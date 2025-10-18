@@ -7,17 +7,28 @@
   <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
-  <meta name="theme-color" content="#0b5ed7">
 </head>
 <body class="light">
+
+  <!-- Pantalla inicial / Splash -->
   <div id="splash" class="splash">
     <div class="logo-wrap">
-      <!-- Inline SVG logo fallback -->
       <img src="logo.svg" alt="TurnApp logo" class="logo-img">
     </div>
     <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
   </div>
 
+  <!-- Pantalla de login -->
+  <div id="login" class="login-screen">
+    <h1>TurnApp</h1>
+    <h3>Inicia sesión</h3>
+    <input type="text" id="username" placeholder="Usuario">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="btn-login" type="button">Entrar</button>
+    <p id="login-error" style="color:red; display:none;">Usuario o contraseña incorrecta</p>
+  </div>
+
+  <!-- App principal -->
   <main id="app" class="hidden">
     <header class="app-header">
       <h2 id="app-title">TurnApp</h2>
@@ -25,7 +36,16 @@
     </header>
 
     <section id="content" class="content">
-      <!-- Dynamic content -->
+      <!-- Contenido dinámico -->
+      <button id="btn-admin-section" 
+              style="display:none; margin:10px; padding:10px; background:#0b5ed7; color:#fff; border:none; border-radius:8px;">
+        Sección Admin
+      </button>
+
+      <button id="btn-logout"
+              style="margin:10px; padding:10px; background:#999; color:#fff; border:none; border-radius:8px;">
+        Cerrar sesión
+      </button>
     </section>
 
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
@@ -37,31 +57,10 @@
 
   <script src="app.js" defer></script>
   <script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('service-worker.js');
-  }
-</script>
-<body>
-  <div id="login" class="login-screen">
-    <h1>TurnApp</h1>
-    <h3>Inicia sesión</h3>
-    <input type="text" id="username" placeholder="Usuario">
-    <input type="password" id="password" placeholder="Contraseña">
-    <button id="btn-login">Entrar</button>
-    <p id="login-error" style="color:red; display:none;">Usuario o contraseña incorrecta</p>
-  </div>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js');
+    }
+  </script>
 
-  <div id="app" class="hidden">
-<button id="btn-admin-section" 
-        style="display:none; margin: 10px; padding: 10px; background:#0b5ed7; color:#fff; border:none; border-radius:8px;">
-  Sección Admin
-<button id="btn-logout"
-        style="margin:10px; padding:10px; background:#999; color:#fff; border:none; border-radius:8px;">
-  Cerrar sesión
-</button>
-    <!-- Aquí irá tu app como antes -->
-  </div>
-
-  <script src="app.js" defer></script>
 </body>
 </html>
