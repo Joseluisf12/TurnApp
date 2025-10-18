@@ -24,6 +24,9 @@ function initApp() {
 
   const diasSemana = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
 
+  const storageKey = `turnos-${mes+1}-${año}`;
+  const savedTurnos = JSON.parse(localStorage.getItem(storageKey) || '{}');
+
   let html = `<h3 style="text-align:center;margin:10px 0;">${meses[mes]} ${año}</h3>`;
   html += `<div class="calendar-grid">`;
 
@@ -42,17 +45,21 @@ function initApp() {
         html += `<div class="day empty"></div>`;
       } else if(diaCounter <= diasMes){
         const diaSemanaIdx = (d)%7;
+
+        // Valores guardados
+        const turnosDia = savedTurnos[diaCounter] || {M:'',T:'',N:''};
+
         html += `
-          <div class="day">
+          <div class="day" data-dia="${diaCounter}">
             <div class="day-number">${diaCounter}</div>
             <div class="day-name">${diasSemana[diaSemanaIdx]}</div>
             <div class="shifts">
               <div class="shift-row">
-                <input type="text" class="shift" placeholder="M" />
-                <input type="text" class="shift" placeholder="T" />
+                <input type="text" class="shift" data-turno="M" placeholder="M" value="${turnosDia.M}" />
+                <input type="text" class="shift" data-turno="T" placeholder="T" value="${turnosDia.T}" />
               </div>
               <div class="shift-row">
-                <input type="text" class="shift" placeholder="N" />
+                <input type="text" class="shift" data-turno="N" placeholder="N" value="${turnosDia.N}" />
               </div>
             </div>
           </div>
@@ -63,10 +70,25 @@ function initApp() {
       }
     }
 
-    html += `</div>`; // fin de la semana
+    html += `</div>`; // fin semana
     semana++;
   }
 
   html += `</div>`; // fin calendar-grid
   content.innerHTML = html;
+
+  // Guardar cambios automáticamente
+  const inputs = content.querySelectorAll('.shift');
+  inputs.forEach(input => {
+    input.addEventListener('input', () => {
+      const dayEl = input.closest('.day');
+      const diaNum = dayEl.dataset.dia;
+      const turno = input.dataset.turno;
+
+      savedTurnos[diaNum] = savedTurnos[diaNum] || {};
+      savedTurnos[diaNum][turno] = input.value;
+
+      localStorage.setItem(storageKey, JSON.stringify(savedTurnos));
+    });
+  });
 }
