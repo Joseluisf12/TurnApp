@@ -1,7 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 
-  // Cambiar tema claro/oscuro
   const btnToggle = document.getElementById('btn-toggle-theme');
   if (btnToggle) {
     btnToggle.addEventListener('click', () => {
@@ -19,8 +18,8 @@ function initApp() {
   const año = fecha.getFullYear();
 
   const meses = [
-    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    'Enero','Febrero','Marzo','Abril','Mayo','Junio',
+    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
   ];
 
   const diasSemana = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
@@ -32,29 +31,43 @@ function initApp() {
   const diasMes = new Date(año, mes + 1, 0).getDate();
   const offset = (primerDia === 0 ? 6 : primerDia - 1);
 
-  // Casillas vacías antes del primer día
-  for (let i = 0; i < offset; i++) {
-    html += `<div class="day empty"></div>`;
+  let diaCounter = 1;
+  let semana = 0;
+
+  // Creamos hasta 6 semanas por mes
+  while(diaCounter <= diasMes) {
+    html += `<div class="week-row">`; // fila de la semana
+
+    for(let d=0; d<7; d++) {
+      if(semana===0 && d < offset) {
+        html += `<div class="day empty"></div>`;
+      } else if(diaCounter <= diasMes){
+        const diaSemanaIdx = (d)%7;
+        html += `
+          <div class="day">
+            <div class="day-number">${diaCounter}</div>
+            <div class="day-name">${diasSemana[diaSemanaIdx]}</div>
+            <div class="shifts">
+              <div class="shift-row">
+                <input type="text" class="shift" placeholder="M" />
+                <input type="text" class="shift" placeholder="T" />
+              </div>
+              <div class="shift-row">
+                <input type="text" class="shift" placeholder="N" />
+              </div>
+            </div>
+          </div>
+        `;
+        diaCounter++;
+      } else {
+        html += `<div class="day empty"></div>`;
+      }
+    }
+
+    html += `</div>`; // fin de semana
+    semana++;
   }
 
-  // Crear días con número, nombre y turnos
-  for (let dia = 1; dia <= diasMes; dia++) {
-    const diaSemanaIdx = (offset + dia - 1) % 7;
-    html += `
-      <div class="day">
-        <div class="day-header">
-          <div class="day-number">${dia}</div>
-          <div class="day-name">${diasSemana[diaSemanaIdx]}</div>
-        </div>
-        <div class="shifts">
-          <input type="text" class="shift" maxlength="10" placeholder="M" />
-          <input type="text" class="shift" maxlength="10" placeholder="T" />
-          <input type="text" class="shift" maxlength="10" placeholder="N" />
-        </div>
-      </div>
-    `;
-  }
-
-  html += `</div>`;
+  html += `</div>`; // fin calendar-grid
   content.innerHTML = html;
 }

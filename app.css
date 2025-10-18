@@ -1,9 +1,15 @@
-/* === CALENDARIO === */
+/* === CALENDARIO HORIZONTAL POR SEMANA === */
 .calendar-grid {
-  display: grid;
-  grid-template-columns: repeat(7, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 6px;
   margin: 10px 0;
+}
+
+.week-row {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr); /* 7 días por semana */
+  gap: 4px;
 }
 
 .day {
@@ -12,35 +18,34 @@
   padding: 4px;
   text-align: center;
   box-shadow: 0 1px 2px rgba(0,0,0,0.1);
-  min-height: 100px;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-}
-
-.day-header {
-  margin-bottom: 5px;
 }
 
 .day-number {
   font-weight: bold;
-  color: #0b5ed7;
   font-size: 1em;
+  color: #0b5ed7;
 }
 
 .day-name {
   font-size: 0.75em;
   color: #555;
+  margin-bottom: 4px;
 }
 
 .shifts {
   display: flex;
-  justify-content: space-between;
-  flex-grow: 1;
-  margin-top: 5px;
+  flex-direction: column;
+  gap: 4px;
 }
 
-.shift {
+.shift-row {
+  display: flex;
+  gap: 4px;
+}
+
+.shift-row input.shift {
   flex: 1;
   font-size: 0.85em;
   font-weight: 600;
@@ -49,7 +54,6 @@
   border-radius: 6px;
   background: #e1e8ff;
   padding: 4px 0;
-  margin: 0 2px;
 }
 
 .empty {
@@ -62,7 +66,7 @@
   color: #fff;
 }
 
-.dark .shift {
+.dark .shift-row input.shift {
   background: #333;
   color: #aad;
   border-color: #66aaff;
