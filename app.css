@@ -1,32 +1,4 @@
-:root{
-  --primary:#0b5ed7;
-  --bg:#ffffff;
-  --text:#121212;
-  --card:#fbfbff;
-  --muted:#6b7280;
-  --accent-radius:14px;
-  font-family: 'Roboto', Arial, sans-serif;
-}
-body { margin:0; background:var(--bg); color:var(--text); -webkit-font-smoothing:antialiased;}
-.hidden{display:none;}
-.splash{height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:1rem; transition:opacity .4s;}
-.logo-img{width:140px; height:140px;}
-.slogan{font-weight:500; margin:0; color:var(--muted); font-size:1rem;}
-
-.app-header{display:flex; align-items:center; justify-content:space-between; padding:12px 16px; background:linear-gradient(90deg, rgba(11,94,215,0.06), transparent); position:sticky; top:0; backdrop-filter:blur(6px);}
-.app-header h2{margin:0; font-size:1.1rem;}
-.icon-btn{background:none;border:0;font-size:1.1rem;padding:.4rem;border-radius:10px;cursor:pointer}
-
-.content{padding:16px; min-height:60vh;}
-.card{background:var(--card); border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(11,94,215,0.06); margin-bottom:12px;}
-
-.bottom-nav{position:fixed; left:0; right:0; bottom:12px; display:flex; justify-content:space-around; padding:8px 12px; gap:8px;}
-.nav-btn{flex:1; margin:0 6px; padding:12px 8px; border-radius:14px; border:0; background:linear-gradient(180deg,#fff,#f7f7ff); box-shadow:0 4px 12px rgba(0,0,0,0.06); cursor:pointer; font-weight:600;}
-.nav-btn.active{background:linear-gradient(90deg,var(--primary),#5a8fe0); color:white;}
-
-/* Dark mode */
-body.dark { --bg:#0f1720; --text:#e6eef8; --card:#0b1b2b; --muted:#9aa9bd; }
-/* === CALENDARIO === */
+/* === CALENDARIO EDITABLE === */
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -40,31 +12,44 @@ body.dark { --bg:#0f1720; --text:#e6eef8; --card:#0b1b2b; --muted:#9aa9bd; }
   padding: 5px;
   text-align: center;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-  min-height: 80px;
+  min-height: 100px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
+.day-header {
+  margin-bottom: 5px;
+}
+
 .day-number {
   font-weight: bold;
   color: #0b5ed7;
+  font-size: 1.1em;
+}
+
+.day-name {
+  font-size: 0.8em;
+  color: #555;
 }
 
 .shifts {
   display: flex;
   justify-content: space-around;
-  margin-top: 4px;
+  flex-grow: 1;
+  gap: 3px;
+  align-items: center;
 }
 
 .shift {
-  background: #e1e8ff;
-  border-radius: 5px;
-  width: 28%;
-  padding: 2px 0;
-  font-size: 0.8em;
-  color: #0b5ed7;
+  flex: 1;
+  font-size: 0.9em;
   font-weight: 600;
+  text-align: center;
+  border: 1px solid #0b5ed7;
+  border-radius: 6px;
+  background: #e1e8ff;
+  padding: 4px 0;
 }
 
 .empty {
@@ -80,5 +65,5 @@ body.dark { --bg:#0f1720; --text:#e6eef8; --card:#0b1b2b; --muted:#9aa9bd; }
 .dark .shift {
   background: #333;
   color: #aad;
+  border-color: #66aaff;
 }
-
