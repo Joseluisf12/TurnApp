@@ -34,9 +34,8 @@ function initApp() {
   let diaCounter = 1;
   let semana = 0;
 
-  // Creamos hasta 6 semanas por mes
   while(diaCounter <= diasMes) {
-    html += `<div class="week-row">`; // fila de la semana
+    html += `<div class="week-row">`;
 
     for(let d=0; d<7; d++) {
       if(semana===0 && d < offset) {
@@ -64,7 +63,7 @@ function initApp() {
       }
     }
 
-    html += `</div>`; // fin de semana
+    html += `</div>`; // fin de la semana
     semana++;
   }
 
