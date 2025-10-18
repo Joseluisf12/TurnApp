@@ -1,90 +1,60 @@
-// ------------------------------
-// TurnApp PWA - app.js
-// ------------------------------
-
-let currentUser = null;
-
-// Función para inicializar la app
-function initApp() {
-  // Mostrar el logo y splash, si lo tienes
-  console.log("Inicializando la app...");
-
-  // Aquí puedes añadir más inicializaciones
-  // Por ejemplo, cargar idioma, menús, etc.
-
-  // Diferenciar roles
-  if (currentUser.role === 'admin') {
-    console.log('Bienvenido administrador');
-    const btnAdmin = document.getElementById('btn-admin-section');
-    if(btnAdmin) btnAdmin.style.display = 'block';
-  } else {
-    console.log('Bienvenido empleado');
-    const btnAdmin = document.getElementById('btn-admin-section');
-    if(btnAdmin) btnAdmin.style.display = 'none';
-  }
-}
-
-// Función para cargar usuarios desde GitHub Pages
-async function fetchUsers() {
-  try {
-    const res = await fetch('users.json?v=' + new Date().getTime());
-    return await res.json();
-  } catch (e) {
-    console.error('No se pudo cargar users.json', e);
-    return [];
-  }
-}
-
-// Función para manejar login
-async function handleLogin() {
-  const users = await fetchUsers();
-  const u = document.getElementById('username').value.trim();
-  const p = document.getElementById('password').value.trim();
-  const found = users.find(x => x.username === u && x.password === p);
-
-  if (found) {
-    currentUser = found;
-    localStorage.setItem('turnapp_user', JSON.stringify(found));
-    document.getElementById('login').classList.add('hidden');
-    document.getElementById('app').classList.remove('hidden');
-    initApp();
-  } else {
-    const err = document.getElementById('login-error');
-    err.style.display = 'block';
-  }
-}
-
-// Comprueba si ya hay un usuario logueado
-const savedUser = localStorage.getItem('turnapp_user');
-if (savedUser) {
-  currentUser = JSON.parse(savedUser);
-  document.getElementById('login').classList.add('hidden');
-  document.getElementById('app').classList.remove('hidden');
-  initApp();
-}
-
-// ------------------------------
-// Espera a que cargue el DOM
-// ------------------------------
 document.addEventListener('DOMContentLoaded', () => {
-  // Si no hay usuario guardado, activa botón login
-  if (!currentUser) {
-    const btnLogin = document.getElementById('btn-login');
-    if (btnLogin) btnLogin.addEventListener('click', handleLogin);
-const btnLogout = document.getElementById('btn-logout');
-if (btnLogout) {
-  btnLogout.addEventListener('click', () => {
-    localStorage.removeItem('turnapp_user');
-    location.reload();
-  });
-}
+  initApp();
 
-  // Theme toggle
-  const btnTheme = document.getElementById('btn-toggle-theme');
-  if (btnTheme) {
-    btnTheme.addEventListener('click', () => {
+  // Cambiar tema claro/oscuro
+  const btnToggle = document.getElementById('btn-toggle-theme');
+  if (btnToggle) {
+    btnToggle.addEventListener('click', () => {
       document.body.classList.toggle('dark');
     });
   }
 });
 
+function initApp() {
+  const content = document.getElementById('content');
+  if (!content) return;
+
+  // Obtener mes y año actual
+  const fecha = new Date();
+  const mes = fecha.getMonth();
+  const año = fecha.getFullYear();
+
+  // Nombres de meses y días
+  const meses = [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+  ];
+
+  // Mostrar encabezado del mes
+  let html = `<h3 style="text-align:center;margin:10px 0;">${meses[mes]} ${año}</h3>`;
+  html += `<div class="calendar-grid">`;
+
+  // Calcular días del mes
+  const primerDia = new Date(año, mes, 1).getDay(); // 0=domingo
+  const diasMes = new Date(año, mes + 1, 0).getDate();
+
+  // Ajustar índice (lunes primero)
+  const offset = (primerDia === 0 ? 6 : primerDia - 1);
+
+  // Espacios vacíos antes del primer día
+  for (let i = 0; i < offset; i++) {
+    html += `<div class="day empty"></div>`;
+  }
+
+  // Días con turnos
+  for (let dia = 1; dia <= diasMes; dia++) {
+    html += `
+      <div class="day">
+        <div class="day-number">${dia}</div>
+        <div class="shifts">
+          <div class="shift">M</div>
+          <div class="shift">T</div>
+          <div class="shift">N</div>
+        </div>
+      </div>
+    `;
+  }
+
+  html += `</div>`;
+  content.innerHTML = html;
+}

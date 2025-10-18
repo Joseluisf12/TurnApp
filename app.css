@@ -26,3 +26,59 @@ body { margin:0; background:var(--bg); color:var(--text); -webkit-font-smoothing
 
 /* Dark mode */
 body.dark { --bg:#0f1720; --text:#e6eef8; --card:#0b1b2b; --muted:#9aa9bd; }
+/* === CALENDARIO === */
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  margin: 10px;
+}
+
+.day {
+  background: #f8f9fa;
+  border-radius: 10px;
+  padding: 5px;
+  text-align: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.day-number {
+  font-weight: bold;
+  color: #0b5ed7;
+}
+
+.shifts {
+  display: flex;
+  justify-content: space-around;
+  margin-top: 4px;
+}
+
+.shift {
+  background: #e1e8ff;
+  border-radius: 5px;
+  width: 28%;
+  padding: 2px 0;
+  font-size: 0.8em;
+  color: #0b5ed7;
+  font-weight: 600;
+}
+
+.empty {
+  background: transparent;
+  box-shadow: none;
+}
+
+.dark .day {
+  background: #222;
+  color: #fff;
+}
+
+.dark .shift {
+  background: #333;
+  color: #aad;
+}
+
