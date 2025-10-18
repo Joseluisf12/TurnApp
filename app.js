@@ -2,7 +2,7 @@ let currentUser = null;
 
 async function fetchUsers() {
   try {
-    const res = await fetch('users.json');
+    const res = await fetch('users.json?v=' + new Date().getTime());
     return await res.json();
   } catch (e) {
     console.error('No se pudo cargar users.json', e);
