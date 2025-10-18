@@ -71,7 +71,13 @@ document.addEventListener('DOMContentLoaded', () => {
   if (!currentUser) {
     const btnLogin = document.getElementById('btn-login');
     if (btnLogin) btnLogin.addEventListener('click', handleLogin);
-  }
+const btnLogout = document.getElementById('btn-logout');
+if (btnLogout) {
+  btnLogout.addEventListener('click', () => {
+    localStorage.removeItem('turnapp_user');
+    location.reload();
+  });
+}
 
   // Theme toggle
   const btnTheme = document.getElementById('btn-toggle-theme');
