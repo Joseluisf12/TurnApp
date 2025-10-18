@@ -14,42 +14,42 @@ function initApp() {
   const content = document.getElementById('content');
   if (!content) return;
 
-  // Obtener mes y año actual
   const fecha = new Date();
   const mes = fecha.getMonth();
   const año = fecha.getFullYear();
 
-  // Nombres de meses y días
   const meses = [
     'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
     'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
   ];
 
-  // Mostrar encabezado del mes
+  const diasSemana = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+
   let html = `<h3 style="text-align:center;margin:10px 0;">${meses[mes]} ${año}</h3>`;
   html += `<div class="calendar-grid">`;
 
-  // Calcular días del mes
   const primerDia = new Date(año, mes, 1).getDay(); // 0=domingo
   const diasMes = new Date(año, mes + 1, 0).getDate();
-
-  // Ajustar índice (lunes primero)
   const offset = (primerDia === 0 ? 6 : primerDia - 1);
 
-  // Espacios vacíos antes del primer día
+  // Casillas vacías antes del primer día
   for (let i = 0; i < offset; i++) {
     html += `<div class="day empty"></div>`;
   }
 
-  // Días con turnos
+  // Crear días con número, nombre y turnos
   for (let dia = 1; dia <= diasMes; dia++) {
+    const diaSemanaIdx = (offset + dia - 1) % 7;
     html += `
       <div class="day">
-        <div class="day-number">${dia}</div>
+        <div class="day-header">
+          <div class="day-number">${dia}</div>
+          <div class="day-name">${diasSemana[diaSemanaIdx]}</div>
+        </div>
         <div class="shifts">
-          <div class="shift">M</div>
-          <div class="shift">T</div>
-          <div class="shift">N</div>
+          <input type="text" class="shift" maxlength="10" placeholder="M" />
+          <input type="text" class="shift" maxlength="10" placeholder="T" />
+          <input type="text" class="shift" maxlength="10" placeholder="N" />
         </div>
       </div>
     `;
