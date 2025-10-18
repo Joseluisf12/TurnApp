@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="app.css">
+  <meta name="theme-color" content="#0b5ed7">
+</head>
+<body class="light">
+  <div id="splash" class="splash">
+    <div class="logo-wrap">
+      <!-- Inline SVG logo fallback -->
+      <img src="logo.svg" alt="TurnApp logo" class="logo-img">
+    </div>
+    <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
+  </div>
+
+  <main id="app" class="hidden">
+    <header class="app-header">
+      <h2 id="app-title">TurnApp</h2>
+      <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
+    </header>
+
+    <section id="content" class="content">
+      <!-- Dynamic content -->
+    </section>
+
+    <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
+      <button data-section="turnos" class="nav-btn active">Turnos</button>
+      <button data-section="peticiones" class="nav-btn">Peticiones</button>
+      <button data-section="ajustes" class="nav-btn">Ajustes</button>
+    </nav>
+  </main>
+
+  <script src="app.js" defer></script>
+</body>
+</html>

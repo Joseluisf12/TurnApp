@@ -1,0 +1,45 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Generador de iconos</title></head>
+<body>
+  <h3>Generador de iconos TurnApp</h3>
+  <p>Pulsa para crear icon-192.png y icon-512.png a partir de logo.svg</p>
+  <input id="file" type="file" accept=".svg" />
+  <div>
+    <button id="b192">Generar 192×192</button>
+    <button id="b512">Generar 512×512</button>
+  </div>
+  <script>
+    const fileEl = document.getElementById('file');
+    let svgText = null;
+    fileEl.addEventListener('change', e=>{
+      const f = e.target.files[0];
+      if(!f) return;
+      const r = new FileReader();
+      r.onload = ()=> svgText = r.result;
+      r.readAsText(f);
+    });
+    function downloadPNG(size){
+      if(!svgText){ alert('Selecciona logo.svg primero'); return; }
+      const img = new Image();
+      const svg64 = btoa(unescape(encodeURIComponent(svgText)));
+      img.src = 'data:image/svg+xml;base64,'+svg64;
+      img.onload = ()=>{
+        const c = document.createElement('canvas');
+        c.width = size; c.height = size;
+        const ctx = c.getContext('2d');
+        ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,size,size);
+        ctx.drawImage(img,0,0,size,size);
+        c.toBlob(b=>{
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(b);
+          a.download = 'icon-'+size+'.png';
+          a.click();
+        },'image/png');
+      }
+    }
+    document.getElementById('b192').onclick = ()=>downloadPNG(192);
+    document.getElementById('b512').onclick = ()=>downloadPNG(512);
+  </script>
+</body>
+</html>

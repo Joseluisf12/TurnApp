@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+  <defs>
+    <linearGradient id="g" x1="0" x2="1">
+      <stop offset="0" stop-color="#0b5ed7"/>
+      <stop offset="1" stop-color="#1f7be8"/>
+    </linearGradient>
+  </defs>
+  <rect width="100%" height="100%" fill="none"/>
+  <!-- abstract T: a stylized T with Galician blue -->
+  <g transform="translate(40,30) scale(1.1)">
+    <rect x="0" y="0" width="120" height="22" rx="10" fill="url(#g)"/>
+    <rect x="49" y="22" width="22" height="90" rx="10" fill="url(#g)"/>
+    <circle cx="60" cy="120" r="10" fill="url(#g)"/>
+  </g>
+</svg>
