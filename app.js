@@ -1,3 +1,43 @@
+let currentUser = null;
+
+async function fetchUsers() {
+  try {
+    const res = await fetch('users.json');
+    return await res.json();
+  } catch (e) {
+    console.error('No se pudo cargar users.json', e);
+    return [];
+  }
+}
+
+async function handleLogin() {
+  const users = await fetchUsers();
+  const u = document.getElementById('username').value.trim();
+  const p = document.getElementById('password').value.trim();
+  const found = users.find(x => x.username === u && x.password === p);
+  
+  if(found){
+    currentUser = found;
+    localStorage.setItem('turnapp_user', JSON.stringify(found));
+    document.getElementById('login').classList.add('hidden');
+    document.getElementById('app').classList.remove('hidden');
+    initApp(); // inicia tu app normalmente
+  } else {
+    const err = document.getElementById('login-error');
+    err.style.display = 'block';
+  }
+}
+
+// Comprueba si ya hay usuario logueado
+const savedUser = localStorage.getItem('turnapp_user');
+if(savedUser){
+  currentUser = JSON.parse(savedUser);
+  document.getElementById('login').classList.add('hidden');
+  document.getElementById('app').classList.remove('hidden');
+  initApp();
+} else {
+  document.getElementById('btn-login').addEventListener('click', handleLogin);
+}
 /* TurnApp minimal core (v1) */
 const LANGS = ['es','en','gl'];
 let locale = 'es';
@@ -79,6 +119,16 @@ async function initApp(){
     es.onmessage = e => console.log('SSE:', e.data);
     es.onerror = ()=>{ es.close(); };
   } catch(e){ /* running file:// or no server — ignore */ }
+}
+if(currentUser.role === 'admin'){
+  console.log('Bienvenido administrador');
+  // aquí puedes mostrar botones o secciones solo para admin
+  // ejemplo:
+  // document.getElementById('btn-admin-section').style.display='block';
+} else {
+  console.log('Bienvenido empleado');
+  // ocultar botones de admin
+  // document.getElementById('btn-admin-section').style.display='none';
 }
 
 document.addEventListener('DOMContentLoaded', ()=>{

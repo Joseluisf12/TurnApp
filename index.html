@@ -41,5 +41,23 @@
     navigator.serviceWorker.register('service-worker.js');
   }
 </script>
+<body>
+  <div id="login" class="login-screen">
+    <h1>TurnApp</h1>
+    <h3>Inicia sesión</h3>
+    <input type="text" id="username" placeholder="Usuario">
+    <input type="password" id="password" placeholder="Contraseña">
+    <button id="btn-login">Entrar</button>
+    <p id="login-error" style="color:red; display:none;">Usuario o contraseña incorrecta</p>
+  </div>
+
+  <div id="app" class="hidden">
+<button id="btn-admin-section" style="display:none; margin: 10px; padding: 10px; background:#0b5ed7; color:#fff; border:none; border-radius:8px;">
+  Sección Admin
+</button>
+    <!-- Aquí irá tu app como antes -->
+  </div>
+
+  <script src="app.js" defer></script>
 </body>
 </html>
