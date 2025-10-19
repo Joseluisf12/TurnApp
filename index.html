@@ -8,6 +8,7 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
 </head>
+
 <body class="light">
 
   <!-- Pantalla inicial / Splash -->
@@ -25,11 +26,22 @@
       <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
     </header>
 
+    <!-- CONTENIDO PRINCIPAL -->
     <section id="content" class="content">
-      <p>Bienvenido a <strong>TurnApp</strong>, tu gestor inteligente de turnos de trabajo.</p>
-      <p>Aquí podrás crear, editar y visualizar tus turnos, gestionar peticiones y ajustar preferencias.</p>
+
+      <!-- Controles de calendario -->
+      <div class="calendar-controls">
+        <button id="prevMonth">◀ Mes anterior</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth">Siguiente mes ▶</button>
+      </div>
+
+      <!-- Calendario dinámico -->
+      <div id="calendar"></div>
+
     </section>
 
+    <!-- Navegación inferior -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
@@ -37,6 +49,7 @@
     </nav>
   </main>
 
+  <!-- Scripts -->
   <script src="app.js" defer></script>
   <script>
     if ('serviceWorker' in navigator) {

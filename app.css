@@ -1,4 +1,148 @@
-/* ===== CALENDARIO ULTRACOMPACTO (VERSIÓN +10% DE TAMAÑO) ===== */
+/* =========================
+   GENERAL / RESET
+========================= */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Roboto', sans-serif;
+}
+
+body.light {
+  background: #fff;
+  color: #222;
+}
+
+body.dark {
+  background: #121212;
+  color: #eee;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* =========================
+   SPLASH / LOGO
+========================= */
+.splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
+}
+
+.logo-wrap {
+  margin-bottom: 12px;
+}
+
+.logo-img {
+  width: 120px;
+  height: auto;
+}
+
+.slogan {
+  font-size: 1.2em;
+  color: #0b5ed7;
+}
+
+/* =========================
+   APP HEADER
+========================= */
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: #0b5ed7;
+  color: #fff;
+  font-weight: 500;
+}
+
+.icon-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.2em;
+}
+
+/* =========================
+   NAV INFERIOR
+========================= */
+.bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  position: fixed;
+  bottom: 0;
+  width: 100%;
+  background: #f0f0f0;
+  padding: 6px 0;
+  border-top: 1px solid #ccc;
+}
+
+.bottom-nav button {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 0;
+  font-weight: 500;
+  color: #0b5ed7;
+}
+
+.bottom-nav button.active {
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+/* =========================
+   CONTENIDO PRINCIPAL
+========================= */
+.content {
+  padding: 16px;
+  margin-bottom: 50px; /* espacio para nav inferior */
+}
+
+/* =========================
+   CONTROLES CALENDARIO
+========================= */
+.calendar-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  margin: 10px auto 6px auto;
+  text-align: center;
+}
+
+.calendar-controls button {
+  background: #0b5ed7;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 0.85em;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background 0.2s ease;
+}
+
+.calendar-controls button:hover {
+  background: #084bb0;
+}
+
+.calendar-controls span {
+  font-weight: 600;
+  font-size: 0.9em;
+  color: #0b5ed7;
+  min-width: 160px;
+  text-align: center;
+}
+
+/* =========================
+   CALENDARIO
+========================= */
 .calendar-grid {
   display: flex;
   flex-direction: column;
@@ -25,28 +169,37 @@
   align-items: center;
   justify-content: flex-start;
   font-family: 'Roboto', sans-serif;
-  width: 52px;        /* antes 46px */
-  min-height: 56px;   /* antes 50px */
+  width: 52px;
+  min-height: 56px;
   box-shadow: 0 1px 1px rgba(0,0,0,0.05);
   box-sizing: border-box;
 }
 
-.day-number { font-weight:700; color:#0b5ed7; font-size:0.8em; line-height:1; }
-.day-name   { font-size:0.7em; color:#666; margin-bottom:2px; line-height:1; }
+.day-number {
+  font-weight: 700;
+  color: #0b5ed7;
+  font-size: 0.8em;
+  line-height: 1;
+}
+
+.day-name-header {
+  font-size: 0.65em;
+  font-weight: 600;
+  color: #666;
+  margin-bottom: 2px;
+}
 
 .shifts {
   display: flex;
   flex-direction: column;
   gap: 2px;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .shift-row {
   display: flex;
   gap: 2px;
   width: 100%;
-  box-sizing: border-box;
 }
 
 .shift {
@@ -55,7 +208,7 @@
   border: 1px solid #ccc;
   border-radius: 4px;
   text-align: center;
-  font-size: 0.65em;  /* un poco mayor */
+  font-size: 0.65em;
   padding: 0;
   margin: 0;
   background: #f9f9f9;
@@ -64,30 +217,43 @@
   white-space: nowrap;
 }
 
-/* Mañana/Tarde */
 .shift-row:first-child .shift {
   width: calc(50% - 1px);
-  height: 18px;       /* antes 16px */
+  height: 18px;
   line-height: 18px;
 }
 
-/* Noche */
 .shift-row:last-child .shift.night {
   width: 100%;
-  height: 11px;       /* antes 10px */
+  height: 11px;
   font-size: 0.58em;
   line-height: 11px;
   background: #eef3ff;
 }
 
-.day.empty { background: transparent; border: none; box-shadow: none; }
+.day.empty {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
 
-.dark .day { background:#222; color:#fff; }
-.dark .shift-row:first-child .shift { background:#333; color:#aad; border-color:#66aaff; }
-.dark .shift-row:last-child .shift.night { background:#444; color:#88c; border-color:#66aaff; }
+/* =========================
+   DARK MODE
+========================= */
+body.dark {
+  background: #121212;
+  color: #eee;
+}
 
-@media (max-width:420px) {
-  .day { width:47px; min-height:50px; }
-  .shift-row:first-child .shift { height:16px; }
-  .shift-row:last-child .shift.night { height:10px; }
+body.dark .day { background:#222; color:#fff; }
+body.dark .shift-row:first-child .shift { background:#333; color:#aad; border-color:#66aaff; }
+body.dark .shift-row:last-child .shift.night { background:#444; color:#88c; border-color:#66aaff; }
+
+/* =========================
+   RESPONSIVE / MOVIL
+========================= */
+@media (max-width: 420px) {
+  .day { width: 47px; min-height: 50px; }
+  .shift-row:first-child .shift { height: 16px; }
+  .shift-row:last-child .shift.night { height: 10px; }
 }

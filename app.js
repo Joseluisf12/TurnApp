@@ -1,144 +1,103 @@
-document.addEventListener('DOMContentLoaded', () => {
-  initApp();
+// === TurnApp — Gestión Inteligente de Turnos de Trabajo ===
 
-  const btnToggle = document.getElementById('btn-toggle-theme');
-  if (btnToggle) {
-    btnToggle.addEventListener('click', () => {
-      document.body.classList.toggle('dark');
-    });
-  }
-});
+// Fecha actual mostrada en el calendario
+let currentDate = new Date();
 
-function initApp() {
-  const content = document.getElementById('content');
-  if (!content) return;
+/**
+ * Genera el calendario del mes indicado
+ */
+function generateCalendar(date) {
+  const calendar = document.getElementById("calendar");
+  const monthLabel = document.getElementById("monthLabel");
+  if (!calendar || !monthLabel) return;
 
-  const fecha = new Date();
-  const mes = fecha.getMonth();
-  const año = fecha.getFullYear();
+  const month = date.getMonth();
+  const year = date.getFullYear();
 
+  // Mostrar el mes actual en el span
   const meses = [
-    'Enero','Febrero','Marzo','Abril','Mayo','Junio',
-    'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'
+    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
   ];
+  monthLabel.textContent = `${meses[month]} ${year}`;
 
-  const diasSemana = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const storageKey = `turnos-${mes+1}-${año}`;
-  let savedTurnos = JSON.parse(localStorage.getItem(storageKey) || '{}');
+  // Días de la semana (lunes a domingo)
+  const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  let html = '<div class="calendar-grid">';
+  html += '<div class="week-row">';
+  weekDays.forEach(d => html += `<div class="day-name-header">${d}</div>`);
+  html += '</div>';
 
-  // --- Botones de control ---
-  let html = `
-    <h3 style="text-align:center;margin:10px 0;">${meses[mes]} ${año}</h3>
-    <div style="text-align:center;margin-bottom:10px;">
-      <button id="btn-reset" style="margin:5px;padding:8px 14px;border:none;background:#e74c3c;color:#fff;border-radius:8px;">🔄 Resetear mes</button>
-      <button id="btn-export" style="margin:5px;padding:8px 14px;border:none;background:#3498db;color:#fff;border-radius:8px;">📤 Exportar</button>
-      <button id="btn-import" style="margin:5px;padding:8px 14px;border:none;background:#2ecc71;color:#fff;border-radius:8px;">📥 Importar</button>
-      <input type="file" id="file-input" accept="application/json" style="display:none;">
-    </div>
-  `;
+  let dayCounter = 1;
+  let firstWeekOffset = (firstDay + 6) % 7; // Ajuste: semana empieza en lunes
 
-  html += `<div class="calendar-grid">`;
-
-  const primerDia = new Date(año, mes, 1).getDay();
-  const diasMes = new Date(año, mes + 1, 0).getDate();
-  const offset = (primerDia === 0 ? 6 : primerDia - 1);
-
-  let diaCounter = 1;
-  let semana = 0;
-
-  while (diaCounter <= diasMes) {
-    html += `<div class="week-row">`;
-
-    for (let d = 0; d < 7; d++) {
-      if (semana === 0 && d < offset) {
+  while (dayCounter <= daysInMonth) {
+    html += '<div class="week-row">';
+    for (let i = 0; i < 7; i++) {
+      if ((dayCounter === 1 && i < firstWeekOffset) || dayCounter > daysInMonth) {
         html += `<div class="day empty"></div>`;
-      } else if (diaCounter <= diasMes) {
-        const diaSemanaIdx = d % 7;
-        const turnosDia = savedTurnos[diaCounter] || { M: '', T: '', N: '' };
-
+      } else {
         html += `
-          <div class="day" data-dia="${diaCounter}">
-            <div class="day-number">${diaCounter}</div>
-            <div class="day-name">${diasSemana[diaSemanaIdx]}</div>
+          <div class="day">
+            <div class="day-number">${dayCounter}</div>
             <div class="shifts">
               <div class="shift-row">
-                <input type="text" class="shift" data-turno="M" placeholder="M" value="${turnosDia.M}" />
-                <input type="text" class="shift" data-turno="T" placeholder="T" value="${turnosDia.T}" />
+                <div class="shift morning" contenteditable="true">M</div>
+                <div class="shift afternoon" contenteditable="true">T</div>
               </div>
               <div class="shift-row">
-                <input type="text" class="shift night" data-turno="N" placeholder="N" value="${turnosDia.N}" />
+                <div class="shift night" contenteditable="true">N</div>
               </div>
             </div>
-          </div>
-        `;
-        diaCounter++;
-      } else {
-        html += `<div class="day empty"></div>`;
+          </div>`;
+        dayCounter++;
       }
     }
-
-    html += `</div>`;
-    semana++;
+    html += '</div>';
   }
 
-  html += `</div>`;
-  content.innerHTML = html;
-
-  // --- Guardar automáticamente ---
-  const inputs = content.querySelectorAll('.shift');
-  inputs.forEach(input => {
-    input.addEventListener('input', () => {
-      const dayEl = input.closest('.day');
-      const diaNum = dayEl.dataset.dia;
-      const turno = input.dataset.turno;
-
-      savedTurnos[diaNum] = savedTurnos[diaNum] || {};
-      savedTurnos[diaNum][turno] = input.value;
-      localStorage.setItem(storageKey, JSON.stringify(savedTurnos));
-    });
-  });
-
-  // --- Resetear mes ---
-  document.getElementById('btn-reset').addEventListener('click', () => {
-    if (confirm('¿Seguro que quieres borrar todos los turnos del mes actual?')) {
-      localStorage.removeItem(storageKey);
-      initApp(); // recargar calendario limpio
-    }
-  });
-
-  // --- Exportar turnos ---
-  document.getElementById('btn-export').addEventListener('click', () => {
-    const blob = new Blob([JSON.stringify(savedTurnos, null, 2)], { type: 'application/json' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `turnos-${mes+1}-${año}.json`;
-    link.click();
-  });
-
-  // --- Importar turnos ---
-  const fileInput = document.getElementById('file-input');
-  document.getElementById('btn-import').addEventListener('click', () => fileInput.click());
-
-  fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const data = JSON.parse(ev.target.result);
-        if (typeof data === 'object') {
-          localStorage.setItem(storageKey, JSON.stringify(data));
-          alert('Turnos importados correctamente.');
-          initApp();
-        } else {
-          alert('Archivo no válido.');
-        }
-      } catch {
-        alert('Error al leer el archivo.');
-      }
-    };
-    reader.readAsText(file);
-  });
+  html += '</div>';
+  calendar.innerHTML = html;
 }
+
+/**
+ * Cambia al mes anterior
+ */
+function prevMonth() {
+  currentDate.setMonth(currentDate.getMonth() - 1);
+  generateCalendar(currentDate);
+}
+
+/**
+ * Cambia al mes siguiente
+ */
+function nextMonth() {
+  currentDate.setMonth(currentDate.getMonth() + 1);
+  generateCalendar(currentDate);
+}
+
+/**
+ * Alterna tema claro/oscuro
+ */
+function toggleTheme() {
+  document.body.classList.toggle("dark");
+}
+
+// === Inicialización ===
+document.addEventListener("DOMContentLoaded", () => {
+  // Generar calendario al cargar la app
+  generateCalendar(currentDate);
+
+  // Botones de navegación de meses
+  const prevBtn = document.getElementById("prevMonth");
+  const nextBtn = document.getElementById("nextMonth");
+  if (prevBtn) prevBtn.addEventListener("click", prevMonth);
+  if (nextBtn) nextBtn.addEventListener("click", nextMonth);
+
+  // Botón de tema
+  const themeBtn = document.getElementById("btn-toggle-theme");
+  if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
+});
