@@ -1,116 +1,93 @@
-/* ===== CALENDARIO ULTRACOMPACTO Y CENTRADO ===== */
+/* ===== CALENDARIO ULTRACOMPACTO (VERSIÓN +10% DE TAMAÑO) ===== */
 .calendar-grid {
   display: flex;
   flex-direction: column;
   gap: 3px;
   width: fit-content;
-  margin: 0 auto 60px auto; /* centrado perfecto */
+  margin: 0 auto 60px auto;
   text-align: center;
+  box-sizing: border-box;
 }
 
 .week-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   gap: 2px;
-  justify-items: center;
 }
 
 .day {
   background: #fff;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
-  padding: 2px;
+  padding: 3px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
   font-family: 'Roboto', sans-serif;
-  width: 46px;       /* ancho fijo por día */
-  min-height: 50px;  /* mucho más pequeño */
+  width: 52px;        /* antes 46px */
+  min-height: 56px;   /* antes 50px */
   box-shadow: 0 1px 1px rgba(0,0,0,0.05);
   box-sizing: border-box;
 }
 
-.day-number {
-  font-weight: bold;
-  color: #0b5ed7;
-  font-size: 0.75em;
-  line-height: 1;
-}
+.day-number { font-weight:700; color:#0b5ed7; font-size:0.8em; line-height:1; }
+.day-name   { font-size:0.7em; color:#666; margin-bottom:2px; line-height:1; }
 
-.day-name {
-  font-size: 0.65em;
-  color: #666;
-  margin-bottom: 2px;
-  line-height: 1;
-}
-
-/* --- Turnos --- */
 .shifts {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .shift-row {
   display: flex;
-  gap: 1px;
+  gap: 2px;
   width: 100%;
-  justify-content: center;
+  box-sizing: border-box;
 }
 
 .shift {
-  flex: 1;
+  display: inline-block;
+  box-sizing: border-box;
   border: 1px solid #ccc;
   border-radius: 4px;
   text-align: center;
-  font-size: 0.6em;
+  font-size: 0.65em;  /* un poco mayor */
   padding: 0;
+  margin: 0;
   background: #f9f9f9;
-  height: 16px; /* mañana y tarde */
-  line-height: 16px;
+  line-height: 1;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
-/* Turno de noche más delgado */
-.shift.night {
-  height: 10px;
+/* Mañana/Tarde */
+.shift-row:first-child .shift {
+  width: calc(50% - 1px);
+  height: 18px;       /* antes 16px */
+  line-height: 18px;
+}
+
+/* Noche */
+.shift-row:last-child .shift.night {
+  width: 100%;
+  height: 11px;       /* antes 10px */
+  font-size: 0.58em;
+  line-height: 11px;
   background: #eef3ff;
-  font-size: 0.55em;
-  line-height: 10px;
 }
 
-.day.empty {
-  background: transparent;
-  border: none;
-  box-shadow: none;
-}
+.day.empty { background: transparent; border: none; box-shadow: none; }
 
-/* --- Botones de control superiores --- */
-#btn-reset, #btn-export, #btn-import {
-  transition: all 0.2s ease;
-}
+.dark .day { background:#222; color:#fff; }
+.dark .shift-row:first-child .shift { background:#333; color:#aad; border-color:#66aaff; }
+.dark .shift-row:last-child .shift.night { background:#444; color:#88c; border-color:#66aaff; }
 
-#btn-reset:hover {
-  background: #c0392b;
-}
-#btn-export:hover {
-  background: #2980b9;
-}
-#btn-import:hover {
-  background: #27ae60;
-}
-
-/* --- Adaptación móvil (pantallas estrechas) --- */
-@media (max-width: 420px) {
-  .day {
-    width: 42px;
-    min-height: 46px;
-  }
-  .shift {
-    height: 14px;
-  }
-  .shift.night {
-    height: 9px;
-  }
+@media (max-width:420px) {
+  .day { width:47px; min-height:50px; }
+  .shift-row:first-child .shift { height:16px; }
+  .shift-row:last-child .shift.night { height:10px; }
 }
