@@ -1,58 +1,61 @@
-/* ===== CALENDARIO COMPACTO, CENTRADO Y ALINEADO ===== */
+/* ===== CALENDARIO ULTRACOMPACTO Y CENTRADO ===== */
 .calendar-grid {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  width: 100%;
-  max-width: 420px; /* centrado en móvil */
-  margin: 0 auto 70px auto; /* centrado horizontalmente */
+  gap: 3px;
+  width: fit-content;
+  margin: 0 auto 60px auto; /* centrado perfecto */
+  text-align: center;
 }
 
 .week-row {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 3px;
-  justify-items: center; /* centra las columnas */
+  gap: 2px;
+  justify-items: center;
 }
 
 .day {
   background: #fff;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 3px;
+  border-radius: 6px;
+  padding: 2px;
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;
   font-family: 'Roboto', sans-serif;
-  width: 100%;
-  min-height: 70px; /* más pequeño */
-  box-shadow: 0 1px 1px rgba(0,0,0,0.08);
+  width: 46px;       /* ancho fijo por día */
+  min-height: 50px;  /* mucho más pequeño */
+  box-shadow: 0 1px 1px rgba(0,0,0,0.05);
   box-sizing: border-box;
 }
 
 .day-number {
   font-weight: bold;
   color: #0b5ed7;
-  font-size: 0.85em;
+  font-size: 0.75em;
+  line-height: 1;
 }
 
 .day-name {
-  font-size: 0.7em;
+  font-size: 0.65em;
   color: #666;
   margin-bottom: 2px;
+  line-height: 1;
 }
 
 /* --- Turnos --- */
 .shifts {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   width: 100%;
 }
 
 .shift-row {
   display: flex;
-  gap: 2px;
+  gap: 1px;
   width: 100%;
   justify-content: center;
 }
@@ -60,19 +63,21 @@
 .shift {
   flex: 1;
   border: 1px solid #ccc;
-  border-radius: 5px;
+  border-radius: 4px;
   text-align: center;
-  font-size: 0.7em;
-  padding: 1px;
+  font-size: 0.6em;
+  padding: 0;
   background: #f9f9f9;
-  height: 20px; /* mañana y tarde */
+  height: 16px; /* mañana y tarde */
+  line-height: 16px;
 }
 
-/* Turno de noche: más delgado */
+/* Turno de noche más delgado */
 .shift.night {
-  height: 14px;
+  height: 10px;
   background: #eef3ff;
-  font-size: 0.65em;
+  font-size: 0.55em;
+  line-height: 10px;
 }
 
 .day.empty {
@@ -96,22 +101,16 @@
   background: #27ae60;
 }
 
-/* --- Adaptación móvil extrema --- */
-@media (max-width: 400px) {
-  .calendar-grid {
-    max-width: 95%;
-  }
-
+/* --- Adaptación móvil (pantallas estrechas) --- */
+@media (max-width: 420px) {
   .day {
-    min-height: 60px;
+    width: 42px;
+    min-height: 46px;
   }
-
   .shift {
-    height: 18px;
-    font-size: 0.65em;
+    height: 14px;
   }
-
   .shift.night {
-    height: 12px;
+    height: 9px;
   }
 }
