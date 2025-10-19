@@ -1,7 +1,55 @@
 // === TurnApp — Gestión Inteligente de Turnos de Trabajo ===
 
-// Fecha actual mostrada en el calendario
 let currentDate = new Date();
+
+/**
+ * Genera la clave de almacenamiento para el mes actual
+ */
+function getStorageKey(date) {
+  return `turns_${date.getFullYear()}_${date.getMonth()}`;
+}
+
+/**
+ * Guarda los turnos del calendario actual en localStorage
+ */
+function saveShifts() {
+  const calendar = document.getElementById("calendar");
+  if (!calendar) return;
+
+  const shifts = [];
+  calendar.querySelectorAll(".day").forEach(day => {
+    if (day.classList.contains("empty")) return;
+    const morning = day.querySelector(".shift.morning")?.textContent || "";
+    const afternoon = day.querySelector(".shift.afternoon")?.textContent || "";
+    const night = day.querySelector(".shift.night")?.textContent || "";
+    shifts.push({ morning, afternoon, night });
+  });
+
+  localStorage.setItem(getStorageKey(currentDate), JSON.stringify(shifts));
+}
+
+/**
+ * Carga los turnos guardados para el mes actual
+ */
+function loadShifts() {
+  const calendar = document.getElementById("calendar");
+  if (!calendar) return;
+
+  const saved = localStorage.getItem(getStorageKey(currentDate));
+  if (!saved) return;
+
+  const shifts = JSON.parse(saved);
+  let idx = 0;
+  calendar.querySelectorAll(".day").forEach(day => {
+    if (day.classList.contains("empty")) return;
+    if (shifts[idx]) {
+      day.querySelector(".shift.morning").textContent = shifts[idx].morning;
+      day.querySelector(".shift.afternoon").textContent = shifts[idx].afternoon;
+      day.querySelector(".shift.night").textContent = shifts[idx].night;
+    }
+    idx++;
+  });
+}
 
 /**
  * Genera el calendario del mes indicado
@@ -14,7 +62,6 @@ function generateCalendar(date) {
   const month = date.getMonth();
   const year = date.getFullYear();
 
-  // Mostrar el mes actual en el span
   const meses = [
     "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
     "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
@@ -23,16 +70,15 @@ function generateCalendar(date) {
 
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-  // Días de la semana (lunes a domingo)
   const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+
   let html = '<div class="calendar-grid">';
   html += '<div class="week-row">';
   weekDays.forEach(d => html += `<div class="day-name-header">${d}</div>`);
   html += '</div>';
 
   let dayCounter = 1;
-  let firstWeekOffset = (firstDay + 6) % 7; // Ajuste: semana empieza en lunes
+  let firstWeekOffset = (firstDay + 6) % 7;
 
   while (dayCounter <= daysInMonth) {
     html += '<div class="week-row">';
@@ -58,15 +104,23 @@ function generateCalendar(date) {
     }
     html += '</div>';
   }
-
   html += '</div>';
   calendar.innerHTML = html;
+
+  // Cargar turnos guardados
+  loadShifts();
+
+  // Guardar cambios al editar cualquier turno
+  calendar.querySelectorAll(".shift").forEach(shiftEl => {
+    shiftEl.addEventListener("input", saveShifts);
+  });
 }
 
 /**
  * Cambia al mes anterior
  */
 function prevMonth() {
+  saveShifts(); // guardar antes de cambiar
   currentDate.setMonth(currentDate.getMonth() - 1);
   generateCalendar(currentDate);
 }
@@ -75,6 +129,7 @@ function prevMonth() {
  * Cambia al mes siguiente
  */
 function nextMonth() {
+  saveShifts(); // guardar antes de cambiar
   currentDate.setMonth(currentDate.getMonth() + 1);
   generateCalendar(currentDate);
 }
@@ -88,16 +143,13 @@ function toggleTheme() {
 
 // === Inicialización ===
 document.addEventListener("DOMContentLoaded", () => {
-  // Generar calendario al cargar la app
   generateCalendar(currentDate);
 
-  // Botones de navegación de meses
   const prevBtn = document.getElementById("prevMonth");
   const nextBtn = document.getElementById("nextMonth");
   if (prevBtn) prevBtn.addEventListener("click", prevMonth);
   if (nextBtn) nextBtn.addEventListener("click", nextMonth);
 
-  // Botón de tema
   const themeBtn = document.getElementById("btn-toggle-theme");
   if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
 });
