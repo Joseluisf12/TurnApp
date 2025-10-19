@@ -8,7 +8,6 @@
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
 </head>
-
 <body class="light">
 
   <!-- Pantalla inicial / Splash -->
@@ -26,22 +25,23 @@
       <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
     </header>
 
-    <!-- CONTENIDO PRINCIPAL -->
     <section id="content" class="content">
 
-      <!-- Controles de calendario -->
       <div class="calendar-controls">
-        <button id="prevMonth">◀ Mes anterior</button>
+        <button id="prevMonth" class="nav-control">◀ Mes anterior</button>
         <span id="monthLabel"></span>
-        <button id="nextMonth">Siguiente mes ▶</button>
+        <button id="nextMonth" class="nav-control">Siguiente mes ▶</button>
       </div>
 
-      <!-- Calendario dinámico -->
+      <div class="calendar-actions">
+        <button id="applyCadence" class="action-btn">Aplicar cadencia</button>
+        <button id="clearCadence" class="action-btn danger">Limpiar cadencia</button>
+      </div>
+
       <div id="calendar"></div>
 
     </section>
 
-    <!-- Navegación inferior -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
@@ -49,7 +49,6 @@
     </nav>
   </main>
 
-  <!-- Scripts -->
   <script src="app.js" defer></script>
   <script>
     if ('serviceWorker' in navigator) {

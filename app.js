@@ -1,155 +1,195 @@
-// === TurnApp — Gestión Inteligente de Turnos de Trabajo ===
+const calendarEl = document.getElementById("calendar");
+const monthLabel = document.getElementById("monthLabel");
+const btnPrev = document.getElementById("prevMonth");
+const btnNext = document.getElementById("nextMonth");
+const btnApplyCadence = document.getElementById("applyCadence");
+const btnClearCadence = document.getElementById("clearCadence");
+
+const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio",
+               "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
 
 let currentDate = new Date();
 
-/**
- * Genera la clave de almacenamiento para el mes actual
- */
-function getStorageKey(date) {
-  return `turns_${date.getFullYear()}_${date.getMonth()}`;
-}
+// Estructura para almacenar los turnos y la cadencia
+let shiftsData = JSON.parse(localStorage.getItem("turnapp_shifts")) || {};
+let cadenceData = JSON.parse(localStorage.getItem("turnapp_cadence")) || null;
 
-/**
- * Guarda los turnos del calendario actual en localStorage
- */
 function saveShifts() {
-  const calendar = document.getElementById("calendar");
-  if (!calendar) return;
-
-  const shifts = [];
-  calendar.querySelectorAll(".day").forEach(day => {
-    if (day.classList.contains("empty")) return;
-    const morning = day.querySelector(".shift.morning")?.textContent || "";
-    const afternoon = day.querySelector(".shift.afternoon")?.textContent || "";
-    const night = day.querySelector(".shift.night")?.textContent || "";
-    shifts.push({ morning, afternoon, night });
-  });
-
-  localStorage.setItem(getStorageKey(currentDate), JSON.stringify(shifts));
+  localStorage.setItem("turnapp_shifts", JSON.stringify(shiftsData));
 }
 
-/**
- * Carga los turnos guardados para el mes actual
- */
-function loadShifts() {
-  const calendar = document.getElementById("calendar");
-  if (!calendar) return;
-
-  const saved = localStorage.getItem(getStorageKey(currentDate));
-  if (!saved) return;
-
-  const shifts = JSON.parse(saved);
-  let idx = 0;
-  calendar.querySelectorAll(".day").forEach(day => {
-    if (day.classList.contains("empty")) return;
-    if (shifts[idx]) {
-      day.querySelector(".shift.morning").textContent = shifts[idx].morning;
-      day.querySelector(".shift.afternoon").textContent = shifts[idx].afternoon;
-      day.querySelector(".shift.night").textContent = shifts[idx].night;
-    }
-    idx++;
-  });
+function saveCadence() {
+  localStorage.setItem("turnapp_cadence", JSON.stringify(cadenceData));
 }
 
-/**
- * Genera el calendario del mes indicado
- */
-function generateCalendar(date) {
-  const calendar = document.getElementById("calendar");
-  const monthLabel = document.getElementById("monthLabel");
-  if (!calendar || !monthLabel) return;
+function getKey(year, month) {
+  return `${year}-${month}`;
+}
 
-  const month = date.getMonth();
-  const year = date.getFullYear();
+function parseDate(input){
+  const parts = input.split("/");
+  if(parts.length!==3) return null;
+  const d=parseInt(parts[0],10), m=parseInt(parts[1],10)-1, y=parseInt(parts[2],10);
+  return new Date(y,m,d);
+}
 
-  const meses = [
-    "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-    "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-  ];
-  monthLabel.textContent = `${meses[month]} ${year}`;
+function createDayCell(date) {
+  const dayCell = document.createElement("div");
+  dayCell.classList.add("day-cell");
 
-  const firstDay = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const weekDays = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"];
+  let dayOfWeek = date.getDay();
+  dayOfWeek = (dayOfWeek === 0) ? 6 : dayOfWeek-1;
 
-  let html = '<div class="calendar-grid">';
-  html += '<div class="week-row">';
-  weekDays.forEach(d => html += `<div class="day-name-header">${d}</div>`);
-  html += '</div>';
+  if(dayOfWeek === 5) dayCell.classList.add("saturday");
+  if(dayOfWeek === 6) dayCell.classList.add("sunday");
 
-  let dayCounter = 1;
-  let firstWeekOffset = (firstDay + 6) % 7;
+  const dateLabel = document.createElement("div");
+  dateLabel.classList.add("day-label");
+  dateLabel.textContent = `${date.getDate()} ${["Lun","Mar","Mié","Jue","Vie","Sáb","Dom"][dayOfWeek]}`;
 
-  while (dayCounter <= daysInMonth) {
-    html += '<div class="week-row">';
-    for (let i = 0; i < 7; i++) {
-      if ((dayCounter === 1 && i < firstWeekOffset) || dayCounter > daysInMonth) {
-        html += `<div class="day empty"></div>`;
-      } else {
-        html += `
-          <div class="day">
-            <div class="day-number">${dayCounter}</div>
-            <div class="shifts">
-              <div class="shift-row">
-                <div class="shift morning" contenteditable="true">M</div>
-                <div class="shift afternoon" contenteditable="true">T</div>
-              </div>
-              <div class="shift-row">
-                <div class="shift night" contenteditable="true">N</div>
-              </div>
-            </div>
-          </div>`;
-        dayCounter++;
+  const shiftsWrapper = document.createElement("div");
+  shiftsWrapper.classList.add("shifts-wrapper");
+
+  const rowMT = document.createElement("div");
+  rowMT.classList.add("shifts-row");
+
+  const shiftM = document.createElement("div");
+  shiftM.classList.add("shift", "shift-m");
+  shiftM.textContent = "M";
+
+  const shiftT = document.createElement("div");
+  shiftT.classList.add("shift", "shift-t");
+  shiftT.textContent = "T";
+
+  rowMT.appendChild(shiftM);
+  rowMT.appendChild(shiftT);
+  shiftsWrapper.appendChild(rowMT);
+
+  const shiftN = document.createElement("div");
+  shiftN.classList.add("shift", "shift-n");
+  shiftN.textContent = "N";
+
+  shiftsWrapper.appendChild(shiftN);
+  dayCell.appendChild(dateLabel);
+  dayCell.appendChild(shiftsWrapper);
+
+  const key = getKey(date.getFullYear(), date.getMonth());
+  const storedDay = shiftsData[key]?.[date.getDate()];
+  if(storedDay){
+    [shiftM,shiftT,shiftN].forEach((el,i)=>{
+      if(storedDay[i]){
+        el.style.backgroundColor = storedDay[i];
+        el.classList.add("colored");
+      }
+    });
+  }
+
+  // Aplicar cadencia sin tocar turnos no afectados
+  if(cadenceData){
+    const startDate = new Date(cadenceData.start);
+    const pattern = cadenceData.pattern;
+    const dayDiff = Math.floor((date-startDate)/(1000*60*60*24));
+    if(dayDiff>=0){
+      const idx = dayDiff % pattern.length;
+      const dayPattern = pattern[idx];
+
+      // Solo colorear los turnos de la cadencia, no modificar texto ni eventos
+      if(dayPattern.includes("M")){
+        shiftM.style.backgroundColor="#ffa94d";
+        shiftM.classList.add("colored");
+      }
+      if(dayPattern.includes("T")){
+        shiftT.style.backgroundColor="#ffa94d";
+        shiftT.classList.add("colored");
+      }
+      if(dayPattern.includes("N")){
+        shiftN.style.backgroundColor="#d87d00";
+        shiftN.classList.add("colored");
       }
     }
-    html += '</div>';
   }
-  html += '</div>';
-  calendar.innerHTML = html;
 
-  // Cargar turnos guardados
-  loadShifts();
-
-  // Guardar cambios al editar cualquier turno
-  calendar.querySelectorAll(".shift").forEach(shiftEl => {
-    shiftEl.addEventListener("input", saveShifts);
+  // Hacer los turnos editables siempre
+  [shiftM,shiftT,shiftN].forEach((el,i)=>{
+    el.addEventListener("click", ()=>{
+      const nuevo = prompt("Editar turno:", el.textContent);
+      if(nuevo!==null){
+        el.textContent=nuevo;
+        saveCurrentDay(date,[shiftM,shiftT,shiftN]);
+      }
+    });
   });
+
+  return dayCell;
 }
 
-/**
- * Cambia al mes anterior
- */
-function prevMonth() {
-  saveShifts(); // guardar antes de cambiar
-  currentDate.setMonth(currentDate.getMonth() - 1);
-  generateCalendar(currentDate);
+function saveCurrentDay(date, shifts){
+  const key = getKey(date.getFullYear(),date.getMonth());
+  if(!shiftsData[key]) shiftsData[key]={};
+  shiftsData[key][date.getDate()] = shifts.map(el=>el.style.backgroundColor||"");
+  saveShifts();
 }
 
-/**
- * Cambia al mes siguiente
- */
-function nextMonth() {
-  saveShifts(); // guardar antes de cambiar
-  currentDate.setMonth(currentDate.getMonth() + 1);
-  generateCalendar(currentDate);
+function renderCalendar(date){
+  calendarEl.innerHTML="";
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  monthLabel.textContent = `${meses[month]} ${year}`;
+
+  const firstDay = new Date(year,month,1);
+  const lastDay = new Date(year,month+1,0);
+  let startDay = firstDay.getDay();
+  startDay = (startDay === 0) ? 6 : startDay-1;
+
+  for(let i=0;i<startDay;i++){
+    const emptyCell = document.createElement("div");
+    calendarEl.appendChild(emptyCell);
+  }
+
+  for(let d=1;d<=lastDay.getDate();d++){
+    const currentDay = new Date(year,month,d);
+    const cell = createDayCell(currentDay);
+    calendarEl.appendChild(cell);
+  }
 }
 
-/**
- * Alterna tema claro/oscuro
- */
-function toggleTheme() {
-  document.body.classList.toggle("dark");
+function applyCadence(){
+  let input = prompt("Introduce fecha de inicio de cadencia (DD/MM/AAAA):");
+  if(!input) return;
+  const startDate = parseDate(input);
+  if(!startDate) return alert("Fecha no válida");
+
+  // Cadencia indefinida 8 días
+  const basePattern = [["M","T"],[],["M","T"],["N"],[],[],[],[]];
+
+  cadenceData = {start:startDate.toISOString(), pattern: basePattern};
+  saveCadence();
+  renderCalendar(currentDate);
 }
 
-// === Inicialización ===
-document.addEventListener("DOMContentLoaded", () => {
-  generateCalendar(currentDate);
+function clearCadence(){
+  let input = prompt("Introduce fecha desde la que limpiar cadencia (DD/MM/AAAA):");
+  if(!input) return;
+  const startDate = parseDate(input);
+  if(!startDate) return alert("Fecha no válida");
 
-  const prevBtn = document.getElementById("prevMonth");
-  const nextBtn = document.getElementById("nextMonth");
-  if (prevBtn) prevBtn.addEventListener("click", prevMonth);
-  if (nextBtn) nextBtn.addEventListener("click", nextMonth);
+  // Se elimina cadencia solo si empieza desde o después de la fecha indicada
+  if(cadenceData){
+    const cadenceStart = new Date(cadenceData.start);
+    if(startDate <= cadenceStart){
+      cadenceData = null;
+      saveCadence();
+      renderCalendar(currentDate);
+    }
+  }
+}
 
-  const themeBtn = document.getElementById("btn-toggle-theme");
-  if (themeBtn) themeBtn.addEventListener("click", toggleTheme);
+btnPrev.addEventListener("click",()=>{currentDate.setMonth(currentDate.getMonth()-1); renderCalendar(currentDate);});
+btnNext.addEventListener("click",()=>{currentDate.setMonth(currentDate.getMonth()+1); renderCalendar(currentDate);});
+btnApplyCadence.addEventListener("click", applyCadence);
+btnClearCadence.addEventListener("click", clearCadence);
+
+document.addEventListener("DOMContentLoaded",()=>{
+  renderCalendar(currentDate);
+  document.getElementById('btn-toggle-theme').addEventListener('click',()=>{document.body.classList.toggle('dark');});
 });
