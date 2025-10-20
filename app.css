@@ -1,19 +1,39 @@
+/* =================== app.css =================== */
+
 /* ---------------------- BODY Y GLOBAL ---------------------- */
-body {
-  font-family: 'Roboto', 'Google Sans', sans-serif;
-  margin: 0;
-  padding: 0;
-  background: #fff;
-  color: #222;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
+
+:root{
+  --primary:#0b5ed7;
+  --accent-green:#198754;
+  --danger:#dc3545;
+  --weekday-bg: #e6f2ff;    /* días laborables L-V */
+  --saturday-bg: #c0e0ff;   /* sábado (azul tenue más oscuro) */
+  --sunday-bg: #ffe6e6;     /* domingo */
+  --cell-border: #ddd;
+  --shift-bg: #f8f9fa;
+  --orange: #ffa94d;
+  --orange-dark: #d87d00;
+  --max-width: 700px;
 }
 
-body.dark {
-  background: #121212;
-  color: #f5f5f5;
+* { box-sizing: border-box; }
+
+html,body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Roboto', 'Google Sans', sans-serif;
+  background: #fff;
+  color: #222;
+}
+
+/* Contenedor principal centrado */
+main, .content {
+  width: 95%;
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding-bottom: 90px; /* espacio para barra inferior */
 }
 
 /* ---------------------- CABECERA ---------------------- */
@@ -21,195 +41,186 @@ body.dark {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 90%;
-  max-width: 700px;
-  margin-top: 1rem;
+  width: 95%;
+  max-width: var(--max-width);
+  margin: 1rem auto 0.5rem;
+}
+
+.app-header h2 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 500;
 }
 
 .icon-btn {
   background: none;
   border: none;
-  font-size: 1.5rem;
+  font-size: 1.4rem;
   cursor: pointer;
 }
 
-/* ---------------------- CONTENIDO ---------------------- */
-.content {
-  width: 90%;
-  max-width: 700px;
-  margin: 1rem auto;
-  text-align: center;
-}
-
-/* ---------------------- CALENDARIO ---------------------- */
+/* ---------------------- CONTROLES DE CALENDARIO ---------------------- */
 .calendar-controls,
-.calendar-actions,
-#calendar {
-  width: 95%;
-  max-width: 700px;
-  margin: 0 auto;
-}
-
-.calendar-controls {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 0.5rem;
-}
-
-.nav-control {
-  background: #0b5ed7;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 0.4rem 0.8rem;
-  cursor: pointer;
-  font-weight: bold;
-}
-
-.nav-control:hover {
-  background: #084bb4;
-}
-
 .calendar-actions {
+  width: 95%;
+  max-width: var(--max-width);
+  margin: 0.4rem auto;
   display: flex;
-  justify-content: center;
-  gap: 1rem;
-  margin-bottom: 1rem;
+  align-items: center;
+  gap: 8px;
 }
 
-.action-btn {
-  background: #198754;
-  color: white;
+.calendar-controls { justify-content: space-between; }
+.calendar-actions { justify-content: center; }
+
+/* ---------------------- BOTONES DE CADENCIA MODERNOS ---------------------- */
+#btn-apply-cadence, #btn-clear-cadence {
+  background: var(--accent-green);
+  color: #fff;
   border: none;
-  border-radius: 6px;
-  padding: 0.5rem 0.8rem;
+  border-radius: 12px;
+  padding: 0.5rem 1rem;
+  margin: 4px;
+  font-weight: 600;
   cursor: pointer;
-  font-weight: bold;
+  transition: all 0.2s ease-in-out;
 }
 
-.action-btn:hover {
-  background: #146c43;
+#btn-apply-cadence:hover, #btn-clear-cadence:hover {
+  filter: brightness(0.9);
 }
 
-.action-btn.danger {
-  background: #dc3545;
-}
-
-.action-btn.danger:hover {
-  background: #b02a37;
-}
-
+/* ---------------------- CALENDARIO (grid) ---------------------- */
 #calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px; /* separación mayor entre casillas */
+  gap: 10px;
   justify-items: stretch;
-  margin-bottom: 1rem;
+  margin: 0 auto 20px;
+  width: 95%;
+  max-width: var(--max-width);
 }
 
+/* ---------------------- CASILLAS (día) ---------------------- */
 .day-cell {
   width: 100%;
   max-width: 90px;
-  min-height: 70px; /* menos alto */
-  background: #fff;
-  border-radius: 12px; /* más redondeado */
-  padding: 4px;
+  min-height: 70px;
+  background: var(--weekday-bg);
+  border-radius: 12px;
+  padding: 6px;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   align-items: stretch;
-  border: 1px solid #ddd;
+  border: 1px solid var(--cell-border);
 }
 
-.day-cell.saturday {
-  background-color: #e6f0ff;
-}
+/* Fines de semana y festivos */
+.day-cell.saturday { background: var(--saturday-bg); }
+.day-cell.sunday { background: var(--sunday-bg); }
+.day-cell.holiday { background: var(--sunday-bg); } /* mismo color que domingo */
 
-.day-cell.sunday {
-  background-color: #ffe6e6;
-}
-
+/* Etiqueta (número y día) */
 .day-label {
-  font-size: 0.8rem;
-  font-weight: bold;
-  margin-bottom: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 6px;
   text-align: left;
-  color: #0b5ed7;
 }
 
-.shifts-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
+/* ---------------------- TURNOS dentro de la casilla ---------------------- */
+.shifts-wrapper { display: flex; flex-direction: column; gap: 4px; }
 
 .shifts-row {
   display: flex;
-  gap: 2px;
+  gap: 6px;
 }
 
+/* Mañana y Tarde lado a lado */
 .shift-m, .shift-t {
   flex: 1;
-  background: #f8f9fa;
-  border-radius: 4px;
+  min-height: 24px;
+  background: var(--shift-bg);
+  border-radius: 6px;
   text-align: center;
-  font-size: 0.75rem;
+  font-size: 0.77rem;
+  line-height: 24px;
   cursor: pointer;
-  padding: 1px 0; /* menos altura */
+  user-select: none;
+  border: 1px solid #e6e6e6;
+  color: #222;
+  padding: 0 4px;
 }
 
+/* Noche debajo, más delgada */
 .shift-n {
   width: 100%;
-  background: #f8f9fa;
-  border-radius: 4px;
+  min-height: 20px;
+  background: var(--shift-bg);
+  border-radius: 6px;
   text-align: center;
-  font-size: 0.7rem;
-  padding: 1px 0;
-  margin-top: 1px;
+  font-size: 0.72rem;
+  line-height: 20px;
+  cursor: pointer;
+  user-select: none;
+  border: 1px solid #e6e6e6;
+  color: #222;
+  padding: 0 4px;
+  margin-top: 4px;
 }
 
-.shift-m.colored, .shift-t.colored {
-  background-color: #ffa94d;
-  color: #fff;
-}
+/* Colores aplicados por cadencia / manual */
+.shift-m.colored, .shift-t.colored { background-color: var(--orange); color: #fff; }
+.shift-n.colored { background-color: var(--orange-dark); color: #fff; }
 
-.shift-n.colored {
-  background-color: #d87d00;
-  color: #fff;
-}
-
-/* ---------------------- NAVEGACION INFERIOR ---------------------- */
+/* ---------------------- NAVEGACIÓN INFERIOR ---------------------- */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #0b5ed7;
+  background: var(--primary);
   display: flex;
   justify-content: space-around;
   padding: 0.6rem 0;
+  z-index: 40;
 }
 
 .nav-btn {
   background: none;
   border: none;
-  color: white;
-  font-weight: bold;
+  color: #fff;
+  font-weight: 700;
   cursor: pointer;
 }
 
-.nav-btn.active {
-  text-decoration: underline;
+.nav-btn.active { text-decoration: underline; }
+
+/* ---------------------- MODO OSCURO ---------------------- */
+body.dark {
+  background: #0f1112;
+  color: #eaeaea;
 }
 
-/* ---------------------- DARK MODE ---------------------- */
 body.dark .day-cell {
-  background: #1e1e1e;
-  color: #f5f5f5;
+  background: #1b1b1b;
+  border-color: rgba(255,255,255,0.06);
 }
 
-body.dark .shift {
-  background: #333;
-  color: #f5f5f5;
+body.dark .shift-m, body.dark .shift-t, body.dark .shift-n {
+  background: #242424;
+  border-color: rgba(255,255,255,0.04);
+  color: #eaeaea;
+}
+
+body.dark .shift-m.colored, body.dark .shift-t.colored { color: #fff; }
+body.dark .shift-n.colored { color: #fff; }
+
+/* ---------------------- RESPONSIVE ---------------------- */
+@media (max-width: 420px) {
+  .day-cell { max-width: 64px; min-height: 64px; padding: 4px; border-radius: 10px; }
+  .shift-m, .shift-t { font-size: 0.68rem; line-height: 20px; min-height: 20px; }
+  .shift-n { font-size: 0.66rem; line-height: 18px; min-height: 18px; }
 }
