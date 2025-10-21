@@ -2,7 +2,7 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
-  document.getElementById('btn-toggle-theme').addEventListener('click', ()=>{
+  document.getElementById('btn-toggle-theme').addEventListener('click', () => {
     document.body.classList.toggle('dark');
   });
 
@@ -35,14 +35,28 @@ const spanishHolidays = [
   { day:25, month:11 }  // 25/12
 ];
 
+// Paleta de colores más intensos para botones de cada casilla
+const colorPalette = [
+  "#ff4d4d", // rojo
+  "#ffa64d", // naranja
+  "#ffd24d", // amarillo
+  "#85e085", // verde
+  "#4dd2ff", // azul claro
+  "#4d79ff", // azul intenso
+  "#b84dff", // violeta
+  "#ff4da6", // rosa
+  "#a6a6a6", // gris
+  "#ffffff"  // blanco
+];
+
 function initApp() {
   renderCalendar(currentMonth, currentYear);
-  document.getElementById('prevMonth').addEventListener('click', ()=>{
+  document.getElementById('prevMonth').addEventListener('click', ()=> {
     currentMonth--;
     if(currentMonth < 0){ currentMonth=11; currentYear--; }
     renderCalendar(currentMonth, currentYear);
   });
-  document.getElementById('nextMonth').addEventListener('click', ()=>{
+  document.getElementById('nextMonth').addEventListener('click', ()=> {
     currentMonth++;
     if(currentMonth > 11){ currentMonth=0; currentYear++; }
     renderCalendar(currentMonth, currentYear);
@@ -104,12 +118,14 @@ function renderCalendar(month, year){
     const shiftM = document.createElement('div');
     shiftM.classList.add('shift-m');
     shiftM.textContent = 'M';
-    shiftM.addEventListener('click', ()=>{ editShiftColor(shiftM); });
+    shiftM.setAttribute('contenteditable', 'true');
+    shiftM.addEventListener('click', ()=>{ showColorPicker(shiftM); });
 
     const shiftT = document.createElement('div');
     shiftT.classList.add('shift-t');
     shiftT.textContent = 'T';
-    shiftT.addEventListener('click', ()=>{ editShiftColor(shiftT); });
+    shiftT.setAttribute('contenteditable', 'true');
+    shiftT.addEventListener('click', ()=>{ showColorPicker(shiftT); });
 
     row.appendChild(shiftM);
     row.appendChild(shiftT);
@@ -118,7 +134,8 @@ function renderCalendar(month, year){
     const shiftN = document.createElement('div');
     shiftN.classList.add('shift-n');
     shiftN.textContent = 'N';
-    shiftN.addEventListener('click', ()=>{ editShiftColor(shiftN); });
+    shiftN.setAttribute('contenteditable', 'true');
+    shiftN.addEventListener('click', ()=>{ showColorPicker(shiftN); });
 
     wrapper.appendChild(shiftN);
 
@@ -132,9 +149,42 @@ function renderCalendar(month, year){
   }
 }
 
-// =================== EDIT SHIFT COLOR ===================
-function editShiftColor(shift){
-  shift.classList.toggle('colored');
+// =================== EDITAR COLOR ===================
+function showColorPicker(shift){
+  // Evitar que aparezcan múltiples pickers
+  const existing = document.getElementById('color-picker-popup');
+  if(existing) existing.remove();
+
+  const popup = document.createElement('div');
+  popup.id = 'color-picker-popup';
+  popup.style.position = 'absolute';
+  popup.style.display = 'flex';
+  popup.style.flexWrap = 'wrap';
+  popup.style.background = '#fff';
+  popup.style.border = '1px solid #ccc';
+  popup.style.padding = '4px';
+  popup.style.borderRadius = '6px';
+  popup.style.zIndex = 1000;
+
+  colorPalette.forEach(color => {
+    const btn = document.createElement('div');
+    btn.style.width = '20px';
+    btn.style.height = '20px';
+    btn.style.margin = '2px';
+    btn.style.borderRadius = '4px';
+    btn.style.backgroundColor = color;
+    btn.style.cursor = 'pointer';
+    btn.addEventListener('click', () => {
+      shift.style.backgroundColor = color;
+      popup.remove();
+    });
+    popup.appendChild(btn);
+  });
+
+  document.body.appendChild(popup);
+  const rect = shift.getBoundingClientRect();
+  popup.style.top = `${rect.bottom + window.scrollY + 2}px`;
+  popup.style.left = `${rect.left + window.scrollX}px`;
 }
 
 // =================== FUNCIONES CADENCIA ===================
