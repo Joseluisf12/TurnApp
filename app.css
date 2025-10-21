@@ -7,9 +7,9 @@
   --primary:#0b5ed7;
   --accent-green:#198754;
   --danger:#dc3545;
-  --weekday-bg: #e6f2ff;    /* días laborables L-V */
-  --saturday-bg: #c0e0ff;   /* sábado (azul tenue más oscuro) */
-  --sunday-bg: #ffe6e6;     /* domingo */
+  --weekday-bg: #e6f2ff;
+  --saturday-bg: #c0e0ff;
+  --sunday-bg: #ffe6e6;
   --cell-border: #ddd;
   --shift-bg: #f8f9fa;
   --orange: #ffa94d;
@@ -33,14 +33,16 @@ main, .content {
   width: 95%;
   max-width: var(--max-width);
   margin: 0 auto;
-  padding-bottom: 90px; /* espacio para barra inferior */
+  padding-bottom: 90px;
+  text-align: center;  /* ✅ centramos el texto de TurnApp y bienvenida */
 }
 
 /* ---------------------- CABECERA ---------------------- */
 .app-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: center; /* ✅ centrado */
   align-items: center;
+  gap: 10px;
   width: 95%;
   max-width: var(--max-width);
   margin: 1rem auto 0.5rem;
@@ -59,6 +61,18 @@ main, .content {
   cursor: pointer;
 }
 
+/* ---------------------- LOGO Y SLOGAN ---------------------- */
+.logo-img {
+  width: 90px;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+.slogan {
+  text-align: center;
+}
+
 /* ---------------------- CONTROLES DE CALENDARIO ---------------------- */
 .calendar-controls,
 .calendar-actions {
@@ -73,24 +87,32 @@ main, .content {
 .calendar-controls { justify-content: space-between; }
 .calendar-actions { justify-content: center; }
 
-/* ---------------------- BOTONES DE CADENCIA MODERNOS ---------------------- */
-#btn-apply-cadence, #btn-clear-cadence {
+.nav-control {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.nav-control:hover { filter: brightness(.95); }
+
+.action-btn {
   background: var(--accent-green);
   color: #fff;
   border: none;
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
-  margin: 4px;
-  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.45rem 0.9rem;
   cursor: pointer;
-  transition: all 0.2s ease-in-out;
+  font-weight: 600;
 }
 
-#btn-apply-cadence:hover, #btn-clear-cadence:hover {
-  filter: brightness(0.9);
-}
+.action-btn.danger { background: var(--danger); }
+.action-btn:hover { filter: brightness(.95); }
 
-/* ---------------------- CALENDARIO (grid) ---------------------- */
+/* ---------------------- CALENDARIO ---------------------- */
 #calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
@@ -101,7 +123,7 @@ main, .content {
   max-width: var(--max-width);
 }
 
-/* ---------------------- CASILLAS (día) ---------------------- */
+/* ---------------------- CASILLAS ---------------------- */
 .day-cell {
   width: 100%;
   max-width: 90px;
@@ -116,12 +138,10 @@ main, .content {
   border: 1px solid var(--cell-border);
 }
 
-/* Fines de semana y festivos */
 .day-cell.saturday { background: var(--saturday-bg); }
 .day-cell.sunday { background: var(--sunday-bg); }
-.day-cell.holiday { background: var(--sunday-bg); } /* mismo color que domingo */
+.day-cell.holiday { background: var(--sunday-bg); }
 
-/* Etiqueta (número y día) */
 .day-label {
   font-size: 0.78rem;
   font-weight: 600;
@@ -130,15 +150,11 @@ main, .content {
   text-align: left;
 }
 
-/* ---------------------- TURNOS dentro de la casilla ---------------------- */
+/* ---------------------- TURNOS ---------------------- */
 .shifts-wrapper { display: flex; flex-direction: column; gap: 4px; }
 
-.shifts-row {
-  display: flex;
-  gap: 6px;
-}
+.shifts-row { display: flex; gap: 6px; }
 
-/* Mañana y Tarde lado a lado */
 .shift-m, .shift-t {
   flex: 1;
   min-height: 24px;
@@ -154,7 +170,6 @@ main, .content {
   padding: 0 4px;
 }
 
-/* Noche debajo, más delgada */
 .shift-n {
   width: 100%;
   min-height: 20px;
@@ -171,7 +186,6 @@ main, .content {
   margin-top: 4px;
 }
 
-/* Colores aplicados por cadencia / manual */
 .shift-m.colored, .shift-t.colored { background-color: var(--orange); color: #fff; }
 .shift-n.colored { background-color: var(--orange-dark); color: #fff; }
 
@@ -215,7 +229,7 @@ body.dark .shift-m, body.dark .shift-t, body.dark .shift-n {
   color: #eaeaea;
 }
 
-body.dark .shift-m.colored, body.dark .shift-t.colored { color: #fff; }
+body.dark .shift-m.colored, body.dark .shift-t.colored,
 body.dark .shift-n.colored { color: #fff; }
 
 /* ---------------------- RESPONSIVE ---------------------- */
@@ -223,4 +237,31 @@ body.dark .shift-n.colored { color: #fff; }
   .day-cell { max-width: 64px; min-height: 64px; padding: 4px; border-radius: 10px; }
   .shift-m, .shift-t { font-size: 0.68rem; line-height: 20px; min-height: 20px; }
   .shift-n { font-size: 0.66rem; line-height: 18px; min-height: 18px; }
+}
+/* ---------------------- BOTONES MODERNOS DE CADENCIA ---------------------- */
+.modern-btn {
+  border: none;
+  border-radius: 8px;
+  padding: 10px 18px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #fff;
+  cursor: pointer;
+  margin: 5px;
+  transition: all 0.2s ease-in-out;
+}
+
+.modern-btn.green {
+  background-color: #198754;
+  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.3);
+}
+
+.modern-btn.red {
+  background-color: #dc3545;
+  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
+}
+
+.modern-btn:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.05);
 }
