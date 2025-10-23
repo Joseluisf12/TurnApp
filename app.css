@@ -1,267 +1,252 @@
-/* =================== app.css =================== */
+/* app.css */
 
-/* ---------------------- BODY Y GLOBAL ---------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap');
-
-:root{
-  --primary:#0b5ed7;
-  --accent-green:#198754;
-  --danger:#dc3545;
-  --weekday-bg: #e6f2ff;
-  --saturday-bg: #c0e0ff;
-  --sunday-bg: #ffe6e6;
-  --cell-border: #ddd;
-  --shift-bg: #f8f9fa;
-  --orange: #ffa94d;
-  --orange-dark: #d87d00;
-  --max-width: 700px;
-}
-
-* { box-sizing: border-box; }
-
-html,body {
-  height: 100%;
+/* --- CONFIGURACIÓN GENERAL --- */
+body {
+  font-family: "Roboto", sans-serif;
   margin: 0;
   padding: 0;
-  font-family: 'Roboto', 'Google Sans', sans-serif;
-  background: #fff;
-  color: #222;
+  background-color: #ffffff; /* Fondo blanco */
+  color: #333;
 }
 
-/* Contenedor principal centrado */
-main, .content {
-  width: 95%;
-  max-width: var(--max-width);
-  margin: 0 auto;
-  padding-bottom: 90px;
-  text-align: center;  /* ✅ centramos el texto de TurnApp y bienvenida */
-}
-
-/* ---------------------- CABECERA ---------------------- */
-.app-header {
+/* --- SPLASH --- */
+.splash {
   display: flex;
-  justify-content: center; /* ✅ centrado */
+  flex-direction: column;
   align-items: center;
-  gap: 10px;
-  width: 95%;
-  max-width: var(--max-width);
-  margin: 1rem auto 0.5rem;
+  justify-content: center;
+  height: 100vh;
+  text-align: center;
 }
 
-.app-header h2 {
-  margin: 0;
-  font-size: 1.1rem;
-  font-weight: 500;
+.logo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
-.icon-btn {
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  cursor: pointer;
-}
-
-/* ---------------------- LOGO Y SLOGAN ---------------------- */
 .logo-img {
-  width: 90px;
+  width: 120px;
   height: auto;
   display: block;
   margin: 0 auto;
 }
 
 .slogan {
+  font-size: 1.2em;
+  text-align: center;
+  margin-top: 10px;
+}
+
+/* --- APP PRINCIPAL --- */
+#app {
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.app-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 15px;
+  background-color: #0b5ed7;
+  color: white;
+  border-radius: 0 0 10px 10px;
+}
+
+#app-title {
+  margin: 0;
+  font-size: 1.5em;
+}
+
+.icon-btn {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1.4em;
+  cursor: pointer;
+}
+
+/* --- CONTENIDO PRINCIPAL --- */
+.content {
+  padding: 15px;
   text-align: center;
 }
 
-/* ---------------------- CONTROLES DE CALENDARIO ---------------------- */
-.calendar-controls,
-.calendar-actions {
-  width: 95%;
-  max-width: var(--max-width);
-  margin: 0.4rem auto;
+.content p {
+  text-align: center;
+  margin-top: 0;
+  margin-bottom: 15px;
+}
+
+/* Centrado adicional de las frases principales */
+#splash .slogan,
+.content p {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  text-align: center;
 }
 
-.calendar-controls { justify-content: space-between; }
-.calendar-actions { justify-content: center; }
+/* --- BOTONES DE CONTROL DE MES --- */
+.calendar-controls {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
 
-.nav-control {
-  background: var(--primary);
-  color: #fff;
+.calendar-controls button {
+  background-color: #0b5ed7;
+  color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  padding: 5px 10px;
   cursor: pointer;
-  font-weight: 600;
+  font-size: 0.9em;
+  transition: 0.2s;
 }
 
-.nav-control:hover { filter: brightness(.95); }
+.calendar-controls button:hover {
+  background-color: #084bb8;
+}
 
-.action-btn {
-  background: var(--accent-green);
-  color: #fff;
+/* --- BOTONES DE CADENCIA --- */
+#btn-apply-cadence, 
+#btn-clear-cadence {
+  background-color: #0b5ed7;
+  color: white;
   border: none;
-  border-radius: 6px;
-  padding: 0.45rem 0.9rem;
+  border-radius: 10px;
+  padding: 8px 16px;
+  margin: 5px;
+  font-size: 0.95em;
   cursor: pointer;
-  font-weight: 600;
+  transition: 0.2s ease;
 }
 
-.action-btn.danger { background: var(--danger); }
-.action-btn:hover { filter: brightness(.95); }
+#btn-apply-cadence:hover, 
+#btn-clear-cadence:hover {
+  background-color: #084bb8;
+}
 
-/* ---------------------- CALENDARIO ---------------------- */
+/* --- CALENDARIO --- */
 #calendar {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 10px;
-  justify-items: stretch;
-  margin: 0 auto 20px;
-  width: 95%;
-  max-width: var(--max-width);
+  gap: 5px;
+  margin-top: 15px;
 }
 
-/* ---------------------- CASILLAS ---------------------- */
 .day-cell {
-  width: 100%;
-  max-width: 90px;
-  min-height: 70px;
-  background: var(--weekday-bg);
-  border-radius: 12px;
-  padding: 6px;
+  background-color: #e6f0ff; /* Azul muy suave para días laborales */
+  border-radius: 10px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  padding: 0;
+  text-align: center;
+  position: relative;
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: stretch;
-  border: 1px solid var(--cell-border);
+  height: 100px; /* Mantener cuadrado */
 }
 
-.day-cell.saturday { background: var(--saturday-bg); }
-.day-cell.sunday { background: var(--sunday-bg); }
-.day-cell.holiday { background: var(--sunday-bg); }
+/* Días especiales */
+.saturday {
+  background-color: #a3c1ff; /* Azul suave */
+}
+
+.sunday, 
+.holiday {
+  background-color: #ffb3b3; /* Rosa */
+}
 
 .day-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: var(--primary);
-  margin-bottom: 6px;
-  text-align: left;
+  font-weight: bold;
+  margin-bottom: 2px;
+  padding-top: 2px;
 }
 
-/* ---------------------- TURNOS ---------------------- */
-.shifts-wrapper { display: flex; flex-direction: column; gap: 4px; }
+/* --- TURNOS --- */
+.shifts-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  height: 100%;
+}
 
-.shifts-row { display: flex; gap: 6px; }
+.shifts-row {
+  display: flex;
+  flex: 1;
+}
+
+.shift-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.shift-cell {
+  width: 100%; /* Todo el ancho */
+  text-align: center;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 .shift-m, .shift-t {
-  flex: 1;
-  min-height: 24px;
-  background: var(--shift-bg);
-  border-radius: 6px;
-  text-align: center;
-  font-size: 0.77rem;
-  line-height: 24px;
-  cursor: pointer;
-  user-select: none;
-  border: 1px solid #e6e6e6;
-  color: #222;
-  padding: 0 4px;
+  height: 50%; /* Mitad superior */
 }
 
 .shift-n {
-  width: 100%;
-  min-height: 20px;
-  background: var(--shift-bg);
-  border-radius: 6px;
-  text-align: center;
-  font-size: 0.72rem;
-  line-height: 20px;
-  cursor: pointer;
-  user-select: none;
-  border: 1px solid #e6e6e6;
-  color: #222;
-  padding: 0 4px;
-  margin-top: 4px;
+  height: 50%; /* Mitad inferior */
 }
 
-.shift-m.colored, .shift-t.colored { background-color: var(--orange); color: #fff; }
-.shift-n.colored { background-color: var(--orange-dark); color: #fff; }
+/* --- HANDLE DE COLOR --- */
+.color-handle {
+  height: 6px;
+  width: 18px;
+  font-size: 7px;
+  opacity: 0.28;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  margin-left: 6px;
+}
 
-/* ---------------------- NAVEGACIÓN INFERIOR ---------------------- */
+.color-handle:hover {
+  opacity: 0.6;
+}
+
+/* --- NAVEGACIÓN INFERIOR --- */
 .bottom-nav {
   position: fixed;
   bottom: 0;
   left: 0;
   width: 100%;
-  background: var(--primary);
   display: flex;
   justify-content: space-around;
-  padding: 0.6rem 0;
-  z-index: 40;
+  background-color: #0b5ed7;
+  padding: 8px 0;
+  border-radius: 10px 10px 0 0;
 }
 
 .nav-btn {
   background: none;
   border: none;
-  color: #fff;
-  font-weight: 700;
+  color: white;
+  font-size: 1em;
   cursor: pointer;
 }
 
-.nav-btn.active { text-decoration: underline; }
-
-/* ---------------------- MODO OSCURO ---------------------- */
-body.dark {
-  background: #0f1112;
-  color: #eaeaea;
-}
-
-body.dark .day-cell {
-  background: #1b1b1b;
-  border-color: rgba(255,255,255,0.06);
-}
-
-body.dark .shift-m, body.dark .shift-t, body.dark .shift-n {
-  background: #242424;
-  border-color: rgba(255,255,255,0.04);
-  color: #eaeaea;
-}
-
-body.dark .shift-m.colored, body.dark .shift-t.colored,
-body.dark .shift-n.colored { color: #fff; }
-
-/* ---------------------- RESPONSIVE ---------------------- */
-@media (max-width: 420px) {
-  .day-cell { max-width: 64px; min-height: 64px; padding: 4px; border-radius: 10px; }
-  .shift-m, .shift-t { font-size: 0.68rem; line-height: 20px; min-height: 20px; }
-  .shift-n { font-size: 0.66rem; line-height: 18px; min-height: 18px; }
-}
-/* ---------------------- BOTONES MODERNOS DE CADENCIA ---------------------- */
-.modern-btn {
-  border: none;
-  border-radius: 8px;
-  padding: 10px 18px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: #fff;
-  cursor: pointer;
-  margin: 5px;
-  transition: all 0.2s ease-in-out;
-}
-
-.modern-btn.green {
-  background-color: #198754;
-  box-shadow: 0 2px 6px rgba(25, 135, 84, 0.3);
-}
-
-.modern-btn.red {
-  background-color: #dc3545;
-  box-shadow: 0 2px 6px rgba(220, 53, 69, 0.3);
-}
-
-.modern-btn:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.05);
+.nav-btn.active {
+  font-weight: bold;
+  text-decoration: underline;
 }

@@ -1,51 +1,52 @@
 // =================== app.js ===================
-// Versión final: persistencia por turno + reglas de cadencia según lo acordado
+// Versión estable y completa (persistencia por turno + cadencia + reglas)
+// ÚNICO cambio visual: handles de color más grandes
 
+// Init
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   const themeBtn = document.getElementById('btn-toggle-theme');
   if (themeBtn) themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
 
-  const btnApplyCadence = document.getElementById('btn-apply-cadence');
-  const btnClearCadence = document.getElementById('btn-clear-cadence');
-  if (btnApplyCadence) btnApplyCadence.addEventListener('click', ()=> applyCadencePrompt());
-  if (btnClearCadence) btnClearCadence.addEventListener('click', ()=> clearCadencePrompt());
+  const applyBtn = document.getElementById('btn-apply-cadence');
+  const clearBtn = document.getElementById('btn-clear-cadence');
+  if (applyBtn) applyBtn.addEventListener('click', () => applyCadencePrompt());
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
 });
 
-// ---------------- estado ----------------
+// Estado
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
-let cadenceData = []; // array de {date: Date, type: 'MT'|'N'|'libre'}
+let cadenceData = []; // [{date: Date, type: 'MT'|'N'|'libre'}, ...]
+let manualEdits = {}; // { "YYYY-MM-DD": { M: {text?, color?, userColor?}, T:..., N:... } }
 
-let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
-
-// cargar manualEdits si existe
+// Cargar persistencia
 try {
   const raw = localStorage.getItem('turnapp.manualEdits');
   if (raw) manualEdits = JSON.parse(raw);
-} catch(e){ manualEdits = {}; }
+} catch (e) { manualEdits = {}; }
 
-// festivos nacionales (simple lista, mes 0-11)
+// Festivos nacionales (mes 0-11)
 const spanishHolidays = [
   { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
   { day:15, month:7 }, { day:12, month:9 }, { day:1, month:10 },
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// paleta color (intensa)
+// Paleta (idéntica que antes)
 const colorPalette = [
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff"
 ];
 
-// ---------------- utilidades ----------------
-function dateKey(year, month, day){
-  const mm = String(month+1).padStart(2,'0');
-  const dd = String(day).padStart(2,'0');
-  return `${year}-${mm}-${dd}`; // YYYY-MM-DD
+// Utiles
+function dateKey(y,m,d){
+  const mm = String(m+1).padStart(2,'0');
+  const dd = String(d).padStart(2,'0');
+  return `${y}-${mm}-${dd}`;
 }
 function saveManualEdits(){
-  try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
+  try{ localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); }catch(e){}
 }
 function isColorLight(hex){
   if(!hex || hex[0] !== '#') return true;
@@ -55,24 +56,24 @@ function isColorLight(hex){
   const lum = 0.2126*r + 0.7152*g + 0.0722*b;
   return lum > 200;
 }
-function defaultTextFor(shiftKey){ return shiftKey; } // 'M','T','N'
+function defaultTextFor(k){ return k; } // 'M','T','N'
 
-// ---------------- init / navegación ----------------
+// Init / navegación
 function initApp(){
   renderCalendar(currentMonth, currentYear);
   const prev = document.getElementById('prevMonth');
   const next = document.getElementById('nextMonth');
   if(prev) prev.addEventListener('click', ()=> {
-    currentMonth--; if(currentMonth < 0){ currentMonth = 11; currentYear--; }
+    currentMonth--; if(currentMonth<0){ currentMonth=11; currentYear--; }
     renderCalendar(currentMonth, currentYear);
   });
   if(next) next.addEventListener('click', ()=> {
-    currentMonth++; if(currentMonth > 11){ currentMonth = 0; currentYear++; }
+    currentMonth++; if(currentMonth>11){ currentMonth=0; currentYear++; }
     renderCalendar(currentMonth, currentYear);
   });
 }
 
-// ---------------- render calendario ----------------
+// Render calendario
 function renderCalendar(month, year){
   const calendar = document.getElementById('calendar');
   if(!calendar) return;
@@ -85,12 +86,12 @@ function renderCalendar(month, year){
   // primer día (lunes = 0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0) ? 6 : firstDay - 1;
-
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  // celdas vacías previas
+  // vacíos previos
   for(let i=0;i<firstDay;i++){
     const empty = document.createElement('div');
+    empty.className = 'day-cell empty';
     calendar.appendChild(empty);
   }
 
@@ -100,8 +101,8 @@ function renderCalendar(month, year){
 
     const dateObj = new Date(year, month, day);
     const weekday = dateObj.getDay();
-    if(weekday === 6) cell.classList.add('saturday');
-    if(weekday === 0) cell.classList.add('sunday');
+    if(weekday === 6) cell.classList.add('saturday'); // sábado
+    if(weekday === 0) cell.classList.add('sunday');   // domingo
     if(spanishHolidays.some(h=>h.day===day && h.month===month)) cell.classList.add('holiday');
 
     const label = document.createElement('div');
@@ -116,25 +117,22 @@ function renderCalendar(month, year){
     const row = document.createElement('div');
     row.className = 'shifts-row';
 
-    // Shifts M y T (lado a lado)
     row.appendChild(createShiftElement(year, month, day, 'M'));
     row.appendChild(createShiftElement(year, month, day, 'T'));
     wrapper.appendChild(row);
 
-    // Shift N debajo
     wrapper.appendChild(createShiftElement(year, month, day, 'N'));
 
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
   }
 
-  // reaplicar cadencia
+  // reaplicar cadencia (si existe)
   if(cadenceData.length > 0) applyCadenceRender(month, year);
 }
 
-// ---------------- crear turno ----------------
+// Crear elemento turno
 function createShiftElement(year, month, day, shiftKey){
-  // contenedor para shift y handle si quieres (se puede ajustar CSS)
   const container = document.createElement('div');
   container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
 
@@ -144,54 +142,55 @@ function createShiftElement(year, month, day, shiftKey){
   shift.spellcheck = false;
   shift.dataset.shift = shiftKey;
 
-  // restaurar texto/color guardados
   const dk = dateKey(year, month, day);
   if(manualEdits[dk] && manualEdits[dk][shiftKey]){
     const obj = manualEdits[dk][shiftKey];
-    if(obj.text !== undefined && obj.text !== null) shift.textContent = obj.text;
-    else shift.textContent = defaultTextFor(shiftKey);
+    shift.textContent = (obj.text !== undefined && obj.text !== null) ? obj.text : defaultTextFor(shiftKey);
     if(obj.color){
       shift.style.backgroundColor = obj.color;
       shift.style.color = isColorLight(obj.color) ? '#000' : '#fff';
       shift.dataset.userColor = 'true';
     }
-    // marcar si el text guardado es distinto del original
-    if(obj.text !== undefined && obj.text !== null){
-      shift.dataset.edited = (String(obj.text).trim() !== defaultTextFor(shiftKey)) ? 'true' : 'false';
-    } else {
-      shift.dataset.edited = 'false';
-    }
+    shift.dataset.edited = (obj.text !== undefined && String(obj.text).trim() !== defaultTextFor(shiftKey)) ? 'true' : 'false';
   } else {
     shift.textContent = defaultTextFor(shiftKey);
     shift.dataset.edited = 'false';
   }
 
-  // cuando pierde foco, guardamos solo ese turno (sin tocar otros)
+  // guardar al perder foco
   shift.addEventListener('blur', ()=> {
     const text = shift.textContent.trim();
     saveShiftText(year, month, day, shiftKey, text);
-    // actualizar flag edited
     shift.dataset.edited = (text !== defaultTextFor(shiftKey)) ? 'true' : 'false';
   });
-  // evitar newline al pulsar Enter
+  // evitar newline al Enter
   shift.addEventListener('keypress', (e)=> {
     if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); }
   });
 
-  // pequeño handle para abrir paleta (para no interferir con edición por click)
+  // HANDLE de color (AGRANDADO visualmente)
   const handle = document.createElement('button');
   handle.type = 'button';
   handle.className = 'color-handle';
   handle.title = 'Elegir color';
   handle.innerText = '●';
+  handle.style.height = '14px';      // aumentado
+  handle.style.width = '24px';       // aumentado
+  handle.style.fontSize = '12px';    // aumentado
+  handle.style.opacity = '0.5';      // visible, pero elegante
+  handle.style.background = 'transparent';
+  handle.style.border = 'none';
+  handle.style.cursor = 'pointer';
+  handle.style.marginLeft = '6px';
+  handle.addEventListener('mouseenter', ()=> handle.style.opacity = '0.8');
+  handle.addEventListener('mouseleave', ()=> handle.style.opacity = '0.5');
+
   handle.addEventListener('click', (ev)=> {
     ev.stopPropagation();
     openColorPicker(handle, (color)=>{
-      // aplicar color => marcar como userColor y guardar color para ese turno
       shift.style.backgroundColor = color;
       shift.style.color = isColorLight(color) ? '#000' : '#fff';
       shift.dataset.userColor = 'true';
-      // asegurarse de que manualEdits[dk] existe
       if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
       manualEdits[dk][shiftKey].color = color;
@@ -205,14 +204,12 @@ function createShiftElement(year, month, day, shiftKey){
   return container;
 }
 
-// ---------------- guardar texto/color específicos ----------------
+// Guardar texto/color
 function saveShiftText(year, month, day, shiftKey, text){
   const dk = dateKey(year, month, day);
   if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
   manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
   manualEdits[dk][shiftKey].text = text;
-  // si guardas texto y no has cambiado color, no tocar color entry aquí (preservar)
-  // marcar userColor no se toca
   saveManualEdits();
 }
 function saveShiftColor(year, month, day, shiftKey, color){
@@ -224,9 +221,8 @@ function saveShiftColor(year, month, day, shiftKey, color){
   saveManualEdits();
 }
 
-// ---------------- paleta ----------------
+// Selector de color (pop-up)
 function openColorPicker(anchorEl, onSelect){
-  // quitar viejo
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
 
@@ -265,7 +261,6 @@ function openColorPicker(anchorEl, onSelect){
   const rect = anchorEl.getBoundingClientRect();
   let left = rect.left + window.scrollX;
   let top = rect.bottom + window.scrollY + 6;
-  // ajustar si sale fuera
   const guessW = 180;
   if(left + guessW > window.scrollX + window.innerWidth) left = window.scrollX + window.innerWidth - guessW - 8;
   popup.style.left = `${left}px`;
@@ -280,12 +275,12 @@ function openColorPicker(anchorEl, onSelect){
   setTimeout(()=> document.addEventListener('click', closeFn), 10);
 }
 
-// ---------------- cadencia ----------------
+// Cadencia: prompt y generación infinita
 function applyCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha inicial de la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
+  if(parts.length !== 3) return alert("Formato incorrecto");
   const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
   const startDate = new Date(year, month, day);
   if(isNaN(startDate)) return alert("Fecha inválida");
@@ -299,11 +294,13 @@ function applyCadencePrompt(){
   }
   renderCalendar(currentMonth, currentYear);
 }
+
+// Limpiar cadencia desde fecha
 function clearCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
+  if(parts.length !== 3) return alert("Formato incorrecto");
   const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
   const startDate = new Date(year, month, day);
   if(isNaN(startDate)) return alert("Fecha inválida");
@@ -312,12 +309,11 @@ function clearCadencePrompt(){
   renderCalendar(currentMonth, currentYear);
 }
 
-// ---------------- aplicar cadencia (reglas precisas) ----------------
+// Aplicar cadencia sobre DOM (respetando reglas)
 function applyCadenceRender(month, year){
   const cells = document.querySelectorAll('.day-cell');
   if(!cells) return;
 
-  // colores por cadencia (puedes sacar variables CSS si quieres)
   const cadColorMT = '#ffa94d';
   const cadColorN = '#d87d00';
 
@@ -339,19 +335,16 @@ function applyCadenceRender(month, year){
     const shiftT = cell.querySelector('.shift-t');
     const shiftN = cell.querySelector('.shift-n');
 
-    // helper para obtener flags a partir de manualEdits persistidos (asegura consistencia)
     function getFlagsForShift(shiftEl, shiftKey){
       const dk = dateKey(year, month, day);
       const saved = (manualEdits[dk] && manualEdits[dk][shiftKey]) ? manualEdits[dk][shiftKey] : {};
       const userColor = !!saved.color || shiftEl.dataset.userColor === 'true';
-      // texto editado: comparar texto guardado (si hay) o texto actual vs original
       let edited = false;
       if(saved.text !== undefined && saved.text !== null){
         edited = String(saved.text).trim() !== defaultTextFor(shiftKey);
       } else {
         edited = String(shiftEl.textContent || '').trim() !== defaultTextFor(shiftKey);
       }
-      // also check whether current DOM has dataset.edited
       if(shiftEl.dataset.edited === 'true') edited = true;
       return { userColor, edited, savedText: saved.text, savedColor: saved.color };
     }
@@ -359,36 +352,22 @@ function applyCadenceRender(month, year){
     function applyToShift(shiftEl, shiftKey, activeForCadence, cadenceColor){
       if(!shiftEl) return;
       const { userColor, edited } = getFlagsForShift(shiftEl, shiftKey);
-      // decidir si la cadencia puede aplicar color:
-      // allowCadence = NOT ( userColor && edited )
-      // pero rule 3 says if userColor && text original -> cadence applies -> that's covered because edited=false -> allow true
       const allowCadence = !(userColor && edited);
       if(activeForCadence){
         if(allowCadence){
-          // cadencia aplica color (manteniendo texto)
           shiftEl.style.backgroundColor = cadenceColor;
           shiftEl.style.color = '#fff';
-          // mark that this is cadence-applied (we do not set dataset.userColor)
           shiftEl.dataset.cadenceApplied = 'true';
         } else {
-          // do nothing (preserve user color and text)
-          // ensure cadenceApplied flag removed
           shiftEl.dataset.cadenceApplied = 'false';
         }
       } else {
-        // cadencia says "no active" -> if allowCadence, remove cadence color (but restore nothing)
-        // If userColor exists and edited=false case, and cadence shouldn't apply, we must restore userColor. But by construction:
-        // - If userColor && edited=false, allowCadence=true and we would have set cadence color above.
-        // - If userColor && edited=true => allowCadence=false -> we must preserve user color (already present)
         if(allowCadence){
-          // remove cadence color only if it was applied previously
           if(shiftEl.dataset.cadenceApplied === 'true'){
             shiftEl.style.backgroundColor = '';
             shiftEl.style.color = '';
             shiftEl.dataset.cadenceApplied = 'false';
           }
-        } else {
-          // nothing to do: preserve user color/text
         }
       }
     }
@@ -408,8 +387,7 @@ function applyCadenceRender(month, year){
         applyToShift(shiftN,'N', false, cadColorN);
       }
     } else {
-      // no hay cadencia para este día -> limpiar posibles cadenciaApplied flags
-      [ ['M',shiftM], ['T',shiftT], ['N',shiftN] ].forEach(([k,el])=>{
+      [['M',shiftM], ['T',shiftT], ['N',shiftN]].forEach(([k,el])=>{
         if(!el) return;
         if(el.dataset.cadenceApplied === 'true'){
           el.style.backgroundColor = '';
@@ -418,9 +396,8 @@ function applyCadenceRender(month, year){
         }
       });
     }
-  }); // cells.forEach
+  });
 }
 
 // ================= export (no) =================
-// No hay export; solo copiar/pegar el archivo completo en tu proyecto
-
+// Copia/pega este archivo para reemplazar tu app.js actual
