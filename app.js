@@ -1,17 +1,19 @@
 // =================== app.js ===================
 // Versión estable y completa (persistencia por turno + cadencia + reglas)
-// ÚNICO cambio visual: handles de color más grandes
+// ÚNICO cambio visual: handles de color muy discretos + añadir color de fondo de días, sábados y festivos a la paleta
+// Botones de cadencia funcionan correctamente
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
+
   const themeBtn = document.getElementById('btn-toggle-theme');
   if (themeBtn) themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
-  if (applyBtn) applyBtn.addEventListener('click', () => applyCadencePrompt());
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+  if(applyBtn) applyBtn.addEventListener('click', ()=> applyCadencePrompt());
+  if(clearBtn) clearBtn.addEventListener('click', ()=> clearCadencePrompt());
 });
 
 // Estado
@@ -33,10 +35,13 @@ const spanishHolidays = [
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// Paleta (idéntica que antes)
+// Paleta (idéntica que antes, añadiendo color de fondo de días, sábados y festivos)
 const colorPalette = [
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
-  "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff"
+  "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
+  "#e6f0ff", // Color de fondo de día laboral
+  "#a3c1ff", // Color de fondo de sábado
+  "#ffb3b3"  // Color de fondo de domingo/festivo
 ];
 
 // Utiles
@@ -61,6 +66,7 @@ function defaultTextFor(k){ return k; } // 'M','T','N'
 // Init / navegación
 function initApp(){
   renderCalendar(currentMonth, currentYear);
+
   const prev = document.getElementById('prevMonth');
   const next = document.getElementById('nextMonth');
   if(prev) prev.addEventListener('click', ()=> {
@@ -71,6 +77,12 @@ function initApp(){
     currentMonth++; if(currentMonth>11){ currentMonth=0; currentYear++; }
     renderCalendar(currentMonth, currentYear);
   });
+
+  // Asegurar que los botones de cadencia funcionan después del render
+  const applyBtn = document.getElementById('btn-apply-cadence');
+  const clearBtn = document.getElementById('btn-clear-cadence');
+  if(applyBtn) applyBtn.addEventListener('click', ()=> applyCadencePrompt());
+  if(clearBtn) clearBtn.addEventListener('click', ()=> clearCadencePrompt());
 }
 
 // Render calendario
@@ -83,12 +95,10 @@ function renderCalendar(month, year){
   const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
-  // primer día (lunes = 0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0) ? 6 : firstDay - 1;
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  // vacíos previos
   for(let i=0;i<firstDay;i++){
     const empty = document.createElement('div');
     empty.className = 'day-cell empty';
@@ -101,8 +111,8 @@ function renderCalendar(month, year){
 
     const dateObj = new Date(year, month, day);
     const weekday = dateObj.getDay();
-    if(weekday === 6) cell.classList.add('saturday'); // sábado
-    if(weekday === 0) cell.classList.add('sunday');   // domingo
+    if(weekday === 6) cell.classList.add('saturday');
+    if(weekday === 0) cell.classList.add('sunday');
     if(spanishHolidays.some(h=>h.day===day && h.month===month)) cell.classList.add('holiday');
 
     const label = document.createElement('div');
@@ -116,25 +126,22 @@ function renderCalendar(month, year){
 
     const row = document.createElement('div');
     row.className = 'shifts-row';
-
     row.appendChild(createShiftElement(year, month, day, 'M'));
     row.appendChild(createShiftElement(year, month, day, 'T'));
     wrapper.appendChild(row);
-
     wrapper.appendChild(createShiftElement(year, month, day, 'N'));
 
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
   }
 
-  // reaplicar cadencia (si existe)
   if(cadenceData.length > 0) applyCadenceRender(month, year);
 }
 
 // Crear elemento turno
 function createShiftElement(year, month, day, shiftKey){
   const container = document.createElement('div');
-  container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
+  container.className = (shiftKey==='N') ? 'shift-container night' : 'shift-container';
 
   const shift = document.createElement('div');
   shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
@@ -145,56 +152,53 @@ function createShiftElement(year, month, day, shiftKey){
   const dk = dateKey(year, month, day);
   if(manualEdits[dk] && manualEdits[dk][shiftKey]){
     const obj = manualEdits[dk][shiftKey];
-    shift.textContent = (obj.text !== undefined && obj.text !== null) ? obj.text : defaultTextFor(shiftKey);
+    shift.textContent = (obj.text!==undefined && obj.text!==null) ? obj.text : defaultTextFor(shiftKey);
     if(obj.color){
       shift.style.backgroundColor = obj.color;
-      shift.style.color = isColorLight(obj.color) ? '#000' : '#fff';
-      shift.dataset.userColor = 'true';
+      shift.style.color = isColorLight(obj.color)?'#000':'#fff';
+      shift.dataset.userColor='true';
     }
-    shift.dataset.edited = (obj.text !== undefined && String(obj.text).trim() !== defaultTextFor(shiftKey)) ? 'true' : 'false';
+    shift.dataset.edited = (obj.text!==undefined && String(obj.text).trim()!==defaultTextFor(shiftKey)) ? 'true':'false';
   } else {
     shift.textContent = defaultTextFor(shiftKey);
-    shift.dataset.edited = 'false';
+    shift.dataset.edited='false';
   }
 
-  // guardar al perder foco
   shift.addEventListener('blur', ()=> {
     const text = shift.textContent.trim();
     saveShiftText(year, month, day, shiftKey, text);
-    shift.dataset.edited = (text !== defaultTextFor(shiftKey)) ? 'true' : 'false';
+    shift.dataset.edited = (text!==defaultTextFor(shiftKey)) ? 'true':'false';
   });
-  // evitar newline al Enter
-  shift.addEventListener('keypress', (e)=> {
-    if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); }
+  shift.addEventListener('keypress', (e)=>{
+    if(e.key==='Enter'){ e.preventDefault(); shift.blur(); }
   });
 
-  // HANDLE de color (AGRANDADO visualmente)
   const handle = document.createElement('button');
-  handle.type = 'button';
-  handle.className = 'color-handle';
-  handle.title = 'Elegir color';
-  handle.innerText = '●';
-  handle.style.height = '14px';      // aumentado
-  handle.style.width = '24px';       // aumentado
-  handle.style.fontSize = '12px';    // aumentado
-  handle.style.opacity = '0.5';      // visible, pero elegante
-  handle.style.background = 'transparent';
-  handle.style.border = 'none';
-  handle.style.cursor = 'pointer';
-  handle.style.marginLeft = '6px';
-  handle.addEventListener('mouseenter', ()=> handle.style.opacity = '0.8');
-  handle.addEventListener('mouseleave', ()=> handle.style.opacity = '0.5');
+  handle.type='button';
+  handle.className='color-handle';
+  handle.title='Elegir color';
+  handle.innerText='●';
+  handle.style.height='6px';
+  handle.style.width='18px';
+  handle.style.fontSize='7px';
+  handle.style.opacity='0.28';
+  handle.style.background='transparent';
+  handle.style.border='none';
+  handle.style.cursor='pointer';
+  handle.style.marginLeft='6px';
+  handle.addEventListener('mouseenter', ()=> handle.style.opacity='0.6');
+  handle.addEventListener('mouseleave', ()=> handle.style.opacity='0.28');
 
-  handle.addEventListener('click', (ev)=> {
+  handle.addEventListener('click', (ev)=>{
     ev.stopPropagation();
     openColorPicker(handle, (color)=>{
-      shift.style.backgroundColor = color;
-      shift.style.color = isColorLight(color) ? '#000' : '#fff';
-      shift.dataset.userColor = 'true';
-      if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-      manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-      manualEdits[dk][shiftKey].color = color;
-      manualEdits[dk][shiftKey].userColor = true;
+      shift.style.backgroundColor=color;
+      shift.style.color=isColorLight(color)?'#000':'#fff';
+      shift.dataset.userColor='true';
+      if(!manualEdits[dk]) manualEdits[dk]={ M:{}, T:{}, N:{} };
+      manualEdits[dk][shiftKey]=manualEdits[dk][shiftKey]||{};
+      manualEdits[dk][shiftKey].color=color;
+      manualEdits[dk][shiftKey].userColor=true;
       saveManualEdits();
     });
   });
@@ -204,51 +208,42 @@ function createShiftElement(year, month, day, shiftKey){
   return container;
 }
 
-// Guardar texto/color
 function saveShiftText(year, month, day, shiftKey, text){
   const dk = dateKey(year, month, day);
-  if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-  manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-  manualEdits[dk][shiftKey].text = text;
-  saveManualEdits();
-}
-function saveShiftColor(year, month, day, shiftKey, color){
-  const dk = dateKey(year, month, day);
-  if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-  manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-  manualEdits[dk][shiftKey].color = color;
-  manualEdits[dk][shiftKey].userColor = true;
+  if(!manualEdits[dk]) manualEdits[dk]={ M:{}, T:{}, N:{} };
+  manualEdits[dk][shiftKey]=manualEdits[dk][shiftKey]||{};
+  manualEdits[dk][shiftKey].text=text;
   saveManualEdits();
 }
 
-// Selector de color (pop-up)
+// Selector de color
 function openColorPicker(anchorEl, onSelect){
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
 
   const popup = document.createElement('div');
-  popup.id = 'color-picker-popup';
-  popup.style.position = 'absolute';
-  popup.style.display = 'flex';
-  popup.style.flexWrap = 'wrap';
-  popup.style.background = '#fff';
-  popup.style.border = '1px solid #ccc';
-  popup.style.padding = '6px';
-  popup.style.borderRadius = '6px';
-  popup.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
-  popup.style.zIndex = 10000;
+  popup.id='color-picker-popup';
+  popup.style.position='absolute';
+  popup.style.display='flex';
+  popup.style.flexWrap='wrap';
+  popup.style.background='#fff';
+  popup.style.border='1px solid #ccc';
+  popup.style.padding='6px';
+  popup.style.borderRadius='6px';
+  popup.style.boxShadow='0 6px 18px rgba(0,0,0,0.12)';
+  popup.style.zIndex=10000;
 
-  colorPalette.forEach(color => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.style.width = '22px';
-    b.style.height = '22px';
-    b.style.margin = '4px';
-    b.style.border = '1px solid rgba(0,0,0,0.06)';
-    b.style.borderRadius = '4px';
-    b.style.cursor = 'pointer';
-    b.style.backgroundColor = color;
-    b.addEventListener('click', (e)=> {
+  colorPalette.forEach(color=>{
+    const b=document.createElement('button');
+    b.type='button';
+    b.style.width='22px';
+    b.style.height='22px';
+    b.style.margin='4px';
+    b.style.border='1px solid rgba(0,0,0,0.06)';
+    b.style.borderRadius='4px';
+    b.style.cursor='pointer';
+    b.style.backgroundColor=color;
+    b.addEventListener('click',(e)=>{
       e.stopPropagation();
       onSelect(color);
       popup.remove();
@@ -257,78 +252,75 @@ function openColorPicker(anchorEl, onSelect){
   });
 
   document.body.appendChild(popup);
-
   const rect = anchorEl.getBoundingClientRect();
   let left = rect.left + window.scrollX;
   let top = rect.bottom + window.scrollY + 6;
   const guessW = 180;
   if(left + guessW > window.scrollX + window.innerWidth) left = window.scrollX + window.innerWidth - guessW - 8;
-  popup.style.left = `${left}px`;
-  popup.style.top = `${top}px`;
+  popup.style.left=`${left}px`;
+  popup.style.top=`${top}px`;
 
-  const closeFn = (ev) => {
-    if(!popup.contains(ev.target) && ev.target !== anchorEl) {
+  const closeFn=(ev)=>{
+    if(!popup.contains(ev.target) && ev.target!==anchorEl){
       popup.remove();
-      document.removeEventListener('click', closeFn);
+      document.removeEventListener('click',closeFn);
     }
   };
-  setTimeout(()=> document.addEventListener('click', closeFn), 10);
+  setTimeout(()=> document.addEventListener('click',closeFn),10);
 }
 
-// Cadencia: prompt y generación infinita
+// Cadencia
 function applyCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha inicial de la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
-  if(parts.length !== 3) return alert("Formato incorrecto");
-  const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
-  const startDate = new Date(year, month, day);
+  if(parts.length!==3) return alert("Formato incorrecto");
+  const day=parseInt(parts[0],10), month=parseInt(parts[1],10)-1, year=parseInt(parts[2],10);
+  const startDate=new Date(year, month, day);
   if(isNaN(startDate)) return alert("Fecha inválida");
 
-  cadenceData = [];
+  cadenceData=[];
   for(let i=0;i<10000;i++){
-    const d = new Date(startDate);
-    d.setDate(startDate.getDate() + i);
-    const type = ['MT','libre','MT','N','libre','libre','libre','libre'][i%8];
-    cadenceData.push({ date: d, type: type });
+    const d=new Date(startDate);
+    d.setDate(startDate.getDate()+i);
+    const type=['MT','libre','MT','N','libre','libre','libre','libre'][i%8];
+    cadenceData.push({date:d, type:type});
   }
   renderCalendar(currentMonth, currentYear);
 }
 
-// Limpiar cadencia desde fecha
 function clearCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
-  if(parts.length !== 3) return alert("Formato incorrecto");
-  const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
-  const startDate = new Date(year, month, day);
+  if(parts.length!==3) return alert("Formato incorrecto");
+  const day=parseInt(parts[0],10), month=parseInt(parts[1],10)-1, year=parseInt(parts[2],10);
+  const startDate=new Date(year, month, day);
   if(isNaN(startDate)) return alert("Fecha inválida");
 
-  cadenceData = cadenceData.filter(cd => cd.date < startDate);
+  cadenceData = cadenceData.filter(cd=>cd.date<startDate);
   renderCalendar(currentMonth, currentYear);
 }
 
-// Aplicar cadencia sobre DOM (respetando reglas)
 function applyCadenceRender(month, year){
   const cells = document.querySelectorAll('.day-cell');
   if(!cells) return;
 
-  const cadColorMT = '#ffa94d';
-  const cadColorN = '#d87d00';
+  const cadColorMT='#ffa94d';
+  const cadColorN='#d87d00';
 
-  cells.forEach(cell => {
+  cells.forEach(cell=>{
     const label = cell.querySelector('.day-label');
     if(!label) return;
     const parts = label.textContent.split(' ');
-    const day = parseInt(parts[0],10);
+    const day=parseInt(parts[0],10);
     if(isNaN(day)) return;
 
-    const cellDate = new Date(year, month, day);
-    const cd = cadenceData.find(c => 
-      c.date.getFullYear() === cellDate.getFullYear() &&
-      c.date.getMonth() === cellDate.getMonth() &&
-      c.date.getDate() === cellDate.getDate()
+    const cellDate=new Date(year, month, day);
+    const cd = cadenceData.find(c=>
+      c.date.getFullYear()===cellDate.getFullYear() &&
+      c.date.getMonth()===cellDate.getMonth() &&
+      c.date.getDate()===cellDate.getDate()
     );
 
     const shiftM = cell.querySelector('.shift-m');
@@ -336,52 +328,52 @@ function applyCadenceRender(month, year){
     const shiftN = cell.querySelector('.shift-n');
 
     function getFlagsForShift(shiftEl, shiftKey){
-      const dk = dateKey(year, month, day);
-      const saved = (manualEdits[dk] && manualEdits[dk][shiftKey]) ? manualEdits[dk][shiftKey] : {};
-      const userColor = !!saved.color || shiftEl.dataset.userColor === 'true';
-      let edited = false;
-      if(saved.text !== undefined && saved.text !== null){
-        edited = String(saved.text).trim() !== defaultTextFor(shiftKey);
+      const dk=dateKey(year, month, day);
+      const saved = (manualEdits[dk] && manualEdits[dk][shiftKey])?manualEdits[dk][shiftKey]:{};
+      const userColor = !!saved.color || shiftEl.dataset.userColor==='true';
+      let edited=false;
+      if(saved.text!==undefined && saved.text!==null){
+        edited = String(saved.text).trim()!==defaultTextFor(shiftKey);
       } else {
-        edited = String(shiftEl.textContent || '').trim() !== defaultTextFor(shiftKey);
+        edited = String(shiftEl.textContent || '').trim()!==defaultTextFor(shiftKey);
       }
-      if(shiftEl.dataset.edited === 'true') edited = true;
+      if(shiftEl.dataset.edited==='true') edited=true;
       return { userColor, edited, savedText: saved.text, savedColor: saved.color };
     }
 
     function applyToShift(shiftEl, shiftKey, activeForCadence, cadenceColor){
       if(!shiftEl) return;
-      const { userColor, edited } = getFlagsForShift(shiftEl, shiftKey);
+      const {userColor, edited} = getFlagsForShift(shiftEl, shiftKey);
       const allowCadence = !(userColor && edited);
       if(activeForCadence){
         if(allowCadence){
-          shiftEl.style.backgroundColor = cadenceColor;
-          shiftEl.style.color = '#fff';
-          shiftEl.dataset.cadenceApplied = 'true';
+          shiftEl.style.backgroundColor=cadenceColor;
+          shiftEl.style.color='#fff';
+          shiftEl.dataset.cadenceApplied='true';
         } else {
-          shiftEl.dataset.cadenceApplied = 'false';
+          shiftEl.dataset.cadenceApplied='false';
         }
       } else {
         if(allowCadence){
-          if(shiftEl.dataset.cadenceApplied === 'true'){
-            shiftEl.style.backgroundColor = '';
-            shiftEl.style.color = '';
-            shiftEl.dataset.cadenceApplied = 'false';
+          if(shiftEl.dataset.cadenceApplied==='true'){
+            shiftEl.style.backgroundColor='';
+            shiftEl.style.color='';
+            shiftEl.dataset.cadenceApplied='false';
           }
         }
       }
     }
 
     if(cd){
-      if(cd.type === 'MT'){
+      if(cd.type==='MT'){
         applyToShift(shiftM,'M', true, cadColorMT);
         applyToShift(shiftT,'T', true, cadColorMT);
         applyToShift(shiftN,'N', false, cadColorN);
-      } else if(cd.type === 'N'){
+      } else if(cd.type==='N'){
         applyToShift(shiftM,'M', false, cadColorMT);
         applyToShift(shiftT,'T', false, cadColorMT);
         applyToShift(shiftN,'N', true, cadColorN);
-      } else if(cd.type === 'libre'){
+      } else if(cd.type==='libre'){
         applyToShift(shiftM,'M', false, cadColorMT);
         applyToShift(shiftT,'T', false, cadColorMT);
         applyToShift(shiftN,'N', false, cadColorN);
@@ -389,15 +381,12 @@ function applyCadenceRender(month, year){
     } else {
       [['M',shiftM], ['T',shiftT], ['N',shiftN]].forEach(([k,el])=>{
         if(!el) return;
-        if(el.dataset.cadenceApplied === 'true'){
-          el.style.backgroundColor = '';
-          el.style.color = '';
-          el.dataset.cadenceApplied = 'false';
+        if(el.dataset.cadenceApplied==='true'){
+          el.style.backgroundColor='';
+          el.style.color='';
+          el.dataset.cadenceApplied='false';
         }
       });
     }
   });
 }
-
-// ================= export (no) =================
-// Copia/pega este archivo para reemplazar tu app.js actual
