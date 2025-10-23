@@ -182,18 +182,19 @@ body {
   flex: 1;
 }
 
+/* Ajuste solicitado: M y T ligeramente más altos */
 .shift-container {
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   flex: 1;
-  height: 50%;
+  height: 100%; /* antes 50% → ahora un poco más grande */
   width: 100%;
 }
 
 .shift-container.night {
-  height: 50%;
+  height: 15%; /* compensamos para que no cambie el tamaño global */
   width: 100%;
   margin-top: 2px;
 }
