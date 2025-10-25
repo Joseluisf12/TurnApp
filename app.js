@@ -1,6 +1,6 @@
 // =================== app.js ===================
 // Versión estable y completa (persistencia por turno + cadencia + reglas)
-// ÚNICO cambio añadido: licencias usan el mismo selector de color (misma paleta)
+// ÚNICO cambio añadido: licencias usan la misma paleta y casillas pequeñas visuales
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   licenciaHandles.forEach(handle => {
     handle.addEventListener('click', (ev) => {
       ev.stopPropagation();
-      // busco el input/elemento visual que representará el color (si no existe, uso el propio botón)
+      // usar el input como objetivo visual (si no existe, usar el botón)
       const item = handle.closest('.licencia-item');
       let target = handle;
       if(item){
@@ -26,10 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if(cantidad) target = cantidad;
       }
       openColorPicker(handle, (color) => {
-        // aplicar color visual
         target.style.backgroundColor = color;
         target.dataset.userColor = 'true';
-        // si quieres guardar por licencia, aquí podríamos persistir en localStorage
       });
     });
   });
@@ -54,13 +52,11 @@ const spanishHolidays = [
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// Paleta (la original que tenías para M/T/N)
+// Paleta (extendida)
 const colorPalette = [
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
-  "rgba(232,240,255,1)",         // azul laboral
-  "rgba(163,193,255,0.55)",      // azul sábado
-  "rgba(255,179,179,0.35)"       // rosa festivo
+  "rgba(232,240,255,1)","rgba(163,193,255,0.55)","rgba(255,179,179,0.35)"
 ];
 
 // Utiles
@@ -69,9 +65,7 @@ function dateKey(y,m,d){
   const dd = String(d).padStart(2,'0');
   return `${y}-${mm}-${dd}`;
 }
-function saveManualEdits(){
-  try{ localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); }catch(e){}
-}
+function saveManualEdits(){ try{ localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); }catch(e){} }
 function isColorLight(hex){
   if(!hex || hex[0] !== '#') return true;
   const r = parseInt(hex.substr(1,2),16);
@@ -80,7 +74,7 @@ function isColorLight(hex){
   const lum = 0.2126*r + 0.7152*g + 0.0722*b;
   return lum > 200;
 }
-function defaultTextFor(k){ return k; } // 'M','T','N'
+function defaultTextFor(k){ return k; }
 
 // Init / navegación
 function initApp(){
@@ -107,13 +101,10 @@ function renderCalendar(month, year){
   const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
-  // primer día (lunes = 0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0) ? 6 : firstDay - 1;
-
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  // celdas vacías previas
   for(let i=0;i<firstDay;i++){
     const empty = document.createElement('div');
     empty.className = 'day-cell empty';
@@ -154,7 +145,6 @@ function renderCalendar(month, year){
     calendar.appendChild(cell);
   }
 
-  // reaplicar cadencia
   if(cadenceData.length > 0) applyCadenceRender(month, year);
 }
 
