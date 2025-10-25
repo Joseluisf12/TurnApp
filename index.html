@@ -41,20 +41,105 @@
       </div>
 
       <div id="calendar"></div>
+
+      <!-- Contenedor de licencias -->
+      <div id="licencias-container" class="licencias" aria-hidden="true" style="display:none; margin-top:20px;">
+        <h3>Gestión de Permisos y Licencias</h3>
+
+        <div class="licencia-item" data-tipo="vacaciones">
+          <label>Vacaciones:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="compfest">
+          <label>Compensación de Festivos:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="asuntos">
+          <label>Asuntos Propios:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="delegacion">
+          <label>Delegación de Gobierno:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="adicionales">
+          <label>Días Adicionales:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="acumuladas">
+          <label>Jornadas Acumuladas:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="otros">
+          <label>Otros:</label>
+          <input type="number" min="0" class="cantidad-input" value="0">
+          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        </div>
+
+        <hr>
+
+        <div class="licencia-total">
+          <label><strong>Total:</strong></label>
+          <input type="text" id="total-licencias" readonly value="0">
+        </div>
+      </div>
     </section>
 
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
-      <button data-section="ajustes" class="nav-btn">Ajustes</button>
+      <button data-section="ajustes" class="nav-btn" id="btn-carga-dias">Carga Días</button>
     </nav>
   </main>
 
   <script src="app.js" defer></script>
+
   <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js');
-    }
+    // pequeño script para toggle del contenedor licencias y scroll (no toca nada más)
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnCarga = document.getElementById('btn-carga-dias');
+      const licencias = document.getElementById('licencias-container');
+      const calendar = document.getElementById('calendar');
+      if(!btnCarga || !licencias || !calendar) return;
+
+      btnCarga.addEventListener('click', () => {
+        const isHidden = licencias.style.display === 'none' || licencias.classList.contains('hidden');
+        if(isHidden){
+          licencias.style.display = 'block';
+          licencias.classList.remove('hidden');
+          licencias.setAttribute('aria-hidden','false');
+          setTimeout(()=> licencias.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+        } else {
+          licencias.style.display = 'none';
+          licencias.classList.add('hidden');
+          licencias.setAttribute('aria-hidden','true');
+          setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+        }
+      });
+
+      // total licencias
+      const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
+      const totalField = document.getElementById('total-licencias');
+      const recalc = () => {
+        let total = 0;
+        inputs.forEach(i => total += Number(i.value)||0);
+        totalField.value = total;
+      };
+      inputs.forEach(i=> i.addEventListener('input', recalc));
+      recalc();
+    });
   </script>
 
 </body>

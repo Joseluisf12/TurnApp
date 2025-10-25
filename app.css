@@ -43,6 +43,7 @@ body {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
+  padding-bottom: 140px; /* ← ADICIÓN: reserva espacio real bajo todo el contenido */
 }
 
 .app-header {
@@ -138,7 +139,7 @@ body {
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
   margin-top: 15px;
-  margin-bottom: 70px; /* espacio para barra inferior */
+  margin-bottom: 70px; /* espacio fijo para barra inferior visual */
 }
 
 .day-cell {
@@ -182,19 +183,19 @@ body {
   flex: 1;
 }
 
-/* Ajuste solicitado: M y T ligeramente más altos */
+/* Ajuste M y T ligeramente más altos */
 .shift-container {
   display: flex;
   justify-content: center;
   align-items: center;
   position: relative;
   flex: 1;
-  height: 100%; /* antes 50% → ahora un poco más grande */
+  height: 100%;
   width: 100%;
 }
 
 .shift-container.night {
-  height: 15%; /* compensamos para que no cambie el tamaño global */
+  height: 15%;
   width: 100%;
   margin-top: 2px;
 }
@@ -252,6 +253,48 @@ body {
   opacity: 0.6;
 }
 
+/* --- CAJÓN DE LICENCIAS --- */
+#licencias-section {
+  margin-top: 20px;
+  margin-bottom: 20px; /* ahora el espacio real lo deja #app padding-bottom */
+  padding: 10px 15px;
+}
+
+.licencia-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f7f9ff;
+  border-radius: 8px;
+  margin-bottom: 6px;
+  padding: 8px 10px;
+}
+
+.licencia-nombre {
+  flex: 1;
+  text-align: left;
+  font-weight: 500;
+}
+
+.licencia-cantidad {
+  width: 60px; /* más pequeña */
+  text-align: center;
+  margin: 0 10px;
+  padding: 3px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+}
+
+.licencia-color {
+  margin-left: auto;
+  cursor: pointer;
+  border: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 6px;
+  overflow: hidden;
+}
+
 /* --- NAVEGACIÓN INFERIOR --- */
 .bottom-nav {
   position: fixed;
@@ -263,6 +306,7 @@ body {
   background-color: #0b5ed7;
   padding: 8px 0;
   border-radius: 10px 10px 0 0;
+  z-index: 10;
 }
 
 .nav-btn {

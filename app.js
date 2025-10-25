@@ -1,6 +1,6 @@
 // =================== app.js ===================
 // Versión estable y completa (persistencia por turno + cadencia + reglas)
-// ÚNICO cambio visual: fondos M/T/N coinciden con fondo del día y se incluyen en la paleta
+// ÚNICO cambio añadido: licencias usan el mismo selector de color (misma paleta)
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -12,6 +12,27 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => applyCadencePrompt());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+
+  // conectar handles de licencia a la paleta unificada
+  const licenciaHandles = document.querySelectorAll('.licencia-color-handle');
+  licenciaHandles.forEach(handle => {
+    handle.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      // busco el input/elemento visual que representará el color (si no existe, uso el propio botón)
+      const item = handle.closest('.licencia-item');
+      let target = handle;
+      if(item){
+        const cantidad = item.querySelector('.cantidad-input');
+        if(cantidad) target = cantidad;
+      }
+      openColorPicker(handle, (color) => {
+        // aplicar color visual
+        target.style.backgroundColor = color;
+        target.dataset.userColor = 'true';
+        // si quieres guardar por licencia, aquí podríamos persistir en localStorage
+      });
+    });
+  });
 });
 
 // Estado
@@ -33,7 +54,7 @@ const spanishHolidays = [
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// Paleta (idéntica que antes + colores de fondo)
+// Paleta (la original que tenías para M/T/N)
 const colorPalette = [
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
@@ -86,10 +107,13 @@ function renderCalendar(month, year){
   const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio","Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
+  // primer día (lunes = 0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0) ? 6 : firstDay - 1;
+
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
+  // celdas vacías previas
   for(let i=0;i<firstDay;i++){
     const empty = document.createElement('div');
     empty.className = 'day-cell empty';
@@ -117,15 +141,20 @@ function renderCalendar(month, year){
 
     const row = document.createElement('div');
     row.className = 'shifts-row';
+
+    // Shifts M y T (lado a lado)
     row.appendChild(createShiftElement(year, month, day, 'M'));
     row.appendChild(createShiftElement(year, month, day, 'T'));
     wrapper.appendChild(row);
+
+    // Shift N debajo
     wrapper.appendChild(createShiftElement(year, month, day, 'N'));
 
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
   }
 
+  // reaplicar cadencia
   if(cadenceData.length > 0) applyCadenceRender(month, year);
 }
 
@@ -200,7 +229,7 @@ function createShiftElement(year, month, day, shiftKey){
       manualEdits[dk][shiftKey].color = color;
       manualEdits[dk][shiftKey].userColor = true;
       saveManualEdits();
-    });
+    }, colorPalette);
   });
 
   container.appendChild(shift);
@@ -217,8 +246,8 @@ function saveShiftText(year, month, day, shiftKey, text){
   saveManualEdits();
 }
 
-// Selector de color
-function openColorPicker(anchorEl, onSelect){
+// Selector de color (con paleta opcional)
+function openColorPicker(anchorEl, onSelect, palette = colorPalette){
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
 
@@ -234,7 +263,7 @@ function openColorPicker(anchorEl, onSelect){
   popup.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
   popup.style.zIndex = 10000;
 
-  colorPalette.forEach(color => {
+  palette.forEach(color => {
     const b = document.createElement('button');
     b.type = 'button';
     b.style.width = '22px';
@@ -392,5 +421,3 @@ function applyCadenceRender(month, year){
     }
   });
 }
-
-// ================= export (no) =================
