@@ -43,7 +43,7 @@ body {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 140px; /* ← ADICIÓN: reserva espacio real bajo todo el contenido */
+  padding-bottom: 140px; /* ← reserva espacio real bajo todo el contenido */
 }
 
 .app-header {
@@ -276,12 +276,13 @@ body {
   font-weight: 500;
 }
 
-.licencia-cantidad {
-  width: 60px; /* más pequeña */
+.cantidad-input {
+  width: 28px;      /* ancho más pequeño */
+  height: 20px;     /* altura más pequeña */
+  font-size: 0.7em; /* tamaño de texto más pequeño */
+  padding: 2px 4px;  /* padding mínimo */
   text-align: center;
-  margin: 0 10px;
-  padding: 3px;
-  border-radius: 6px;
+  border-radius: 4px;
   border: 1px solid #ccc;
 }
 
