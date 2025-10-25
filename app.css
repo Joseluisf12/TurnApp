@@ -43,7 +43,7 @@ body {
   width: 100%;
   max-width: 600px;
   margin: 0 auto;
-  padding-bottom: 140px; /* ← reserva espacio real bajo todo el contenido */
+  padding-bottom: 140px; /* espacio para barra inferior */
 }
 
 .app-header {
@@ -139,11 +139,11 @@ body {
   grid-template-columns: repeat(7, 1fr);
   gap: 5px;
   margin-top: 15px;
-  margin-bottom: 70px; /* espacio fijo para barra inferior visual */
+  margin-bottom: 70px; /* espacio para barra inferior */
 }
 
 .day-cell {
-  background-color: #e8f0ff; /* día laboral azul muy suave */
+  background-color: #e8f0ff;
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   padding: 5px;
@@ -161,12 +161,12 @@ body {
 
 /* --- COLORES DE DÍAS ESPECIALES --- */
 .saturday {
-  background-color: rgba(163,193,255,0.55); /* azul sábado más oscuro */
+  background-color: rgba(163,193,255,0.55);
 }
 
 .sunday, 
 .holiday {
-  background-color: rgba(255,179,179,0.35); /* rosa traslúcido */
+  background-color: rgba(255,179,179,0.35);
 }
 
 /* --- TURNOS --- */
@@ -183,7 +183,6 @@ body {
   flex: 1;
 }
 
-/* Ajuste M y T ligeramente más altos */
 .shift-container {
   display: flex;
   justify-content: center;
@@ -210,21 +209,21 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #000; /* texto negro */
+  color: #000;
 }
 
 /* Colores de fondo por defecto de M/T/N según tipo de día */
 .day-cell:not(.saturday):not(.sunday):not(.holiday) .shift-cell {
-  background-color: #e8f0ff; /* azul suave para días laborales */
+  background-color: #e8f0ff;
 }
 
 .day-cell.saturday .shift-cell {
-  background-color: rgba(163,193,255,0.55); /* azul sábado */
+  background-color: rgba(163,193,255,0.55);
 }
 
 .day-cell.sunday .shift-cell,
 .day-cell.holiday .shift-cell {
-  background-color: rgba(255,179,179,0.35); /* rosa festivo */
+  background-color: rgba(255,179,179,0.35);
 }
 
 /* --- Paleta de colores editables --- */
@@ -254,39 +253,39 @@ body {
 }
 
 /* --- CAJÓN DE LICENCIAS --- */
-#licencias-section {
+#licencias-container {
   margin-top: 20px;
-  margin-bottom: 20px; /* ahora el espacio real lo deja #app padding-bottom */
+  margin-bottom: 20px;
   padding: 10px 15px;
 }
 
 .licencia-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-start; /* alineación principal */
   background: #f7f9ff;
   border-radius: 8px;
   margin-bottom: 6px;
   padding: 8px 10px;
 }
 
-.licencia-nombre {
+.licencia-item label {
   flex: 1;
   text-align: left;
   font-weight: 500;
 }
 
 .cantidad-input {
-  width: 28px;      /* ancho más pequeño */
-  height: 20px;     /* altura más pequeña */
-  font-size: 0.7em; /* tamaño de texto más pequeño */
-  padding: 2px 4px;  /* padding mínimo */
+  width: 40px;       /* más pequeña */
   text-align: center;
-  border-radius: 4px;
+  margin: 0 10px;
+  padding: 2px;
+  border-radius: 6px;
   border: 1px solid #ccc;
+  flex-shrink: 0;
 }
 
-.licencia-color {
+.licencia-color-handle {
   margin-left: auto;
   cursor: pointer;
   border: none;
