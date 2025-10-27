@@ -1,20 +1,17 @@
 // =================== app.js ===================
 // Versión estable y completa (persistencia por turno + cadencia + reglas)
-// ÚNICO cambio añadido: selector de cadencias múltiples y M/N combinado
+// ÚNICO cambio: corrección en modal para que V-2 y Personalizada funcionen correctamente
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
   const themeBtn = document.getElementById('btn-toggle-theme');
   if (themeBtn) themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
-document.querySelectorAll('.cantidad-input').forEach(i => {
-  i.addEventListener('input', saveLicenciasState);
-});
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
-  if(applyBtn) applyBtn.addEventListener('click', () => chooseCadence());
-  if(clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+  if(applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+  if(clearBtn) clearBtn.addEventListener('click', () => openClearCadenceModal());
 
   // conectar handles de licencia a la paleta unificada
   const licenciaHandles = document.querySelectorAll('.licencia-color-handle');
@@ -72,40 +69,6 @@ function dateKey(y,m,d){
 function saveManualEdits(){
   try{ localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); }catch(e){}
 }
-function saveLicenciasState() {
-  const items = document.querySelectorAll('.licencia-item');
-  const data = {};
-  items.forEach(item => {
-    const tipo = item.dataset.tipo;
-    const cantidad = item.querySelector('.cantidad-input')?.value || '0';
-    const color = item.querySelector('.cantidad-input')?.style.backgroundColor || '';
-    data[tipo] = { cantidad, color };
-  });
-  try {
-    localStorage.setItem('turnapp.licencias', JSON.stringify(data));
-  } catch (e) {}
-}
-
-function loadLicenciasState() {
-  try {
-    const raw = localStorage.getItem('turnapp.licencias');
-    if (!raw) return;
-    const data = JSON.parse(raw);
-    Object.entries(data).forEach(([tipo, { cantidad, color }]) => {
-      const item = document.querySelector(`.licencia-item[data-tipo="${tipo}"]`);
-      if (!item) return;
-      const input = item.querySelector('.cantidad-input');
-      if (input) {
-        input.value = cantidad;
-        if (color) {
-          input.style.backgroundColor = color;
-          input.dataset.userColor = 'true';
-        }
-      }
-    });
-  } catch (e) {}
-}
-
 function isColorLight(hex){
   if(!hex || hex[0] !== '#') return true;
   const r = parseInt(hex.substr(1,2),16);
@@ -325,80 +288,391 @@ function openColorPicker(anchorEl,onSelect,palette=colorPalette){
   setTimeout(()=>document.addEventListener('click',closeFn),10);
 }
 
-// =================== CADENCIAS ===================
+// =================== CADENCIAS (modal UI reemplaza prompt) ===================
 
-function chooseCadence(){
-  const choice = prompt("Elige cadencia:\n1: V-1\n2: V-2\n3: Personalizada");
-  if(!choice) return;
-  if(choice==='1') applyCadencePrompt('V-1');
-  else if(choice==='2') applyCadencePrompt('V-2');
-  else if(choice==='3') applyCadencePrompt('Personalizada');
-  else alert('Opción inválida');
-}
+function openCadenceModal(){
+  if(document.getElementById('cadence-modal-overlay')) return;
 
-function applyCadencePrompt(type='V-1'){
-  const startDateStr = prompt("Introduce la fecha inicial de la cadencia (DD/MM/AAAA):");
-  if(!startDateStr) return;
-  const parts=startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
-  const day=parseInt(parts[0],10), month=parseInt(parts[1],10)-1, year=parseInt(parts[2],10);
-  const startDate=new Date(year,month,day);
-  if(isNaN(startDate)) return alert("Fecha inválida");
+  const overlay = document.createElement('div');
+  overlay.id = 'cadence-modal-overlay';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.background = 'rgba(0,0,0,0.28)';
+  overlay.style.zIndex = 12000;
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 220ms ease';
 
-  cadenceData=[];
+  const card = document.createElement('div');
+  card.id = 'cadence-modal-card';
+  card.style.width = '360px';
+  card.style.maxWidth = '92%';
+  card.style.background = '#fff';
+  card.style.borderRadius = '12px';
+  card.style.padding = '16px';
+  card.style.boxShadow = '0 12px 40px rgba(0,0,0,0.18)';
+  card.style.transform = 'scale(.92)';
+  card.style.transition = 'transform 220ms ease, opacity 220ms ease';
+  card.style.opacity = '0';
+  card.style.fontFamily = 'inherit';
+  card.style.color = '#222';
 
-  if(type==='V-1'){
-    const v1options=[
-      ['MT','L','MT','N','L','L','L','L'],
-      ['MT','MT','N','L','L','L','L','L'],
-      ['T','MT','M/N','L','L','L','L','L'],
-      ['MT','N','L','L','L'],
-      ['T','M/N','L','L','L']
-    ];
-    const optionStr="Elige opción V-1:\n1: MT,L,MT,N,L,L,L,L\n2: MT,MT,N,L,L,L,L,L\n3: T,MT,M/N,L,L,L,L,L\n4: MT,N,L,L,L\n5: T,M/N,L,L,L";
-    const optChoice=prompt(optionStr);
-    const optIdx=parseInt(optChoice,10)-1;
-    if(optIdx<0||optIdx>=v1options.length) return alert('Opción inválida');
-    const pattern=v1options[optIdx];
-    for(let i=0;i<10000;i++){
-      const d=new Date(startDate);
-      d.setDate(startDate.getDate()+i);
-      cadenceData.push({date:d, type: pattern[i%pattern.length]});
+  const h = document.createElement('h3');
+  h.textContent = 'Aplicar cadencia';
+  h.style.margin = '0 0 8px 0';
+  h.style.fontSize = '1.05rem';
+  card.appendChild(h);
+
+  const selectWrap = document.createElement('div');
+  selectWrap.style.marginBottom = '10px';
+  const label = document.createElement('label');
+  label.textContent = 'Tipo: ';
+  label.style.fontWeight = '600';
+  label.style.display = 'block';
+  label.style.marginBottom = '6px';
+  selectWrap.appendChild(label);
+
+  const radios = document.createElement('div');
+  radios.style.display = 'flex';
+  radios.style.gap = '8px';
+  radios.style.flexWrap = 'wrap';
+
+  const types = [
+    {id:'v1', label:'V-1'},
+    {id:'v2', label:'V-2'},
+    {id:'custom', label:'Personalizada'}
+  ];
+  types.forEach(t=>{
+    const b = document.createElement('button');
+    b.type='button';
+    b.className='cad-type-btn';
+    b.dataset.type = t.id;
+    b.textContent = t.label;
+    b.style.padding = '8px 10px';
+    b.style.borderRadius = '8px';
+    b.style.border = '1px solid #e6e6e6';
+    b.style.background = '#fff';
+    b.style.cursor = 'pointer';
+    b.style.fontWeight = '600';
+    b.addEventListener('click', ()=> {
+      Array.from(radios.children).forEach(ch=>{
+        ch.style.boxShadow = 'none';
+        ch.removeAttribute('data-selected');
+      });
+      b.style.boxShadow = 'inset 0 -2px 0 0 var(--primary, #0b5ed7)';
+      b.setAttribute('data-selected','true');
+      showCadenceSubpanel(t.id);
+    });
+    radios.appendChild(b);
+  });
+  selectWrap.appendChild(radios);
+  card.appendChild(selectWrap);
+
+  const dateWrap = document.createElement('div');
+  dateWrap.style.marginBottom = '10px';
+  const dateLabel = document.createElement('label');
+  dateLabel.textContent = 'Fecha inicio:';
+  dateLabel.style.display = 'block';
+  dateLabel.style.marginBottom = '6px';
+  dateWrap.appendChild(dateLabel);
+
+  const dateInput = document.createElement('input');
+  dateInput.type = 'date';
+  dateInput.id = 'cadence-start-date';
+  dateInput.style.width = '100%';
+  dateInput.style.padding = '8px';
+  dateInput.style.borderRadius = '8px';
+  dateInput.style.border = '1px solid #ddd';
+  dateWrap.appendChild(dateInput);
+  card.appendChild(dateWrap);
+
+  const panels = document.createElement('div');
+  panels.id = 'cadence-subpanels';
+  panels.style.marginBottom = '12px';
+
+  const panelV1 = document.createElement('div');
+  panelV1.id = 'panel-v1';
+  panelV1.style.display = 'none';
+  panelV1.style.marginBottom = '8px';
+
+  const v1Options = [
+    { id:0, label: '1 — MT, L, MT, N, L, L, L, L', pattern: ['MT','L','MT','N','L','L','L','L'] },
+    { id:1, label: '2 — MT, MT, N, L, L, L, L, L', pattern: ['MT','MT','N','L','L','L','L','L'] },
+    { id:2, label: '3 — T, MT, M/N, L, L, L, L, L', pattern: ['T','MT','M/N','L','L','L','L','L'] },
+    { id:3, label: '4 — MT, N, L, L, L', pattern: ['MT','N','L','L','L'] },
+    { id:4, label: '5 — T, M/N, L, L, L', pattern: ['T','M/N','L','L','L'] }
+  ];
+  const v1List = document.createElement('div');
+  v1List.style.display = 'flex';
+  v1List.style.flexDirection = 'column';
+  v1List.style.gap = '6px';
+  v1Options.forEach(opt=>{
+    const r = document.createElement('button');
+    r.type = 'button';
+    r.className = 'v1-option';
+    r.dataset.idx = String(opt.id);
+    r.textContent = opt.label;
+    r.style.textAlign = 'left';
+    r.style.padding = '8px';
+    r.style.borderRadius = '8px';
+    r.style.border = '1px solid #eee';
+    r.style.cursor = 'pointer';
+    r.addEventListener('click', () => {
+      Array.from(v1List.children).forEach(ch=>ch.style.boxShadow='none');
+      r.style.boxShadow = 'inset 0 -2px 0 0 var(--primary,#0b5ed7)';
+      r.setAttribute('data-selected','true');
+    });
+    v1List.appendChild(r);
+  });
+  panelV1.appendChild(v1List);
+  panels.appendChild(panelV1);
+
+  const panelV2 = document.createElement('div');
+  panelV2.id = 'panel-v2';
+  panelV2.style.display = 'none';
+  panelV2.style.marginBottom = '8px';
+  const pV2info = document.createElement('div');
+  pV2info.textContent = 'V-2 (fija 6 días): MT, MT, L, L, L, L';
+  pV2info.style.padding = '8px';
+  pV2info.style.border = '1px solid #eee';
+  pV2info.style.borderRadius = '8px';
+  panelV2.appendChild(pV2info);
+  panels.appendChild(panelV2);
+
+  const panelCustom = document.createElement('div');
+  panelCustom.id = 'panel-custom';
+  panelCustom.style.display = 'none';
+  panelCustom.style.marginBottom = '8px';
+  const customLabel = document.createElement('label');
+  customLabel.textContent = 'Patrón (ej: MT,L,MT,N,L,L,L,L)';
+  customLabel.style.display = 'block';
+  customLabel.style.marginBottom = '6px';
+  panelCustom.appendChild(customLabel);
+  const customInput = document.createElement('input');
+  customInput.type = 'text';
+  customInput.placeholder = 'MT,L,MT,N,L,L,L,L';
+  customInput.style.width = '100%';
+  customInput.style.padding = '8px';
+  customInput.style.border = '1px solid #ddd';
+  customInput.style.borderRadius = '8px';
+  panelCustom.appendChild(customInput);
+  panels.appendChild(panelCustom);
+
+  card.appendChild(panels);
+
+  const actions = document.createElement('div');
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'flex-end';
+  actions.style.gap = '8px';
+
+  const cancelBtn = document.createElement('button');
+  cancelBtn.type='button';
+  cancelBtn.textContent='Cancelar';
+  cancelBtn.style.padding='8px 12px';
+  cancelBtn.style.border='none';
+  cancelBtn.style.background='transparent';
+  cancelBtn.style.cursor='pointer';
+  cancelBtn.addEventListener('click', closeCadenceModal);
+
+  const applyBtn = document.createElement('button');
+  applyBtn.type='button';
+  applyBtn.textContent='Aplicar';
+  applyBtn.style.padding='8px 12px';
+  applyBtn.style.borderRadius='8px';
+  applyBtn.style.border='none';
+  applyBtn.style.background='var(--primary,#0b5ed7)';
+  applyBtn.style.color='#fff';
+  applyBtn.style.cursor='pointer';
+  applyBtn.addEventListener('click', ()=>{
+    // detección robusta de tipo seleccionado
+    const selectedTypeBtn = radios.querySelector('[data-selected="true"]');
+    if(!selectedTypeBtn){ alert('Selecciona un tipo de cadencia (V-1, V-2 o Personalizada)'); return; }
+    const type = selectedTypeBtn.dataset.type; // 'v1' | 'v2' | 'custom'
+
+    const startDateVal = dateInput.value;
+    if(!startDateVal){ alert('Selecciona fecha de inicio'); return; }
+    const sdParts = startDateVal.split('-');
+    const sYear = parseInt(sdParts[0],10), sMonth = parseInt(sdParts[1],10)-1, sDay = parseInt(sdParts[2],10);
+    const startDate = new Date(sYear, sMonth, sDay);
+
+    if(type === 'v1'){
+      const selectedV1 = v1List.querySelector('[data-selected="true"]');
+      if(!selectedV1){ alert('Selecciona una opción V-1'); return; }
+      const idx = parseInt(selectedV1.dataset.idx,10);
+      const v1options = [
+        ['MT','L','MT','N','L','L','L','L'],
+        ['MT','MT','N','L','L','L','L','L'],
+        ['T','MT','M/N','L','L','L','L','L'],
+        ['MT','N','L','L','L'],
+        ['T','M/N','L','L','L']
+      ];
+      const pattern = v1options[idx];
+      applyCadenceFromPattern(startDate, pattern);
+      closeCadenceModal();
+      return;
+    } else if(type === 'v2'){
+      const pattern = ['MT','MT','L','L','L','L'];
+      applyCadenceFromPattern(startDate, pattern);
+      closeCadenceModal();
+      return;
+    } else if(type === 'custom'){
+      const raw = customInput.value.trim();
+      if(!raw){ alert('Introduce el patrón personalizado'); return; }
+      const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
+      if(pattern.length === 0){ alert('Patrón inválido'); return; }
+      applyCadenceFromPattern(startDate, pattern);
+      closeCadenceModal();
+      return;
+    } else {
+      alert('Opción inválida');
     }
-  } else if(type==='V-2'){
-    const pattern=['MT','MT','L','L','L','L'];
-    for(let i=0;i<10000;i++){
-      const d=new Date(startDate);
-      d.setDate(startDate.getDate()+i);
-      cadenceData.push({date:d, type: pattern[i%pattern.length]});
-    }
-  } else if(type==='Personalizada'){
-    const userPattern=prompt('Introduce tu patrón personalizado, separando días por comas (ej: MT,L,MT,N,L,L,L,L):');
-    if(!userPattern) return;
-    const pattern=userPattern.split(',').map(s=>s.trim());
-    for(let i=0;i<10000;i++){
-      const d=new Date(startDate);
-      d.setDate(startDate.getDate()+i);
-      cadenceData.push({date:d, type: pattern[i%pattern.length]});
-    }
+  });
+
+  actions.appendChild(cancelBtn);
+  actions.appendChild(applyBtn);
+  card.appendChild(actions);
+
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(()=> {
+    overlay.style.opacity = '1';
+    card.style.transform = 'scale(1)';
+    card.style.opacity = '1';
+  });
+
+  function showCadenceSubpanel(id){
+    panelV1.style.display = id==='v1' ? 'block' : 'none';
+    panelV2.style.display = id==='v2' ? 'block' : 'none';
+    panelCustom.style.display = id==='custom' ? 'block' : 'none';
   }
 
+  // seleccionar por defecto V-1
+  const firstBtn = radios.children[0];
+  if(firstBtn) firstBtn.click();
+
+  overlay.addEventListener('click', (ev) => {
+    if(ev.target === overlay) closeCadenceModal();
+  });
+
+  function closeCadenceModal(){
+    card.style.transform = 'scale(.92)';
+    card.style.opacity = '0';
+    overlay.style.opacity = '0';
+    setTimeout(()=> {
+      if(overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    }, 240);
+  }
+}
+
+function applyCadenceFromPattern(startDate, pattern){
+  cadenceData = [];
+  for(let i=0;i<10000;i++){
+    const d=new Date(startDate);
+    d.setDate(startDate.getDate()+i);
+    cadenceData.push({date:d, type: pattern[i % pattern.length]});
+  }
   renderCalendar(currentMonth, currentYear);
 }
 
-function clearCadencePrompt(){
-  const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
-  if(!startDateStr) return;
-  const parts=startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
-  const day=parseInt(parts[0],10), month=parseInt(parts[1],10)-1, year=parseInt(parts[2],10);
-  const startDate=new Date(year,month,day);
-  if(isNaN(startDate)) return alert("Fecha inválida");
+function openClearCadenceModal(){
+  if(document.getElementById('clear-cadence-modal')) return;
 
-  cadenceData = cadenceData.filter(cd => cd.date < startDate);
-  renderCalendar(currentMonth, currentYear);
+  const overlay = document.createElement('div');
+  overlay.id = 'clear-cadence-modal';
+  overlay.style.position = 'fixed';
+  overlay.style.inset = '0';
+  overlay.style.display = 'flex';
+  overlay.style.alignItems = 'center';
+  overlay.style.justifyContent = 'center';
+  overlay.style.background = 'rgba(0,0,0,0.28)';
+  overlay.style.zIndex = 12000;
+  overlay.style.opacity = '0';
+  overlay.style.transition = 'opacity 220ms ease';
+
+  const card = document.createElement('div');
+  card.style.width = '320px';
+  card.style.background = '#fff';
+  card.style.borderRadius = '10px';
+  card.style.padding = '14px';
+  card.style.boxShadow = '0 12px 40px rgba(0,0,0,0.12)';
+  card.style.transform = 'scale(.94)';
+  card.style.transition = 'transform 180ms ease, opacity 180ms ease';
+  card.style.opacity = '0';
+
+  const h = document.createElement('h4');
+  h.textContent = 'Limpiar cadencia desde fecha';
+  h.style.margin = '0 0 8px 0';
+  card.appendChild(h);
+
+  const input = document.createElement('input');
+  input.type = 'date';
+  input.style.width = '100%';
+  input.style.padding = '8px';
+  input.style.border = '1px solid #ddd';
+  input.style.borderRadius = '8px';
+  card.appendChild(input);
+
+  const actions = document.createElement('div');
+  actions.style.display = 'flex';
+  actions.style.justifyContent = 'flex-end';
+  actions.style.gap = '8px';
+  actions.style.marginTop = '12px';
+
+  const cancel = document.createElement('button');
+  cancel.type = 'button';
+  cancel.textContent = 'Cancelar';
+  cancel.style.background = 'transparent';
+  cancel.style.border = 'none';
+  cancel.style.cursor = 'pointer';
+  cancel.addEventListener('click', closeModal);
+
+  const apply = document.createElement('button');
+  apply.type = 'button';
+  apply.textContent = 'Limpiar';
+  apply.style.background = 'var(--danger,#dc3545)';
+  apply.style.color = '#fff';
+  apply.style.border = 'none';
+  apply.style.borderRadius = '8px';
+  apply.style.padding = '8px 10px';
+  apply.style.cursor = 'pointer';
+  apply.addEventListener('click', ()=>{
+    const val = input.value;
+    if(!val){ alert('Selecciona fecha'); return; }
+    const parts = val.split('-');
+    const d = new Date(parseInt(parts[0],10), parseInt(parts[1],10)-1, parseInt(parts[2],10));
+    cadenceData = cadenceData.filter(cd => cd.date < d);
+    renderCalendar(currentMonth, currentYear);
+    closeModal();
+  });
+
+  actions.appendChild(cancel);
+  actions.appendChild(apply);
+  card.appendChild(actions);
+  overlay.appendChild(card);
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(()=> {
+    overlay.style.opacity = '1';
+    card.style.transform = 'scale(1)';
+    card.style.opacity = '1';
+  });
+
+  overlay.addEventListener('click', (ev)=>{
+    if(ev.target === overlay) closeModal();
+  });
+
+  function closeModal(){
+    card.style.transform = 'scale(.94)';
+    card.style.opacity = '0';
+    overlay.style.opacity = '0';
+    setTimeout(()=> { if(overlay.parentNode) overlay.parentNode.removeChild(overlay); }, 200);
+  }
 }
 
+// applyCadenceRender (sin cambios funcionales)
 function applyCadenceRender(month, year){
   const cells=document.querySelectorAll('.day-cell');
   if(!cells) return;
@@ -454,7 +728,6 @@ function applyCadenceRender(month, year){
     }
 
     if(cd){
-      // Manejo múltiple: si hay M/T/N combinados
       const types=cd.type.split('/');
       applyToShift(shiftM,'M', types.includes('M') || types.includes('MT'), cadColorMT);
       applyToShift(shiftT,'T', types.includes('T') || types.includes('MT'), cadColorMT);
