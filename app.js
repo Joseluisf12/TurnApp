@@ -7,6 +7,9 @@ document.addEventListener('DOMContentLoaded', () => {
   initApp();
   const themeBtn = document.getElementById('btn-toggle-theme');
   if (themeBtn) themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
+document.querySelectorAll('.cantidad-input').forEach(i => {
+  i.addEventListener('input', saveLicenciasState);
+});
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
@@ -69,6 +72,40 @@ function dateKey(y,m,d){
 function saveManualEdits(){
   try{ localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); }catch(e){}
 }
+function saveLicenciasState() {
+  const items = document.querySelectorAll('.licencia-item');
+  const data = {};
+  items.forEach(item => {
+    const tipo = item.dataset.tipo;
+    const cantidad = item.querySelector('.cantidad-input')?.value || '0';
+    const color = item.querySelector('.cantidad-input')?.style.backgroundColor || '';
+    data[tipo] = { cantidad, color };
+  });
+  try {
+    localStorage.setItem('turnapp.licencias', JSON.stringify(data));
+  } catch (e) {}
+}
+
+function loadLicenciasState() {
+  try {
+    const raw = localStorage.getItem('turnapp.licencias');
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    Object.entries(data).forEach(([tipo, { cantidad, color }]) => {
+      const item = document.querySelector(`.licencia-item[data-tipo="${tipo}"]`);
+      if (!item) return;
+      const input = item.querySelector('.cantidad-input');
+      if (input) {
+        input.value = cantidad;
+        if (color) {
+          input.style.backgroundColor = color;
+          input.dataset.userColor = 'true';
+        }
+      }
+    });
+  } catch (e) {}
+}
+
 function isColorLight(hex){
   if(!hex || hex[0] !== '#') return true;
   const r = parseInt(hex.substr(1,2),16);
