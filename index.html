@@ -43,56 +43,58 @@
       <div id="calendar"></div>
 
       <!-- Contenedor de licencias -->
-      <div id="licencias-container" class="licencias" aria-hidden="true" style="display:none; margin-top:20px;">
+      <div id="licencias-container" class="licencias" aria-hidden="true" style="display:block; margin-top:20px;">
         <h3>Gestión de Permisos y Licencias</h3>
 
-        <div class="licencia-item" data-tipo="vacaciones">
-          <label class="licencia-nombre">Vacaciones:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+        <div id="licencias-list">
+          <div class="licencia-item" data-tipo="vacaciones">
+            <div class="licencia-nombre">Vacaciones:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="compfest">
+            <div class="licencia-nombre">Compensación de Festivos:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="asuntos">
+            <div class="licencia-nombre">Asuntos Propios:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="delegacion">
+            <div class="licencia-nombre">Delegación de Gobierno:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="adicionales">
+            <div class="licencia-nombre">Días Adicionales:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="acumuladas">
+            <div class="licencia-nombre">Jornadas Acumuladas:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
+
+          <div class="licencia-item" data-tipo="otros">
+            <div class="licencia-nombre">Otros:</div>
+            <input type="number" min="0" class="cantidad-input" value="0">
+            <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
+          </div>
         </div>
 
-        <div class="licencia-item" data-tipo="compfest">
-          <label class="licencia-nombre">Compensación de Festivos:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <div class="licencia-item" data-tipo="asuntos">
-          <label class="licencia-nombre">Asuntos Propios:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <div class="licencia-item" data-tipo="delegacion">
-          <label class="licencia-nombre">Delegación de Gobierno:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <div class="licencia-item" data-tipo="adicionales">
-          <label class="licencia-nombre">Días Adicionales:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <div class="licencia-item" data-tipo="acumuladas">
-          <label class="licencia-nombre">Jornadas Acumuladas:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <div class="licencia-item" data-tipo="otros">
-          <label class="licencia-nombre">Otros:</label>
-          <input type="number" min="0" class="cantidad-input" value="0">
-          <button type="button" class="licencia-color-handle" title="Elegir color">●</button>
-        </div>
-
-        <hr style="margin:10px 0;">
+        <hr>
 
         <div class="licencia-total">
-          <label style="flex:1; text-align:left;"><strong>Total:</strong></label>
-          <input type="text" id="total-licencias" readonly value="0">
+          <label><strong>Total:</strong></label>
+          <input type="text" id="total-licencias" readonly value="0" style="width:72px;">
         </div>
       </div>
     </section>
@@ -104,43 +106,49 @@
     </nav>
   </main>
 
+  <!-- Cadence modal (hidden by default) -->
+  <div id="cadence-modal" class="modal-backdrop" aria-hidden="true" style="display:none;">
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">Aplicar cadencia</h3>
+
+      <div class="modal-row">
+        <label>Tipo de cadencia:</label>
+        <select id="modal-cadence-type">
+          <option value="V-1">V-1 (variantes)</option>
+          <option value="V-2">V-2 (6 días fijo)</option>
+          <option value="Personalizada">Personalizada</option>
+        </select>
+      </div>
+
+      <div id="v1-options" class="modal-row">
+        <label>Opciones V-1:</label>
+        <select id="modal-v1-choice">
+          <option value="0">1: MT, L, MT, N, L, L, L, L</option>
+          <option value="1">2: MT, MT, N, L, L, L, L, L</option>
+          <option value="2">3: T, MT, M/N, L, L, L, L, L</option>
+          <option value="3">4: MT, N, L, L, L</option>
+          <option value="4">5: T, M/N, L, L, L</option>
+        </select>
+      </div>
+
+      <div id="personal-row" class="modal-row" style="display:none;">
+        <label>Patrón (ej: MT,L,MT,N,L,L,L,L):</label>
+        <input id="modal-custom-pattern" type="text" placeholder="MT,L,MT,N,L,L,L,L"/>
+      </div>
+
+      <div class="modal-row">
+        <label>Fecha inicio (DD/MM/AAAA):</label>
+        <input id="modal-start-date" type="text" placeholder="DD/MM/AAAA" />
+      </div>
+
+      <div class="modal-actions">
+        <button id="modal-cancel" class="btn">Cancelar</button>
+        <button id="modal-apply" class="btn primary">Aplicar</button>
+      </div>
+    </div>
+  </div>
+
   <script src="app.js" defer></script>
-
-  <script>
-    // pequeño script para toggle del contenedor licencias y scroll (no toca nada más)
-    document.addEventListener('DOMContentLoaded', () => {
-      const btnCarga = document.getElementById('btn-carga-dias');
-      const licencias = document.getElementById('licencias-container');
-      const calendar = document.getElementById('calendar');
-      if(!btnCarga || !licencias || !calendar) return;
-
-      btnCarga.addEventListener('click', () => {
-        const isHidden = licencias.style.display === 'none' || licencias.classList.contains('hidden');
-        if(isHidden){
-          licencias.style.display = 'block';
-          licencias.classList.remove('hidden');
-          licencias.setAttribute('aria-hidden','false');
-          setTimeout(()=> licencias.scrollIntoView({behavior:'smooth', block:'start'}), 50);
-        } else {
-          licencias.style.display = 'none';
-          licencias.classList.add('hidden');
-          licencias.setAttribute('aria-hidden','true');
-          setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 50);
-        }
-      });
-
-      // total licencias
-      const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
-      const totalField = document.getElementById('total-licencias');
-      const recalc = () => {
-        let total = 0;
-        inputs.forEach(i => total += Number(i.value)||0);
-        totalField.value = total;
-      };
-      inputs.forEach(i=> i.addEventListener('input', recalc));
-      recalc();
-    });
-  </script>
 
 </body>
 </html>
