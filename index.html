@@ -115,6 +115,27 @@
         </div>
       </div>
     </section>
+<!-- Cajón de Peticiones -->
+<section id="peticiones-section" class="panel oculto">
+  <h2>Gestión de Peticiones</h2>
+
+  <!-- Zona Usuario -->
+  <div class="peticiones-zona">
+    <h3>Zona Usuario</h3>
+    <textarea id="peticion-texto" placeholder="Ejemplo: Quiero pedir el 18 M/T y la Noche del 19 de Noviembre..."></textarea>
+    <div class="peticiones-controles">
+      <button id="enviar-peticion">Enviar petición</button>
+    </div>
+    <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
+  </div>
+
+  <!-- Zona Administrador -->
+  <div class="peticiones-zona">
+    <h3>Zona Administrador</h3>
+    <ul id="lista-peticiones-admin" class="lista-peticiones"></ul>
+  </div>
+</section>
+
 
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>

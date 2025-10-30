@@ -381,3 +381,110 @@ body {
   .modal-card { padding:12px; }
   .licencia-cantidad { width: 44px; }
 }
+
+/* ----- Cajón de Peticiones ----- */
+#peticiones-section {
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 20px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  color: #000; /* ← texto negro visible */
+}
+
+/* 🔹 Subcomponentes internos del cajón */
+#peticiones-section textarea,
+#peticiones-section input,
+#peticiones-section .peticion-item {
+  color: #000 !important;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+#peticiones-section button {
+  color: #fff !important;
+  background-color: #007bff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+#peticiones-section button:hover {
+  background-color: #0056b3;
+}
+
+#peticiones-section .lista-peticiones li {
+  color: #000 !important;                  /* texto negro visible */
+  background-color: rgba(255, 255, 255, .85) !important; /* fondo blanco translúcido */
+  border: 1px solid rgba(0,0,0,0.15);      /* borde sutil para contraste */
+}
+
+
+.peticiones-zona {
+  margin-bottom: 25px;
+}
+
+.peticiones-zona h3 {
+  font-size: 1.1em;
+  margin-bottom: 10px;
+  color: #e0e0e0;
+}
+
+#peticion-texto {
+  width: 100%;
+  height: 70px;
+  border-radius: 10px;
+  border: none;
+  padding: 10px;
+  resize: none;
+  margin-bottom: 10px;
+  font-size: 0.95em;
+}
+
+.peticiones-controles {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
+#enviar-peticion {
+  background-color: rgba(100, 150, 255, 0.3);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 6px 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+#enviar-peticion:hover {
+  background-color: rgba(100, 150, 255, 0.5);
+}
+
+.lista-peticiones {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.lista-peticiones li {
+  background-color: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #fff;
+}
+
+.lista-peticiones li .info {
+  flex: 1;
+}
+
+.lista-peticiones li input[type="checkbox"] {
+  transform: scale(1.2);
+  cursor: pointer;
+}
+

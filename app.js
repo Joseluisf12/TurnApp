@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+const peticionesBtn = document.getElementById('btn-peticiones');
+  if (peticionesBtn)
+    peticionesBtn.addEventListener('click', () => {
+      // Oculta todos los cajones visibles (Calendario, Licencias, etc.)
+      document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
+      // Muestra solo el nuevo cajón de Peticiones
+      document.getElementById('peticiones-section').classList.remove('oculto');
+    });
 
   // conectar handles de licencia a la paleta unificada (se usan mismas paletas)
   bindLicenciaHandles();
@@ -650,3 +658,58 @@ function applyCadenceRender(month, year){
     }
   });
 }
+// ----- PETICIONES -----
+
+function cargarPeticiones() {
+  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
+  const listaUsuario = document.getElementById("lista-peticiones-usuario");
+  const listaAdmin = document.getElementById("lista-peticiones-admin");
+
+  listaUsuario.innerHTML = "";
+  listaAdmin.innerHTML = "";
+
+  peticiones.forEach((p, i) => {
+    // Usuario
+    const liUser = document.createElement("li");
+    liUser.innerHTML = `
+      <div class="info">
+        <strong>${p.texto}</strong><br>
+        <small>${p.fecha}</small>
+      </div>
+      <input type="checkbox" ${p.visto ? "checked" : ""} onchange="marcarVisto(${i})" />
+    `;
+    listaUsuario.appendChild(liUser);
+
+    // Administrador
+    const liAdmin = document.createElement("li");
+    liAdmin.innerHTML = `<div class="info"><strong>${p.texto}</strong></div>`;
+    listaAdmin.appendChild(liAdmin);
+  });
+}
+
+function enviarPeticion() {
+  const texto = document.getElementById("peticion-texto").value.trim();
+  if (!texto) return;
+
+  const nuevaPeticion = {
+    texto,
+    fecha: new Date().toLocaleString(),
+    visto: false,
+  };
+
+  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
+  peticiones.push(nuevaPeticion);
+  localStorage.setItem("peticiones", JSON.stringify(peticiones));
+  document.getElementById("peticion-texto").value = "";
+  cargarPeticiones();
+}
+
+function marcarVisto(index) {
+  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
+  peticiones[index].visto = !peticiones[index].visto;
+  localStorage.setItem("peticiones", JSON.stringify(peticiones));
+  cargarPeticiones();
+}
+
+document.getElementById("enviar-peticion").addEventListener("click", enviarPeticion);
+window.addEventListener("load", cargarPeticiones);
