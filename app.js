@@ -29,6 +29,9 @@ const peticionesBtn = document.getElementById('btn-peticiones');
   // restaurar persistencia de manualEdits y cadenceSpec
   restoreManualEdits();
   restoreCadenceSpec();
+
+  // inicializar módulo de peticiones (listeners + render)
+  initPeticiones();
 });
 
 // ---------------- estado ----------------
@@ -658,58 +661,264 @@ function applyCadenceRender(month, year){
     }
   });
 }
+
 // ----- PETICIONES -----
+function initPeticiones() {
+  const listaUsuario = document.getElementById("lista-usuario");
+  const listaAdmin = document.getElementById("lista-admin");
+  const peticionTexto = document.getElementById("peticion-texto");
+  const enviarPeticionBtn = document.getElementById("enviar-peticion");
+  const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
 
-function cargarPeticiones() {
-  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
-  const listaUsuario = document.getElementById("lista-peticiones-usuario");
-  const listaAdmin = document.getElementById("lista-peticiones-admin");
+  if (!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn) return;
 
-  listaUsuario.innerHTML = "";
-  listaAdmin.innerHTML = "";
+  function cargarPeticiones() {
+    const peticionesUsuario = JSON.parse(localStorage.getItem("peticionesUsuario")) || [];
+    const peticionesAdmin = JSON.parse(localStorage.getItem("peticionesAdmin")) || [];
+    return { peticionesUsuario, peticionesAdmin };
+  }
 
-  peticiones.forEach((p, i) => {
-    // Usuario
-    const liUser = document.createElement("li");
-    liUser.innerHTML = `
-      <div class="info">
-        <strong>${p.texto}</strong><br>
-        <small>${p.fecha}</small>
-      </div>
-      <input type="checkbox" ${p.visto ? "checked" : ""} onchange="marcarVisto(${i})" />
-    `;
-    listaUsuario.appendChild(liUser);
+  function guardarPeticiones(peticionesUsuario, peticionesAdmin) {
+    localStorage.setItem("peticionesUsuario", JSON.stringify(peticionesUsuario));
+    localStorage.setItem("peticionesAdmin", JSON.stringify(peticionesAdmin));
+  }
 
-    // Administrador
-    const liAdmin = document.createElement("li");
-    liAdmin.innerHTML = `<div class="info"><strong>${p.texto}</strong></div>`;
-    listaAdmin.appendChild(liAdmin);
+  function renderPeticiones() {
+    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
+    listaUsuario.innerHTML = "";
+    listaAdmin.innerHTML = "";
+
+    peticionesUsuario.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      li.style.color = "#000";
+      const btn = document.createElement("button");
+      btn.textContent = "🗑️";
+      btn.style.marginLeft = "8px";
+      btn.onclick = () => eliminarPeticionUsuario(i);
+      li.appendChild(btn);
+      listaUsuario.appendChild(li);
+    });
+
+    peticionesAdmin.forEach((p, i) => {
+      const li = document.createElement("li");
+      li.textContent = p;
+      li.style.color = "#000";
+      const btn = document.createElement("button");
+      btn.textContent = "🗑️";
+      btn.style.marginLeft = "8px";
+      btn.onclick = () => eliminarPeticionAdmin(i);
+      li.appendChild(btn);
+      listaAdmin.appendChild(li);
+    });
+  }
+
+  enviarPeticionBtn.addEventListener("click", () => {
+    const texto = peticionTexto.value.trim();
+    if (!texto) return alert("Por favor, escribe una petición antes de enviar.");
+    const fecha = new Date().toLocaleString();
+    const peticion = `${texto} (${fecha})`;
+
+    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
+    peticionesUsuario.push(peticion);
+    peticionesAdmin.push(peticion);
+    guardarPeticiones(peticionesUsuario, peticionesAdmin);
+    peticionTexto.value = "";
+    renderPeticiones();
   });
+
+  function eliminarPeticionUsuario(index) {
+    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
+    peticionesUsuario.splice(index, 1);
+    guardarPeticiones(peticionesUsuario, peticionesAdmin);
+    renderPeticiones();
+  }
+
+  function eliminarPeticionAdmin(index) {
+    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
+    peticionesAdmin.splice(index, 1);
+    guardarPeticiones(peticionesUsuario, peticionesAdmin);
+    renderPeticiones();
+  }
+
+  if (borrarTodasAdminBtn) {
+    borrarTodasAdminBtn.addEventListener("click", () => {
+      if (confirm("¿Seguro que deseas borrar TODAS las peticiones de ambas zonas?")) {
+        localStorage.removeItem("peticionesUsuario");
+        localStorage.removeItem("peticionesAdmin");
+        renderPeticiones();
+      }
+    });
+  }
+
+  renderPeticiones();
 }
 
-function enviarPeticion() {
-  const texto = document.getElementById("peticion-texto").value.trim();
-  if (!texto) return;
+// ------------------ MÓDULO PETICIONES (autocontenido) ------------------
+function initPeticiones(){
+  // Elementos (IDs esperados en tu HTML)
+  const listaUsuario = document.getElementById("lista-usuario");
+  const listaAdmin = document.getElementById("lista-admin");
+  const peticionTexto = document.getElementById("peticion-texto");
+  const enviarPeticionBtn = document.getElementById("enviar-peticion");
+  const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
 
-  const nuevaPeticion = {
-    texto,
-    fecha: new Date().toLocaleString(),
-    visto: false,
-  };
+  // Si faltan elementos, salimos y mostramos advertencia (evita errores)
+  if(!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
+    console.warn("initPeticiones: faltan elementos del DOM (ids peticiones). Revisa tu HTML.");
+    return;
+  }
 
-  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
-  peticiones.push(nuevaPeticion);
-  localStorage.setItem("peticiones", JSON.stringify(peticiones));
-  document.getElementById("peticion-texto").value = "";
-  cargarPeticiones();
+  const KEY_USER = "peticionesUsuario";
+  const KEY_ADMIN = "peticionesAdmin";
+
+  // util: cargar arrays desde localStorage
+  function loadAll(){
+    const u = JSON.parse(localStorage.getItem(KEY_USER)) || [];
+    const a = JSON.parse(localStorage.getItem(KEY_ADMIN)) || [];
+    return { user: u, admin: a };
+  }
+  function saveAll(userArr, adminArr){
+    localStorage.setItem(KEY_USER, JSON.stringify(userArr));
+    localStorage.setItem(KEY_ADMIN, JSON.stringify(adminArr));
+  }
+
+  // Renderiza ambas listas
+  function render(){
+    const { user, admin } = loadAll();
+    // usuario
+    listaUsuario.innerHTML = "";
+    user.forEach((p, idx) => {
+      const li = document.createElement("li");
+      li.className = "peticion-item";
+      // texto + fecha ya incluidos en p.texto/p.fecha
+      const left = document.createElement("div");
+      left.className = "peticion-left";
+      const textoSpan = document.createElement("div");
+      textoSpan.textContent = p.texto;
+      textoSpan.style.color = "#000"; // asegurar legibilidad
+      const fechaSpan = document.createElement("div");
+      fechaSpan.textContent = p.fecha;
+      fechaSpan.style.fontSize = "0.85em";
+      fechaSpan.style.opacity = "0.8";
+      left.appendChild(textoSpan);
+      left.appendChild(fechaSpan);
+
+      const right = document.createElement("div");
+      right.style.display = "flex";
+      right.style.gap = "8px";
+      // botón eliminar (usuario)
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.title = "Eliminar (usuario)";
+      delBtn.textContent = "🗑️";
+      delBtn.onclick = () => {
+        eliminarUsuario(idx);
+      };
+      // checkbox visto (sólo visible en zona usuario)
+      const vistoChk = document.createElement("input");
+      vistoChk.type = "checkbox";
+      vistoChk.title = "Marcado como visto por administrador";
+      vistoChk.checked = !!p.visto;
+      vistoChk.onchange = () => {
+        toggleVistoUsuario(idx, vistoChk.checked);
+      };
+
+      right.appendChild(vistoChk);
+      right.appendChild(delBtn);
+
+      li.appendChild(left);
+      li.appendChild(right);
+      listaUsuario.appendChild(li);
+    });
+
+    // admin
+    listaAdmin.innerHTML = "";
+    admin.forEach((p, idx) => {
+      const li = document.createElement("li");
+      li.className = "peticion-item";
+      const textoDiv = document.createElement("div");
+      textoDiv.textContent = p.texto;
+      textoDiv.style.color = "#000"; // asegurar legibilidad
+      li.appendChild(textoDiv);
+
+      // botón eliminar individual (admin)
+      const delBtn = document.createElement("button");
+      delBtn.type = "button";
+      delBtn.title = "Eliminar (admin)";
+      delBtn.textContent = "🗑️";
+      delBtn.style.marginLeft = "8px";
+      delBtn.onclick = () => {
+        eliminarAdmin(idx);
+      };
+      li.appendChild(delBtn);
+      listaAdmin.appendChild(li);
+    });
+  }
+
+  // operaciones
+  function agregarPeticion(textoRaw){
+    const texto = String(textoRaw).trim();
+    if(!texto) return;
+    const nueva = {
+      texto,
+      fecha: (new Date()).toLocaleString(),
+      visto: false
+    };
+    const { user, admin } = loadAll();
+    user.unshift(nueva);    // añade al principio (orden cronológico reciente arriba)
+    admin.unshift(nueva);
+    saveAll(user, admin);
+    render();
+  }
+
+  function eliminarUsuario(idx){
+    const { user, admin } = loadAll();
+    if(idx < 0 || idx >= user.length) return;
+    user.splice(idx,1);
+    // opcional: no eliminamos del admin automáticamente (tu requerimiento fue duplicar en admin)
+    saveAll(user, admin);
+    render();
+  }
+  function eliminarAdmin(idx){
+    const { user, admin } = loadAll();
+    if(idx < 0 || idx >= admin.length) return;
+    admin.splice(idx,1);
+    saveAll(user, admin);
+    render();
+  }
+  function toggleVistoUsuario(idx, checked){
+    const { user, admin } = loadAll();
+    if(idx < 0 || idx >= user.length) return;
+    user[idx].visto = !!checked;
+    // reflejar el visto también en la copia de admin (si existe el mismo texto/fecha)
+    // simple heurístico: buscar por texto+fecha
+    const matchIdx = admin.findIndex(x => x.texto === user[idx].texto && x.fecha === user[idx].fecha);
+    if(matchIdx >= 0) admin[matchIdx].visto = !!checked;
+    saveAll(user, admin);
+    render();
+  }
+
+  function borrarTodasAdmin(){
+    if(!confirm("¿Borrar TODAS las peticiones (usuario + admin)?")) return;
+    saveAll([], []);
+    render();
+  }
+
+  // Bind de botones
+  enviarPeticionBtn.removeEventListener && enviarPeticionBtn.removeEventListener("click", agregarPeticion);
+  enviarPeticionBtn.addEventListener("click", ()=> {
+    agregarPeticion(peticionTexto.value);
+    peticionTexto.value = "";
+  });
+
+  if(borrarTodasAdminBtn){
+    borrarTodasAdminBtn.removeEventListener && borrarTodasAdminBtn.removeEventListener("click", borrarTodasAdmin);
+    borrarTodasAdminBtn.addEventListener("click", borrarTodasAdmin);
+  }
+
+  // inicial render
+  render();
 }
+// ------------------ FIN MÓDULO PETICIONES ------------------
 
-function marcarVisto(index) {
-  const peticiones = JSON.parse(localStorage.getItem("peticiones")) || [];
-  peticiones[index].visto = !peticiones[index].visto;
-  localStorage.setItem("peticiones", JSON.stringify(peticiones));
-  cargarPeticiones();
-}
-
-document.getElementById("enviar-peticion").addEventListener("click", enviarPeticion);
-window.addEventListener("load", cargarPeticiones);

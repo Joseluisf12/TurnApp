@@ -382,7 +382,7 @@ body {
   .licencia-cantidad { width: 44px; }
 }
 
-/* ----- Cajón de Peticiones ----- */
+/* ----- CAJÓN DE PETICIONES ----- */
 #peticiones-section {
   background: rgba(255, 255, 255, 0.2);
   backdrop-filter: blur(10px);
@@ -486,5 +486,48 @@ body {
 .lista-peticiones li input[type="checkbox"] {
   transform: scale(1.2);
   cursor: pointer;
+}
+
+/* Botones de borrado en peticiones */
+.btn-borrar-todo {
+  background-color: rgba(220, 53, 69, 0.8);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.btn-borrar-todo:hover {
+  background-color: rgba(200, 35, 50, 0.9);
+}
+
+/* Icono de borrar individual */
+.btn-borrar-peticion {
+  background: none;
+  border: none;
+  color: #c00;
+  cursor: pointer;
+  font-size: 1.1em;
+  margin-left: 8px;
+}
+.btn-borrar-peticion:hover {
+  color: #f00;
+}
+
+.btn-borrar-todo {
+  background-color: #d9534f;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 14px;
+  margin-top: 10px;
+  transition: background-color 0.2s ease-in-out;
+}
+
+.btn-borrar-todo:hover {
+  background-color: #c9302c;
 }
 

@@ -133,6 +133,7 @@
   <div class="peticiones-zona">
     <h3>Zona Administrador</h3>
     <ul id="lista-peticiones-admin" class="lista-peticiones"></ul>
+
   </div>
 </section>
 
@@ -226,7 +227,151 @@
       inputs.forEach(i=> i.addEventListener('input', recalc));
       recalc();
     });
-  </script>
+ </script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const textoPeticion = document.getElementById('peticion-texto');
+  const botonEnviar = document.getElementById('enviar-peticion');
+  const listaUsuario = document.getElementById('lista-peticiones-usuario');
+  const listaAdmin = document.getElementById('lista-peticiones-admin');
+
+  // Simulación: definir si el usuario actual es admin
+  const esAdmin = true; // cambia a false si quieres probar la vista de usuario normal
+
+  // Crear botones de borrado total (uno por zona)
+  const botonBorrarUsuario = document.createElement('button');
+  botonBorrarUsuario.textContent = '🧹 Borrar Peticiones';
+  botonBorrarUsuario.className = 'btn-borrar-todo';
+  botonBorrarUsuario.style.display = esAdmin ? 'inline-block' : 'none';
+  listaUsuario.parentElement.appendChild(botonBorrarUsuario);
+
+  const botonBorrarAdmin = document.createElement('button');
+  botonBorrarAdmin.textContent = '🧹 Borrar Peticiones';
+  botonBorrarAdmin.className = 'btn-borrar-todo';
+  botonBorrarAdmin.style.display = esAdmin ? 'inline-block' : 'none';
+  listaAdmin.parentElement.appendChild(botonBorrarAdmin);
+
+  // Recuperar peticiones guardadas
+  const peticionesUsuario = JSON.parse(localStorage.getItem('peticionesUsuario') || '[]');
+  const peticionesAdmin = JSON.parse(localStorage.getItem('peticionesAdmin') || '[]');
+
+  // Renderizar peticiones
+  peticionesUsuario.forEach((p, idx) => agregarPeticionUsuario(p, idx));
+  peticionesAdmin.forEach((p, idx) => agregarPeticionAdmin(p, idx));
+
+  // Enviar nueva petición
+  botonEnviar.addEventListener('click', () => {
+    const texto = textoPeticion.value.trim();
+    if (!texto) {
+      alert('Por favor escribe una petición antes de enviarla.');
+      return;
+    }
+
+    const fechaHora = new Date().toLocaleString();
+    const nueva = { texto, revisada: false, fechaHora };
+
+    // Guardar en ambas listas
+    peticionesUsuario.push(nueva);
+    peticionesAdmin.push({ texto });
+    localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+    localStorage.setItem('peticionesAdmin', JSON.stringify(peticionesAdmin));
+
+    agregarPeticionUsuario(nueva, peticionesUsuario.length - 1);
+    agregarPeticionAdmin({ texto }, peticionesAdmin.length - 1);
+    textoPeticion.value = '';
+  });
+
+  // --- Función: agregar a zona Usuario ---
+  function agregarPeticionUsuario(p, idx) {
+    const li = document.createElement('li');
+    li.className = 'peticion-item';
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = p.revisada;
+    check.addEventListener('change', () => {
+      peticionesUsuario[idx].revisada = check.checked;
+      localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+    });
+
+    const span = document.createElement('span');
+    span.textContent = `${p.texto} — ${p.fechaHora}`;
+    if (p.revisada) span.style.textDecoration = 'line-through';
+
+    check.addEventListener('change', () => {
+      span.style.textDecoration = check.checked ? 'line-through' : 'none';
+    });
+
+    li.appendChild(check);
+    li.appendChild(span);
+
+    // Botón individual de borrado (solo admin)
+    if (esAdmin) {
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '❌';
+      btnDel.className = 'btn-eliminar';
+      btnDel.style.marginLeft = '8px';
+      btnDel.addEventListener('click', () => {
+        peticionesUsuario.splice(idx, 1);
+        localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+        recargarListas();
+      });
+      li.appendChild(btnDel);
+    }
+
+    listaUsuario.appendChild(li);
+  }
+
+  // --- Función: agregar a zona Administrador ---
+  function agregarPeticionAdmin(p, idx) {
+    const li = document.createElement('li');
+    li.className = 'peticion-item';
+    li.textContent = p.texto;
+
+    if (esAdmin) {
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '❌';
+      btnDel.className = 'btn-eliminar';
+      btnDel.style.marginLeft = '8px';
+      btnDel.addEventListener('click', () => {
+        peticionesAdmin.splice(idx, 1);
+        localStorage.setItem('peticionesAdmin', JSON.stringify(peticionesAdmin));
+        recargarListas();
+      });
+      li.appendChild(btnDel);
+    }
+
+    listaAdmin.appendChild(li);
+  }
+
+  // --- Botones de borrado total (cada uno borra su zona) ---
+  botonBorrarUsuario.addEventListener('click', () => {
+    if (confirm('¿Seguro que quieres borrar las peticiones de la zona de Usuario?')) {
+      peticionesUsuario.length = 0;
+      localStorage.setItem('peticionesUsuario', '[]');
+      recargarListas();
+    }
+  });
+
+  botonBorrarAdmin.addEventListener('click', () => {
+    if (confirm('¿Seguro que quieres borrar las peticiones de la zona de Administrador?')) {
+      peticionesAdmin.length = 0;
+      localStorage.setItem('peticionesAdmin', '[]');
+      recargarListas();
+    }
+  });
+
+  // --- Recargar ambas zonas ---
+  function recargarListas() {
+    listaUsuario.innerHTML = '';
+    listaAdmin.innerHTML = '';
+    const nuevasU = JSON.parse(localStorage.getItem('peticionesUsuario') || '[]');
+    const nuevasA = JSON.parse(localStorage.getItem('peticionesAdmin') || '[]');
+    nuevasU.forEach((p, idx) => agregarPeticionUsuario(p, idx));
+    nuevasA.forEach((p, idx) => agregarPeticionAdmin(p, idx));
+  }
+});
+</script>
 
 </body>
 </html>
