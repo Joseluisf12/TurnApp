@@ -487,6 +487,15 @@ body {
   transform: scale(1.2);
   cursor: pointer;
 }
+/* --- Estilo del texto de hora y fecha en las peticiones --- */
+#lista-peticiones-usuario li span.fecha-hora {
+  display: block;
+  font-size: 0.85em;              /* más pequeño que el texto principal */
+  color: #0b5ed7;                 /* mismo azul que los botones */
+  margin-top: 2px;
+  font-weight: 500;
+}
+
 
 /* Botones de borrado en peticiones */
 .btn-borrar-todo {
@@ -560,4 +569,6 @@ body {
   color: #333; /* Un tono ligeramente más oscuro */
   font-weight: 500;
   margin-bottom: 10px;
+  padding-bottom: 5px;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.1); /* línea decorativa sutil */
 }

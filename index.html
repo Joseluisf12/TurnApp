@@ -294,14 +294,16 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     const span = document.createElement('span');
-    span.textContent = `${p.texto} — ${p.fechaHora}`;
+span.textContent = p.texto;
 
-    check.addEventListener('change', () => {
-    check.style.accentColor = check.checked ? 'green' : '';
-  });
+const fechaSpan = document.createElement('span');
+fechaSpan.className = 'fecha-hora';
+fechaSpan.textContent = p.fechaHora;
 
-    li.appendChild(check);
-    li.appendChild(span);
+li.appendChild(check);
+li.appendChild(span);
+li.appendChild(fechaSpan);
+
 
     // Botón individual de borrado (solo admin)
     if (esAdmin) {
