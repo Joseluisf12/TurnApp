@@ -296,11 +296,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const span = document.createElement('span');
     span.textContent = `${p.texto} — ${p.fechaHora}`;
-    if (p.revisada) span.style.textDecoration = 'line-through';
 
     check.addEventListener('change', () => {
-      span.style.textDecoration = check.checked ? 'line-through' : 'none';
-    });
+    check.style.accentColor = check.checked ? 'green' : '';
+    span.style.textDecoration = 'none';
+  });
 
     li.appendChild(check);
     li.appendChild(span);

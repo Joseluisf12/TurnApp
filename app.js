@@ -763,6 +763,14 @@ function initPeticiones(){
   const enviarPeticionBtn = document.getElementById("enviar-peticion");
   const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
 
+
+// 🔒 Solo visible para Administrador
+const esAdmin = localStorage.getItem("turnapp.isAdmin") === "true"; 
+if (!esAdmin && borrarTodasAdminBtn) {
+  borrarTodasAdminBtn.style.display = "none"; // oculta el botón
+}
+
+
   // Si faltan elementos, salimos y mostramos advertencia (evita errores)
   if(!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
     console.warn("initPeticiones: faltan elementos del DOM (ids peticiones). Revisa tu HTML.");
@@ -820,10 +828,16 @@ function initPeticiones(){
       vistoChk.type = "checkbox";
       vistoChk.title = "Marcado como visto por administrador";
       vistoChk.checked = !!p.visto;
-      vistoChk.onchange = () => {
-        toggleVistoUsuario(idx, vistoChk.checked);
-      };
 
+if (vistoChk.checked) {
+  li.style.textDecoration = "none";
+}
+      vistoChk.onchange = () => {
+      vistoChk.style.accentColor = vistoChk.checked ? "green" : "";
+li.style.textDecoration = "none"
+  guardarPeticiones();
+};
+       
       right.appendChild(vistoChk);
       right.appendChild(delBtn);
 
