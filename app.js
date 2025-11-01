@@ -662,6 +662,7 @@ function applyCadenceRender(month, year){
   });
 }
 
+/* === BLOQUE PETICIONES DUPLICADO - COMENTADO START ===
 // ----- PETICIONES -----
 function initPeticiones() {
   const listaUsuario = document.getElementById("lista-usuario");
@@ -752,6 +753,7 @@ function initPeticiones() {
   }
 
   renderPeticiones();
+=== BLOQUE PETICIONES DUPLICADO - COMENTADO END === */
 }
 
 // ------------------ MÓDULO PETICIONES (autocontenido) ------------------
