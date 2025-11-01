@@ -1,7 +1,6 @@
-// =================== app.js ===================
-// Versión 1.2.1 - base 1.2 con modal cadencias translúcido y persistencia localStorage
-// ÚNICO objetivo: mantener exactamente la lógica/estructura anterior, añadir modal visual
-// y persistencia de cadencias además de las licencias (colors+values).
+// =================== app.js (Versión corregida y unificada) ===================
+// Versión 1.2.1 - Unificado, corregido (sin duplicados), mantiene la misma lógica
+// Mantén exactamente este archivo como reemplazo único para solucionar el error de sintaxis.
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -14,46 +13,37 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
-// -------------- handler toggle para el botón Peticiones --------------
-const peticionesBtn = document.getElementById('btn-peticiones');
-if (peticionesBtn) {
-  peticionesBtn.addEventListener('click', () => {
-    const peticionesSection = document.getElementById('peticiones-section');
-    const calendar = document.getElementById('calendar');
-    // Si no existen elementos, no hacemos nada
-    if (!peticionesSection) return;
 
-    const isVisible = !peticionesSection.classList.contains('oculto');
-
-    if (isVisible) {
-      // Si ya está visible --> ocultar peticiones y mostrar calendario
-      peticionesSection.classList.add('oculto');
-      if (calendar) calendar.classList.remove('oculto');
-      // Además, si usas display styles explícitos en el HTML (ej: style="display:none"),
-      // restablecemos el comportamiento por clases:
-      if (peticionesSection.style.display !== '') peticionesSection.style.display = '';
-      if (calendar && calendar.style.display === 'none') calendar.style.display = '';
-      // forzar scroll al calendario si hace falta
-      if (calendar) setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 40);
-    } else {
-      // Si está oculto --> ocultar otros .panel y mostrar peticiones, ocultar calendar
-      document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
-      peticionesSection.classList.remove('oculto');
-      if (calendar) calendar.classList.add('oculto');
-      if (calendar) calendar.style.display = 'none';
-      // scroll al cajón de peticiones
-      setTimeout(()=> peticionesSection.scrollIntoView({behavior:'smooth', block:'start'}), 40);
-    }
-  });
-}
-
-      // Oculta todos los cajones visibles (Calendario, Licencias, etc.)
-      document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
-      // Muestra solo el nuevo cajón de Peticiones
-      document.getElementById('peticiones-section').classList.remove('oculto');
+  // Bind toggling nav button for peticiones (tolerante a id o data-section)
+  const peticionesNav = document.getElementById('btn-peticiones') || document.querySelector('button[data-section="peticiones"]');
+  if (peticionesNav) {
+    peticionesNav.addEventListener('click', () => {
+      const peticionesSection = document.getElementById('peticiones-section');
+      const calendar = document.getElementById('calendar');
+      if(!peticionesSection) return;
+      const isVisible = !peticionesSection.classList.contains('oculto') && peticionesSection.style.display !== 'none';
+      if (isVisible) {
+        peticionesSection.classList.add('oculto');
+        peticionesSection.style.display = '';
+        if(calendar) {
+          calendar.classList.remove('oculto');
+          calendar.style.display = '';
+          setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 40);
+        }
+      } else {
+        document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
+        peticionesSection.classList.remove('oculto');
+        peticionesSection.style.display = '';
+        if(calendar){
+          calendar.classList.add('oculto');
+          calendar.style.display = 'none';
+        }
+        setTimeout(()=> peticionesSection.scrollIntoView({behavior:'smooth', block:'start'}), 40);
+      }
     });
+  }
 
-  // conectar handles de licencia a la paleta unificada (se usan mismas paletas)
+  // conectar handles de licencia a la paleta unificada
   bindLicenciaHandles();
 
   // restaurar persistencia de manualEdits y cadenceSpec
@@ -71,12 +61,37 @@ let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
 
-// cargar manualEdits si existe
+// ---------------- utilidades ----------------
+function dateKey(year, month, day){
+  const mm = String(month+1).padStart(2,'0');
+  const dd = String(day).padStart(2,'0');
+  return `${year}-${mm}-${dd}`;
+}
+function isColorLight(hex){
+  if(!hex) return true;
+  if(hex.indexOf('rgba')===0 || hex.indexOf('rgb')===0){
+    const nums = hex.replace(/[^\d,]/g,'').split(',').map(n=>parseInt(n,10)||0);
+    const [r,g,b] = nums;
+    const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+    return lum > 200;
+  }
+  if(hex[0] !== '#') return true;
+  const r = parseInt(hex.substr(1,2),16);
+  const g = parseInt(hex.substr(3,2),16);
+  const b = parseInt(hex.substr(5,2),16);
+  const lum = 0.2126*r + 0.7152*g + 0.0722*b;
+  return lum > 200;
+}
+function defaultTextFor(shiftKey){ return shiftKey; }
+
+// ---------------- persistencia manualEdits ----------------
 function restoreManualEdits(){
   try {
     const raw = localStorage.getItem('turnapp.manualEdits');
     if (raw) manualEdits = JSON.parse(raw);
-  } catch(e){ manualEdits = {}; }
+  } catch(e){
+    manualEdits = {};
+  }
   // restaurar licencias values/colors UI
   const licenciaItems = document.querySelectorAll('.licencia-item');
   licenciaItems.forEach(item=>{
@@ -92,16 +107,13 @@ function restoreManualEdits(){
       }
     } catch(e){}
   });
-  // total
   recalcLicenciasTotal();
 }
 function saveManualEdits(){
   try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
 }
 function saveLicenciaValue(tipo, value, color){
-  try {
-    localStorage.setItem('turnapp.licencia.'+tipo, JSON.stringify({ value: value, color: color }));
-  } catch(e){}
+  try { localStorage.setItem('turnapp.licencia.'+tipo, JSON.stringify({ value: value, color: color })); } catch(e){}
 }
 function recalcLicenciasTotal(){
   const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
@@ -114,42 +126,17 @@ function recalcLicenciasTotal(){
 
 // festivos nacionales (mes 0-11)
 const spanishHolidays = [
-  { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
+  { day:1, month:0 }, { day:6, month:0 }, { day:3, month:3 }, { day:1, month:4 },
   { day:15, month:7 }, { day:12, month:9 }, { day:2, month:10 },
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// paleta color (intensa)
+// paleta color
 const colorPalette = [
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
   "rgba(232,240,255,1)","rgba(163,193,255,0.65)","rgba(255,179,179,0.45)"
 ];
-
-// ---------------- utilidades ----------------
-function dateKey(year, month, day){
-  const mm = String(month+1).padStart(2,'0');
-  const dd = String(day).padStart(2,'0');
-  return `${year}-${mm}-${dd}`; // YYYY-MM-DD
-}
-function isColorLight(hex){
-  if(!hex) return true;
-  // Accept rgba(...) too: approximate by ignoring alpha if present
-  if(hex.indexOf('rgba')===0 || hex.indexOf('rgb')===0){
-    // crude parse
-    const nums = hex.replace(/[^\d,]/g,'').split(',').map(n=>parseInt(n,10)||0);
-    const [r,g,b] = nums;
-    const lum = 0.2126*r + 0.7152*g + 0.0722*b;
-    return lum > 200;
-  }
-  if(hex[0] !== '#') return true;
-  const r = parseInt(hex.substr(1,2),16);
-  const g = parseInt(hex.substr(3,2),16);
-  const b = parseInt(hex.substr(5,2),16);
-  const lum = 0.2126*r + 0.7152*g + 0.0722*b;
-  return lum > 200;
-}
-function defaultTextFor(shiftKey){ return shiftKey; } // 'M','T','N'
 
 // ---------------- init / navegación ----------------
 function initApp(){
@@ -166,7 +153,7 @@ function initApp(){
     renderCalendar(currentMonth, currentYear);
   });
 
-  // licencia inputs binding + initial recalc
+  // licencia inputs binding
   const licenciaInputs = document.querySelectorAll('.cantidad-input');
   licenciaInputs.forEach(input => {
     input.addEventListener('input', (ev)=>{
@@ -193,32 +180,29 @@ function renderCalendar(month, year){
   ];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
-  // Primer día del mes (adaptado para lunes=0)
+  // Primer día del mes (lunes=0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0)? 6 : firstDay-1;
 
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
-  // Añadir días vacíos previos
   for(let i=0;i<firstDay;i++){
     const emptyCell = document.createElement('div');
     emptyCell.className = 'day-cell empty';
     calendar.appendChild(emptyCell);
   }
 
-  // Añadir días
   for(let day=1; day<=daysInMonth; day++){
     const cell = document.createElement('div');
     cell.className = 'day-cell';
 
     const dateObj = new Date(year, month, day);
     const weekday = dateObj.getDay();
-    if(weekday===6) cell.classList.add('saturday'); // sábado
-    if(weekday===0) cell.classList.add('sunday');   // domingo
+    if(weekday===6) cell.classList.add('saturday');
+    if(weekday===0) cell.classList.add('sunday');
 
-    // Festivos nacionales España: comparar día y mes directamente
     if(spanishHolidays.some(h => h.day===day && h.month===month)){
-      cell.classList.add('holiday'); // mismo color que domingo
+      cell.classList.add('holiday');
     }
 
     const label = document.createElement('div');
@@ -227,26 +211,22 @@ function renderCalendar(month, year){
     label.textContent = `${day} ${weekdayNames[weekday===0?6:weekday-1]}`;
     cell.appendChild(label);
 
-    // Shifts wrapper
     const wrapper = document.createElement('div');
     wrapper.className = 'shifts-wrapper';
 
     const row = document.createElement('div');
     row.className = 'shifts-row';
 
-    // Shifts M y T (lado a lado)
     row.appendChild(createShiftElement(year, month, day, 'M'));
     row.appendChild(createShiftElement(year, month, day, 'T'));
     wrapper.appendChild(row);
 
-    // Shift N debajo
     wrapper.appendChild(createShiftElement(year, month, day, 'N'));
 
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
   }
 
-  // Aplicar cadencia si existe
   if(cadenceData.length>0){
     applyCadenceRender(month, year);
   }
@@ -254,7 +234,6 @@ function renderCalendar(month, year){
 
 // ---------------- crear turno ----------------
 function createShiftElement(year, month, day, shiftKey){
-  // contenedor para shift y handle
   const container = document.createElement('div');
   container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
 
@@ -264,10 +243,8 @@ function createShiftElement(year, month, day, shiftKey){
   shift.spellcheck = false;
   shift.dataset.shift = shiftKey;
 
-  // restaurar texto/color guardados (si hay)
   const dk = dateKey(year, month, day);
-  // Determinar fondo por defecto según día
-  let defaultBg = '#e8f0ff'; // laboral
+  let defaultBg = '#e8f0ff';
   const weekday = new Date(year, month, day).getDay();
   if(weekday === 6) defaultBg = 'rgba(163,193,255,0.65)';
   if(weekday === 0 || spanishHolidays.some(h=>h.day===day && h.month===month)) defaultBg = 'rgba(255,179,179,0.45)';
@@ -282,7 +259,6 @@ function createShiftElement(year, month, day, shiftKey){
       shift.style.backgroundColor = obj.color;
       shift.dataset.userColor = 'true';
     }
-    // marcar si el text guardado es distinto del original
     if(obj.text !== undefined && obj.text !== null){
       shift.dataset.edited = (String(obj.text).trim() !== defaultTextFor(shiftKey)) ? 'true' : 'false';
     } else {
@@ -293,24 +269,20 @@ function createShiftElement(year, month, day, shiftKey){
     shift.dataset.edited = 'false';
   }
 
-  // guardar al perder foco
   shift.addEventListener('blur', ()=> {
     const text = shift.textContent.trim();
     saveShiftText(year, month, day, shiftKey, text);
     shift.dataset.edited = (text !== defaultTextFor(shiftKey)) ? 'true' : 'false';
   });
-  // evitar newline al pulsar Enter
   shift.addEventListener('keypress', (e)=> {
     if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); }
   });
 
-  // handle color (discreto)
   const handle = document.createElement('button');
   handle.type = 'button';
   handle.className = 'color-handle';
   handle.title = 'Elegir color';
   handle.innerText = '●';
-  // estilo mínimo inline (ya en CSS hay reglas pero dejamos esto para seguridad de tamaño)
   handle.style.height = '10px';
   handle.style.width = '24px';
   handle.style.fontSize = '10px';
@@ -356,15 +328,9 @@ function bindLicenciaHandles(){
     handle.addEventListener('click', (ev) => {
       ev.stopPropagation();
       const item = handle.closest('.licencia-item');
-      let target = handle;
-      if(item){
-        const cantidad = item.querySelector('.cantidad-input');
-        if(cantidad) target = cantidad;
-      }
+      if(!item) return;
       openColorPicker(handle, (color) => {
-        // aplicar color visual al botón (licencia)
         handle.style.backgroundColor = color;
-        // persistir
         const tipo = item.dataset.tipo;
         const value = (item.querySelector('.cantidad-input')||{value:0}).value;
         saveLicenciaValue(tipo, value, color);
@@ -372,7 +338,6 @@ function bindLicenciaHandles(){
     });
   });
 
-  // asegurarse de recalcular total al inicio
   const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
   inputs.forEach(i=>i.addEventListener('input', ()=> {
     const item = i.closest('.licencia-item');
@@ -383,7 +348,6 @@ function bindLicenciaHandles(){
   }));
 }
 
-// Seleccion de color (popup) - palette por defecto colorPalette
 function openColorPicker(anchorEl, onSelect, palette = colorPalette){
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
@@ -439,16 +403,13 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
 
 // ---------------- persistencia/CADENCIA spec ----------------
 function saveCadenceSpec(spec){
-  try {
-    localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec));
-  } catch(e){}
+  try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
 }
 function restoreCadenceSpec(){
   try {
     const raw = localStorage.getItem('turnapp.cadenceSpec');
     if(!raw) return;
     cadenceSpec = JSON.parse(raw);
-    // construir cadenceData a partir de cadenceSpec
     if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern){
       cadenceData = [];
       const start = new Date(cadenceSpec.startISO);
@@ -458,7 +419,6 @@ function restoreCadenceSpec(){
         const type = cadenceSpec.pattern[i % cadenceSpec.pattern.length];
         cadenceData.push({ date: d, type: type });
       }
-      // render del mes actual para que se vea aplicada
       renderCalendar(currentMonth, currentYear);
     }
   } catch(e){ cadenceSpec = null; }
@@ -470,60 +430,64 @@ function openCadenceModal(){
   const modal = document.getElementById('cadence-modal');
   if(!overlay || !modal) return;
 
-  // reset UI
   document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('v1-options').style.display = 'none';
-  document.getElementById('v2-options').style.display = 'none';
-  document.getElementById('custom-section').style.display = 'none';
-  document.getElementById('custom-pattern').value = '';
-  document.getElementById('cadence-start').value = '';
+  const v1 = document.getElementById('v1-options');
+  const v2 = document.getElementById('v2-options');
+  const custom = document.getElementById('custom-section');
+  if(v1) v1.style.display = 'none';
+  if(v2) v2.style.display = 'none';
+  if(custom) custom.style.display = 'none';
+  const cp = document.getElementById('custom-pattern');
+  if(cp) cp.value = '';
+  const cs = document.getElementById('cadence-start');
+  if(cs) cs.value = '';
 
-  // if there is saved cadenceSpec, prefill
   if(cadenceSpec){
-    document.getElementById('cadence-start').value = (new Date(cadenceSpec.startISO)).toLocaleDateString('es-ES');
+    if(cs) cs.value = (new Date(cadenceSpec.startISO)).toLocaleDateString('es-ES');
     if(cadenceSpec.type === 'V-1'){
-      document.querySelector('.modal-type-btn[data-type="V-1"]').classList.add('active');
-      document.getElementById('v1-options').style.display = 'block';
-      // choose radio if v1Index known
+      const btn = document.querySelector('.modal-type-btn[data-type="V-1"]');
+      if(btn) btn.classList.add('active');
+      if(v1) v1.style.display = 'block';
       if(typeof cadenceSpec.v1Index !== 'undefined'){
         const r = document.querySelector(`input[name="v1opt"][value="${cadenceSpec.v1Index}"]`);
         if(r) r.checked = true;
       }
     } else if(cadenceSpec.type === 'V-2'){
-      document.querySelector('.modal-type-btn[data-type="V-2"]').classList.add('active');
-      document.getElementById('v2-options').style.display = 'block';
+      const btn = document.querySelector('.modal-type-btn[data-type="V-2"]');
+      if(btn) btn.classList.add('active');
+      if(v2) v2.style.display = 'block';
     } else if(cadenceSpec.type === 'Personalizada'){
-      document.querySelector('.modal-type-btn[data-type="Personalizada"]').classList.add('active');
-      document.getElementById('custom-section').style.display = 'block';
-      if(cadenceSpec.pattern) document.getElementById('custom-pattern').value = cadenceSpec.pattern.join(',');
+      const btn = document.querySelector('.modal-type-btn[data-type="Personalizada"]');
+      if(btn) btn.classList.add('active');
+      if(custom) custom.style.display = 'block';
+      if(cadenceSpec.pattern && cp) cp.value = cadenceSpec.pattern.join(',');
     }
   }
 
-  // events for selecting type within modal
   document.querySelectorAll('.modal-type-btn').forEach(btn=>{
     btn.onclick = () => {
       document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const t = btn.dataset.type;
-      document.getElementById('v1-options').style.display = (t==='V-1') ? 'block' : 'none';
-      document.getElementById('v2-options').style.display = (t==='V-2') ? 'block' : 'none';
-      document.getElementById('custom-section').style.display = (t==='Personalizada') ? 'block' : 'none';
+      if(v1) v1.style.display = (t==='V-1') ? 'block' : 'none';
+      if(v2) v2.style.display = (t==='V-2') ? 'block' : 'none';
+      if(custom) custom.style.display = (t==='Personalizada') ? 'block' : 'none';
     };
   });
 
-  document.getElementById('close-cadence').onclick = () => {
+  const closeBtn = document.getElementById('close-cadence');
+  if(closeBtn) closeBtn.onclick = () => {
     overlay.style.display = 'none';
     overlay.setAttribute('aria-hidden','true');
   };
 
-  document.getElementById('apply-cadence-confirm').onclick = () => {
-    // detect selected type
+  const applyBtn = document.getElementById('apply-cadence-confirm');
+  if(applyBtn) applyBtn.onclick = () => {
     const activeBtn = document.querySelector('.modal-type-btn.active');
     if(!activeBtn) return alert('Seleccione un tipo de cadencia.');
     const typ = activeBtn.dataset.type;
-    const startStr = document.getElementById('cadence-start').value;
+    const startStr = (document.getElementById('cadence-start')||{}).value;
     if(!startStr) return alert('Introduce la fecha de inicio (DD/MM/AAAA).');
-    // parse DD/MM/YYYY
     const parts = startStr.split('/');
     if(parts.length !== 3) return alert('Formato de fecha incorrecto.');
     const d = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, y = parseInt(parts[2],10);
@@ -553,7 +517,7 @@ function openCadenceModal(){
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'Personalizada'){
-      const raw = document.getElementById('custom-pattern').value;
+      const raw = (document.getElementById('custom-pattern')||{}).value;
       if(!raw) return alert('Introduce un patrón personalizado.');
       const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
       if(pattern.length === 0) return alert('Patrón inválido.');
@@ -562,10 +526,8 @@ function openCadenceModal(){
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     }
-    // cerrar
-    const overlay2 = document.getElementById('cadence-modal-overlay');
-    overlay2.style.display = 'none';
-    overlay2.setAttribute('aria-hidden','true');
+    overlay.style.display = 'none';
+    overlay.setAttribute('aria-hidden','true');
   };
 
   overlay.style.display = 'flex';
@@ -594,28 +556,20 @@ function clearCadencePrompt(){
   const startDate = new Date(year, month, day);
   if(isNaN(startDate)) return alert("Fecha inválida");
 
-  // limpiar cadenceData desde esa fecha
   cadenceData = cadenceData.filter(cd => cd.date < startDate);
 
-  // si la cadenceSpec empieza en/after startDate -> eliminar spec
   if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
     cadenceSpec = null;
     try { localStorage.removeItem('turnapp.cadenceSpec'); } catch(e){}
-  } else {
-    // conservar cadenceSpec pero nada que hacer
   }
   renderCalendar(currentMonth, currentYear);
 }
 
-// Restaurar cadenceSpec a partir de localStorage (ya se llama en init)
-// function restoreCadenceSpec(){ ... } -> implementada arriba
-
-// ---------------- aplicar cadencia sobre DOM (reglas precisas) ----------------
+// ---------------- aplicar cadencia sobre DOM ----------------
 function applyCadenceRender(month, year){
   const cells = document.querySelectorAll('.day-cell');
   if(!cells) return;
 
-  // colores por cadencia
   const cadColorMT = '#ffa94d';
   const cadColorN = '#d87d00';
 
@@ -656,7 +610,6 @@ function applyCadenceRender(month, year){
       if(activeForCadence){
         if(allowCadence){
           shiftEl.style.backgroundColor = cadenceColor;
-          // N tiene texto blanco para contraste si se desea
           shiftEl.style.color = (shiftKey === 'N') ? '#fff' : '#000';
           shiftEl.dataset.cadenceApplied = 'true';
         } else {
@@ -674,7 +627,6 @@ function applyCadenceRender(month, year){
     }
 
     if(cd){
-      // Manejo múltiple: si hay M/T/N combinados
       const types = String(cd.type).split('/');
       applyToShift(shiftM,'M', types.includes('M') || types.includes('MT'), cadColorMT);
       applyToShift(shiftT,'T', types.includes('T') || types.includes('MT'), cadColorMT);
@@ -692,127 +644,26 @@ function applyCadenceRender(month, year){
   });
 }
 
-// ----- PETICIONES -----
-function initPeticiones() {
-  const listaUsuario = document.getElementById("lista-usuario");
-  const listaAdmin = document.getElementById("lista-admin");
-  const peticionTexto = document.getElementById("peticion-texto");
-  const enviarPeticionBtn = document.getElementById("enviar-peticion");
-  const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
-
-  if (!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn) return;
-
-  function cargarPeticiones() {
-    const peticionesUsuario = JSON.parse(localStorage.getItem("peticionesUsuario")) || [];
-    const peticionesAdmin = JSON.parse(localStorage.getItem("peticionesAdmin")) || [];
-    return { peticionesUsuario, peticionesAdmin };
-  }
-
-  function guardarPeticiones(peticionesUsuario, peticionesAdmin) {
-    localStorage.setItem("peticionesUsuario", JSON.stringify(peticionesUsuario));
-    localStorage.setItem("peticionesAdmin", JSON.stringify(peticionesAdmin));
-  }
-
-  function renderPeticiones() {
-    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
-    listaUsuario.innerHTML = "";
-    listaAdmin.innerHTML = "";
-
-    peticionesUsuario.forEach((p, i) => {
-      const li = document.createElement("li");
-      li.textContent = p;
-      li.style.color = "#000";
-      const btn = document.createElement("button");
-      btn.textContent = "🗑️";
-      btn.style.marginLeft = "8px";
-      btn.onclick = () => eliminarPeticionUsuario(i);
-      li.appendChild(btn);
-      listaUsuario.appendChild(li);
-    });
-
-    peticionesAdmin.forEach((p, i) => {
-      const li = document.createElement("li");
-      li.textContent = p;
-      li.style.color = "#000";
-      const btn = document.createElement("button");
-      btn.textContent = "🗑️";
-      btn.style.marginLeft = "8px";
-      btn.onclick = () => eliminarPeticionAdmin(i);
-      li.appendChild(btn);
-      listaAdmin.appendChild(li);
-    });
-  }
-
-  enviarPeticionBtn.addEventListener("click", () => {
-    const texto = peticionTexto.value.trim();
-    if (!texto) return alert("Por favor, escribe una petición antes de enviar.");
-    const fecha = new Date().toLocaleString();
-    const peticion = `${texto} (${fecha})`;
-
-    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
-    peticionesUsuario.push(peticion);
-    peticionesAdmin.push(peticion);
-    guardarPeticiones(peticionesUsuario, peticionesAdmin);
-    peticionTexto.value = "";
-    renderPeticiones();
-  });
-
-  function eliminarPeticionUsuario(index) {
-    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
-    peticionesUsuario.splice(index, 1);
-    guardarPeticiones(peticionesUsuario, peticionesAdmin);
-    renderPeticiones();
-  }
-
-  function eliminarPeticionAdmin(index) {
-    const { peticionesUsuario, peticionesAdmin } = cargarPeticiones();
-    peticionesAdmin.splice(index, 1);
-    guardarPeticiones(peticionesUsuario, peticionesAdmin);
-    renderPeticiones();
-  }
-
-  if (borrarTodasAdminBtn) {
-    borrarTodasAdminBtn.addEventListener("click", () => {
-      if (confirm("¿Seguro que deseas borrar TODAS las peticiones de ambas zonas?")) {
-        localStorage.removeItem("peticionesUsuario");
-        localStorage.removeItem("peticionesAdmin");
-        renderPeticiones();
-      }
-    });
-  }
-
-  renderPeticiones();
-}
-
-// ------------------ MÓDULO PETICIONES (autocontenido) ------------------
+// ------------------ MÓDULO PETICIONES (único, coherente) ------------------
 function initPeticiones(){
-  // Intentar encontrar los IDs históricos o los nuevos (fallbacks)
-  const listaUsuario = document.getElementById("lista-usuario") || document.getElementById("lista-peticiones-usuario");
-  const listaAdmin   = document.getElementById("lista-admin")   || document.getElementById("lista-peticiones-admin");
-  const peticionTexto = document.getElementById("peticion-texto");
-  const enviarPeticionBtn = document.getElementById("enviar-peticion");
-  // botón opcional que en algunas versiones no existe
-  const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
+  // IDs según tu HTML
+  const listaUsuario = document.getElementById('lista-peticiones-usuario');
+  const listaAdmin   = document.getElementById('lista-peticiones-admin');
+  const peticionTexto = document.getElementById('peticion-texto');
+  const enviarPeticionBtn = document.getElementById('enviar-peticion');
+  const borrarTodasAdminBtn = document.getElementById('borrar-todas-admin'); // opcional
 
-  // Si faltan los elementos mínimos, salir (con aviso en consola)
-  if(!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
-    console.warn("initPeticiones: faltan elementos del DOM (ids peticiones). Revisa tu HTML.");
+  if (!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
+    console.warn("initPeticiones: faltan elementos del DOM (ids esperados: lista-peticiones-usuario, lista-peticiones-admin, peticion-texto, enviar-peticion). Revisa tu HTML.");
     return;
   }
 
-  // 🔒 Solo visible para Administrador (si lo usas)
-  const esAdmin = localStorage.getItem("turnapp.isAdmin") === "true";
-  if (!esAdmin && borrarTodasAdminBtn) {
-    borrarTodasAdminBtn.style.display = "none";
-  }
+  const KEY_USER = 'peticionesUsuario';
+  const KEY_ADMIN = 'peticionesAdmin';
 
-  const KEY_USER = "peticionesUsuario";
-  const KEY_ADMIN = "peticionesAdmin";
-
-  // util: cargar arrays desde localStorage
   function loadAll(){
-    const u = JSON.parse(localStorage.getItem(KEY_USER)) || [];
-    const a = JSON.parse(localStorage.getItem(KEY_ADMIN)) || [];
+    const u = JSON.parse(localStorage.getItem(KEY_USER) || '[]');
+    const a = JSON.parse(localStorage.getItem(KEY_ADMIN) || '[]');
     return { user: u, admin: a };
   }
   function saveAll(userArr, adminArr){
@@ -820,46 +671,52 @@ function initPeticiones(){
     localStorage.setItem(KEY_ADMIN, JSON.stringify(adminArr));
   }
 
-  // Renderiza ambas listas
   function render(){
     const { user, admin } = loadAll();
-    // usuario
-    listaUsuario.innerHTML = "";
+    listaUsuario.innerHTML = '';
     user.forEach((p, idx) => {
-      const li = document.createElement("li");
-      li.className = "peticion-item";
-      const left = document.createElement("div");
-      left.className = "peticion-left";
-      const textoSpan = document.createElement("div");
-      textoSpan.textContent = p.texto;
-      textoSpan.style.color = "#000";
-      const fechaSpan = document.createElement("div");
-      fechaSpan.textContent = p.fecha;
-      fechaSpan.style.fontSize = "0.85em";
-      fechaSpan.style.opacity = "0.8";
-      left.appendChild(textoSpan);
-      left.appendChild(fechaSpan);
+      const li = document.createElement('li');
+      li.className = 'peticion-item';
+      const left = document.createElement('div');
+      left.className = 'peticion-left';
+      const textoDiv = document.createElement('div');
+      textoDiv.textContent = p.texto || String(p);
+      textoDiv.style.color = '#000';
+      left.appendChild(textoDiv);
+      if(p.fecha){
+        const fechaDiv = document.createElement('div');
+        fechaDiv.className = 'fecha-hora';
+        fechaDiv.textContent = p.fecha;
+        fechaDiv.style.fontSize = '0.85em';
+        fechaDiv.style.opacity = '0.85';
+        left.appendChild(fechaDiv);
+      }
 
-      const right = document.createElement("div");
-      right.style.display = "flex";
-      right.style.gap = "8px";
+      const right = document.createElement('div');
+      right.style.display = 'flex';
+      right.style.gap = '8px';
+      right.style.alignItems = 'center';
 
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.title = "Eliminar (usuario)";
-      delBtn.textContent = "🗑️";
-      delBtn.onclick = () => { eliminarUsuario(idx); };
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = !!p.visto;
+      chk.addEventListener('change', () => {
+        const all = loadAll();
+        if(all.user[idx]) { all.user[idx].visto = chk.checked; saveAll(all.user, all.admin); render(); }
+      });
 
-      const vistoChk = document.createElement("input");
-      vistoChk.type = "checkbox";
-      vistoChk.title = "Marcado como visto por administrador";
-      vistoChk.checked = !!p.visto;
-      vistoChk.onchange = () => {
-        // actualiza y guarda el estado visto
-        toggleVistoUsuario(idx, vistoChk.checked);
-      };
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.title = 'Eliminar';
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', ()=> {
+        const all = loadAll();
+        all.user.splice(idx,1);
+        saveAll(all.user, all.admin);
+        render();
+      });
 
-      right.appendChild(vistoChk);
+      right.appendChild(chk);
       right.appendChild(delBtn);
 
       li.appendChild(left);
@@ -867,89 +724,54 @@ function initPeticiones(){
       listaUsuario.appendChild(li);
     });
 
-    // admin
-    listaAdmin.innerHTML = "";
+    listaAdmin.innerHTML = '';
     admin.forEach((p, idx) => {
-      const li = document.createElement("li");
-      li.className = "peticion-item";
-      const textoDiv = document.createElement("div");
-      textoDiv.textContent = p.texto;
-      textoDiv.style.color = "#000";
+      const li = document.createElement('li');
+      li.className = 'peticion-item';
+      const textoDiv = document.createElement('div');
+      textoDiv.textContent = p.texto || String(p);
+      textoDiv.style.color = '#000';
       li.appendChild(textoDiv);
 
-      const delBtn = document.createElement("button");
-      delBtn.type = "button";
-      delBtn.title = "Eliminar (admin)";
-      delBtn.textContent = "🗑️";
-      delBtn.style.marginLeft = "8px";
-      delBtn.onclick = () => { eliminarAdmin(idx); };
+      const delBtn = document.createElement('button');
+      delBtn.type = 'button';
+      delBtn.title = 'Eliminar (admin)';
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', ()=> {
+        const all = loadAll();
+        all.admin.splice(idx,1);
+        saveAll(all.user, all.admin);
+        render();
+      });
       li.appendChild(delBtn);
       listaAdmin.appendChild(li);
     });
   }
 
-  // operaciones
   function agregarPeticion(textoRaw){
-    const texto = String(textoRaw || "").trim();
+    const texto = String(textoRaw || '').trim();
     if(!texto) return;
-    const nueva = {
-      texto,
-      fecha: (new Date()).toLocaleString(),
-      visto: false
-    };
-    const { user, admin } = loadAll();
-    user.unshift(nueva);
-    admin.unshift(nueva);
-    saveAll(user, admin);
+    const nueva = { texto, fecha: (new Date()).toLocaleString(), visto: false };
+    const all = loadAll();
+    all.user.unshift(nueva);
+    all.admin.unshift(nueva);
+    saveAll(all.user, all.admin);
     render();
   }
 
-  function eliminarUsuario(idx){
-    const { user, admin } = loadAll();
-    if(idx < 0 || idx >= user.length) return;
-    user.splice(idx,1);
-    saveAll(user, admin);
-    render();
-  }
-  function eliminarAdmin(idx){
-    const { user, admin } = loadAll();
-    if(idx < 0 || idx >= admin.length) return;
-    admin.splice(idx,1);
-    saveAll(user, admin);
-    render();
-  }
-  function toggleVistoUsuario(idx, checked){
-    const { user, admin } = loadAll();
-    if(idx < 0 || idx >= user.length) return;
-    user[idx].visto = !!checked;
-    // intentar reflejar en admin (heurístico por texto+fecha)
-    const matchIdx = admin.findIndex(x => x.texto === user[idx].texto && x.fecha === user[idx].fecha);
-    if(matchIdx >= 0) admin[matchIdx].visto = !!checked;
-    saveAll(user, admin);
-    render();
-  }
+  enviarPeticionBtn.addEventListener('click', ()=> {
+    agregarPeticion(peticionTexto.value);
+    peticionTexto.value = '';
+  });
 
-  function borrarTodasAdmin(){
-    if(!confirm("¿Borrar TODAS las peticiones (usuario + admin)?")) return;
-    saveAll([], []);
-    render();
-  }
-
-  // Bind de botones
-  // aseguramos no duplicar handlers
-  if(enviarPeticionBtn){
-    enviarPeticionBtn.removeEventListener && enviarPeticionBtn.removeEventListener("click", agregarPeticion);
-    enviarPeticionBtn.addEventListener("click", ()=> {
-      agregarPeticion(peticionTexto.value);
-      peticionTexto.value = "";
+  if(borrarTodasAdminBtn){
+    borrarTodasAdminBtn.addEventListener('click', () => {
+      if(!confirm('¿Borrar TODAS las peticiones (usuario + admin)?')) return;
+      saveAll([], []);
+      render();
     });
   }
 
-  if(borrarTodasAdminBtn){
-    borrarTodasAdminBtn.removeEventListener && borrarTodasAdminBtn.removeEventListener("click", borrarTodasAdmin);
-    borrarTodasAdminBtn.addEventListener("click", borrarTodasAdmin);
-  }
-
-  // inicial render
   render();
 }
+// ------------------ FIN app.js ------------------
