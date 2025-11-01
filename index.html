@@ -139,7 +139,7 @@
 
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
-      <button data-section="peticiones" class="nav-btn">Peticiones</button>
+      <button id="btn-peticiones" data-section="peticiones" class="nav-btn">Peticiones</button>
       <button data-section="ajustes" class="nav-btn" id="btn-carga-dias">Carga Días</button>
     </nav>
   </main>
@@ -370,6 +370,29 @@ li.appendChild(fechaSpan);
     nuevasU.forEach((p, idx) => agregarPeticionUsuario(p, idx));
     nuevasA.forEach((p, idx) => agregarPeticionAdmin(p, idx));
   }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const peticionesBtn = document.querySelector('button[data-section="peticiones"]');
+  const peticionesSection = document.getElementById('peticiones-section');
+  const calendar = document.getElementById('calendar');
+
+  if (!peticionesBtn || !peticionesSection || !calendar) return;
+
+  peticionesBtn.addEventListener('click', () => {
+    const visible = !peticionesSection.classList.contains('oculto');
+
+    if (visible) {
+      // Ocultar el cajón de peticiones y mostrar calendario
+      peticionesSection.classList.add('oculto');
+      calendar.classList.remove('oculto');
+    } else {
+      // Mostrar peticiones y ocultar calendario
+      peticionesSection.classList.remove('oculto');
+      calendar.classList.add('oculto');
+    }
+  });
 });
 </script>
 

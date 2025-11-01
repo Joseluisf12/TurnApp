@@ -14,9 +14,39 @@ document.addEventListener('DOMContentLoaded', () => {
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+// -------------- handler toggle para el botón Peticiones --------------
 const peticionesBtn = document.getElementById('btn-peticiones');
-  if (peticionesBtn)
-    peticionesBtn.addEventListener('click', () => {
+if (peticionesBtn) {
+  peticionesBtn.addEventListener('click', () => {
+    const peticionesSection = document.getElementById('peticiones-section');
+    const calendar = document.getElementById('calendar');
+    // Si no existen elementos, no hacemos nada
+    if (!peticionesSection) return;
+
+    const isVisible = !peticionesSection.classList.contains('oculto');
+
+    if (isVisible) {
+      // Si ya está visible --> ocultar peticiones y mostrar calendario
+      peticionesSection.classList.add('oculto');
+      if (calendar) calendar.classList.remove('oculto');
+      // Además, si usas display styles explícitos en el HTML (ej: style="display:none"),
+      // restablecemos el comportamiento por clases:
+      if (peticionesSection.style.display !== '') peticionesSection.style.display = '';
+      if (calendar && calendar.style.display === 'none') calendar.style.display = '';
+      // forzar scroll al calendario si hace falta
+      if (calendar) setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 40);
+    } else {
+      // Si está oculto --> ocultar otros .panel y mostrar peticiones, ocultar calendar
+      document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
+      peticionesSection.classList.remove('oculto');
+      if (calendar) calendar.classList.add('oculto');
+      if (calendar) calendar.style.display = 'none';
+      // scroll al cajón de peticiones
+      setTimeout(()=> peticionesSection.scrollIntoView({behavior:'smooth', block:'start'}), 40);
+    }
+  });
+}
+
       // Oculta todos los cajones visibles (Calendario, Licencias, etc.)
       document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
       // Muestra solo el nuevo cajón de Peticiones
@@ -84,7 +114,7 @@ function recalcLicenciasTotal(){
 
 // festivos nacionales (mes 0-11)
 const spanishHolidays = [
-  { day:1, month:0 }, { day:6, month:0 }, { day:3, month:3 }, { day:1, month:4 },
+  { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
   { day:15, month:7 }, { day:12, month:9 }, { day:2, month:10 },
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
@@ -756,25 +786,24 @@ function initPeticiones() {
 
 // ------------------ MÓDULO PETICIONES (autocontenido) ------------------
 function initPeticiones(){
-  // Elementos (IDs esperados en tu HTML)
-  const listaUsuario = document.getElementById("lista-usuario");
-  const listaAdmin = document.getElementById("lista-admin");
+  // Intentar encontrar los IDs históricos o los nuevos (fallbacks)
+  const listaUsuario = document.getElementById("lista-usuario") || document.getElementById("lista-peticiones-usuario");
+  const listaAdmin   = document.getElementById("lista-admin")   || document.getElementById("lista-peticiones-admin");
   const peticionTexto = document.getElementById("peticion-texto");
   const enviarPeticionBtn = document.getElementById("enviar-peticion");
+  // botón opcional que en algunas versiones no existe
   const borrarTodasAdminBtn = document.getElementById("borrar-todas-admin");
 
-
-// 🔒 Solo visible para Administrador
-const esAdmin = localStorage.getItem("turnapp.isAdmin") === "true"; 
-if (!esAdmin && borrarTodasAdminBtn) {
-  borrarTodasAdminBtn.style.display = "none"; // oculta el botón
-}
-
-
-  // Si faltan elementos, salimos y mostramos advertencia (evita errores)
+  // Si faltan los elementos mínimos, salir (con aviso en consola)
   if(!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
     console.warn("initPeticiones: faltan elementos del DOM (ids peticiones). Revisa tu HTML.");
     return;
+  }
+
+  // 🔒 Solo visible para Administrador (si lo usas)
+  const esAdmin = localStorage.getItem("turnapp.isAdmin") === "true";
+  if (!esAdmin && borrarTodasAdminBtn) {
+    borrarTodasAdminBtn.style.display = "none";
   }
 
   const KEY_USER = "peticionesUsuario";
@@ -799,12 +828,11 @@ if (!esAdmin && borrarTodasAdminBtn) {
     user.forEach((p, idx) => {
       const li = document.createElement("li");
       li.className = "peticion-item";
-      // texto + fecha ya incluidos en p.texto/p.fecha
       const left = document.createElement("div");
       left.className = "peticion-left";
       const textoSpan = document.createElement("div");
       textoSpan.textContent = p.texto;
-      textoSpan.style.color = "#000"; // asegurar legibilidad
+      textoSpan.style.color = "#000";
       const fechaSpan = document.createElement("div");
       fechaSpan.textContent = p.fecha;
       fechaSpan.style.fontSize = "0.85em";
@@ -815,29 +843,22 @@ if (!esAdmin && borrarTodasAdminBtn) {
       const right = document.createElement("div");
       right.style.display = "flex";
       right.style.gap = "8px";
-      // botón eliminar (usuario)
+
       const delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.title = "Eliminar (usuario)";
       delBtn.textContent = "🗑️";
-      delBtn.onclick = () => {
-        eliminarUsuario(idx);
-      };
-      // checkbox visto (sólo visible en zona usuario)
+      delBtn.onclick = () => { eliminarUsuario(idx); };
+
       const vistoChk = document.createElement("input");
       vistoChk.type = "checkbox";
       vistoChk.title = "Marcado como visto por administrador";
       vistoChk.checked = !!p.visto;
-
-if (vistoChk.checked) {
-  li.style.textDecoration = "none";
-}
       vistoChk.onchange = () => {
-      vistoChk.style.accentColor = vistoChk.checked ? "green" : "";
-li.style.textDecoration = "none"
-  guardarPeticiones();
-};
-       
+        // actualiza y guarda el estado visto
+        toggleVistoUsuario(idx, vistoChk.checked);
+      };
+
       right.appendChild(vistoChk);
       right.appendChild(delBtn);
 
@@ -853,18 +874,15 @@ li.style.textDecoration = "none"
       li.className = "peticion-item";
       const textoDiv = document.createElement("div");
       textoDiv.textContent = p.texto;
-      textoDiv.style.color = "#000"; // asegurar legibilidad
+      textoDiv.style.color = "#000";
       li.appendChild(textoDiv);
 
-      // botón eliminar individual (admin)
       const delBtn = document.createElement("button");
       delBtn.type = "button";
       delBtn.title = "Eliminar (admin)";
       delBtn.textContent = "🗑️";
       delBtn.style.marginLeft = "8px";
-      delBtn.onclick = () => {
-        eliminarAdmin(idx);
-      };
+      delBtn.onclick = () => { eliminarAdmin(idx); };
       li.appendChild(delBtn);
       listaAdmin.appendChild(li);
     });
@@ -872,7 +890,7 @@ li.style.textDecoration = "none"
 
   // operaciones
   function agregarPeticion(textoRaw){
-    const texto = String(textoRaw).trim();
+    const texto = String(textoRaw || "").trim();
     if(!texto) return;
     const nueva = {
       texto,
@@ -880,7 +898,7 @@ li.style.textDecoration = "none"
       visto: false
     };
     const { user, admin } = loadAll();
-    user.unshift(nueva);    // añade al principio (orden cronológico reciente arriba)
+    user.unshift(nueva);
     admin.unshift(nueva);
     saveAll(user, admin);
     render();
@@ -890,7 +908,6 @@ li.style.textDecoration = "none"
     const { user, admin } = loadAll();
     if(idx < 0 || idx >= user.length) return;
     user.splice(idx,1);
-    // opcional: no eliminamos del admin automáticamente (tu requerimiento fue duplicar en admin)
     saveAll(user, admin);
     render();
   }
@@ -905,8 +922,7 @@ li.style.textDecoration = "none"
     const { user, admin } = loadAll();
     if(idx < 0 || idx >= user.length) return;
     user[idx].visto = !!checked;
-    // reflejar el visto también en la copia de admin (si existe el mismo texto/fecha)
-    // simple heurístico: buscar por texto+fecha
+    // intentar reflejar en admin (heurístico por texto+fecha)
     const matchIdx = admin.findIndex(x => x.texto === user[idx].texto && x.fecha === user[idx].fecha);
     if(matchIdx >= 0) admin[matchIdx].visto = !!checked;
     saveAll(user, admin);
@@ -920,11 +936,14 @@ li.style.textDecoration = "none"
   }
 
   // Bind de botones
-  enviarPeticionBtn.removeEventListener && enviarPeticionBtn.removeEventListener("click", agregarPeticion);
-  enviarPeticionBtn.addEventListener("click", ()=> {
-    agregarPeticion(peticionTexto.value);
-    peticionTexto.value = "";
-  });
+  // aseguramos no duplicar handlers
+  if(enviarPeticionBtn){
+    enviarPeticionBtn.removeEventListener && enviarPeticionBtn.removeEventListener("click", agregarPeticion);
+    enviarPeticionBtn.addEventListener("click", ()=> {
+      agregarPeticion(peticionTexto.value);
+      peticionTexto.value = "";
+    });
+  }
 
   if(borrarTodasAdminBtn){
     borrarTodasAdminBtn.removeEventListener && borrarTodasAdminBtn.removeEventListener("click", borrarTodasAdmin);
@@ -934,5 +953,3 @@ li.style.textDecoration = "none"
   // inicial render
   render();
 }
-// ------------------ FIN MÓDULO PETICIONES ------------------
-
