@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (peticionesNav) {
     peticionesNav.addEventListener('click', () => {
       const peticionesSection = document.getElementById('peticiones-section');
-      const calendar = document.getElementById('calendar');
+      const calendar = document.getElementById('calendar-panel');
       if(!peticionesSection) return;
       const isVisible = !peticionesSection.classList.contains('oculto') && peticionesSection.style.display !== 'none';
       if (isVisible) {
@@ -774,4 +774,41 @@ function initPeticiones(){
 
   render();
 }
+// === CONTROL FINAL DE BOTÓN DE PETICIONES (calendario siempre visible) ===
+document.addEventListener("DOMContentLoaded", () => {
+  const btnPeticiones = document.getElementById("btn-peticiones");
+  const peticionesSection = document.getElementById("peticiones-section");
+
+  if (!btnPeticiones || !peticionesSection) {
+    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
+    return;
+  }
+
+  // Asegura que empieza oculto el cajón de Peticiones
+  peticionesSection.classList.add("oculto");
+  peticionesSection.style.display = "none";
+
+  // Alternar solo visibilidad del cajón
+  btnPeticiones.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const visible = peticionesSection.style.display !== "none" && 
+                    !peticionesSection.classList.contains("oculto");
+
+    if (visible) {
+      // Ocultar cajón
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
+    } else {
+      // Mostrar cajón
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
+    }
+
+    // Evita scrolls indeseados
+    window.scrollTo({ top: 0, behavior: "instant" });
+  });
+});
+
 // ------------------ FIN app.js ------------------

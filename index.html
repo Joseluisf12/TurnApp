@@ -40,7 +40,10 @@
         <button id="nextMonth">Siguiente mes ▶</button>
       </div>
 
-      <div id="calendar"></div>
+      <section id="calendar-panel" class="panel">
+  <div id="calendar"></div>
+</section>
+
 
       <!-- Contenedor de licencias -->
       <div id="licencias-container" class="licencias" aria-hidden="true" style="display:block; margin-top:20px;">
@@ -139,7 +142,8 @@
 
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
-      <button id="btn-peticiones" data-section="peticiones" class="nav-btn">Peticiones</button>
+      <button id="btn-peticiones" type="button" data-section="peticiones" class="nav-btn">Peticiones</button>
+
       <button data-section="ajustes" class="nav-btn" id="btn-carga-dias">Carga Días</button>
     </nav>
   </main>
@@ -374,27 +378,33 @@ li.appendChild(fechaSpan);
 </script>
 <script>
 document.addEventListener("DOMContentLoaded", () => {
+  const calendar = document.getElementById("calendar");
+  const peticionesSection = document.getElementById("peticiones-section");
   const peticionesBtn = document.querySelector('button[data-section="peticiones"]');
-  const peticionesSection = document.getElementById('peticiones-section');
-  const calendar = document.getElementById('calendar');
 
-  if (!peticionesBtn || !peticionesSection || !calendar) return;
+  // 🔹 Garantiza que el calendario esté siempre visible
+  if (calendar) {
+    calendar.classList.remove("oculto");
+    calendar.style.display = "grid";
+  }
 
-  peticionesBtn.addEventListener('click', () => {
-    const visible = !peticionesSection.classList.contains('oculto');
+  // 🔹 Si no hay botón o sección, salimos
+  if (!peticionesBtn || !peticionesSection) return;
 
+  // 🔹 Al pulsar el botón de Peticiones, solo alterna el cajón
+  peticionesBtn.addEventListener("click", () => {
+    const visible = !peticionesSection.classList.contains("oculto");
     if (visible) {
-      // Ocultar el cajón de peticiones y mostrar calendario
-      peticionesSection.classList.add('oculto');
-      calendar.classList.remove('oculto');
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
     } else {
-      // Mostrar peticiones y ocultar calendario
-      peticionesSection.classList.remove('oculto');
-      calendar.classList.add('oculto');
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
     }
   });
 });
 </script>
+
 
 </body>
 </html>
