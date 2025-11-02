@@ -14,36 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
 
-  // Bind toggling nav button for peticiones (tolerante a id o data-section)
-  const peticionesNav = document.getElementById('btn-peticiones') || document.querySelector('button[data-section="peticiones"]');
-  if (peticionesNav) {
-    peticionesNav.addEventListener('click', () => {
-      const peticionesSection = document.getElementById('peticiones-section');
-      const calendar = document.getElementById('calendar-panel');
-      if(!peticionesSection) return;
-      const isVisible = !peticionesSection.classList.contains('oculto') && peticionesSection.style.display !== 'none';
-      if (isVisible) {
-        peticionesSection.classList.add('oculto');
-        peticionesSection.style.display = '';
-        if(calendar) {
-          calendar.classList.remove('oculto');
-          calendar.style.display = '';
-          setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 40);
-        }
-      } else {
-        document.querySelectorAll('.panel').forEach(p => p.classList.add('oculto'));
-        peticionesSection.classList.remove('oculto');
-        peticionesSection.style.display = '';
-        if(calendar){
-          calendar.classList.add('oculto');
-          calendar.style.display = 'none';
-        }
-        setTimeout(()=> peticionesSection.scrollIntoView({behavior:'smooth', block:'start'}), 40);
-      }
-    });
-  }
-
-  // conectar handles de licencia a la paleta unificada
+    // conectar handles de licencia a la paleta unificada
   bindLicenciaHandles();
 
   // restaurar persistencia de manualEdits y cadenceSpec
@@ -774,7 +745,7 @@ function initPeticiones(){
 
   render();
 }
-// === CONTROL FINAL DE BOTÓN DE PETICIONES (calendario siempre visible) ===
+// === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
 document.addEventListener("DOMContentLoaded", () => {
   const btnPeticiones = document.getElementById("btn-peticiones");
   const peticionesSection = document.getElementById("peticiones-section");
@@ -784,31 +755,66 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  // Asegura que empieza oculto el cajón de Peticiones
+  // Estado inicial: el cajón de peticiones oculto
   peticionesSection.classList.add("oculto");
   peticionesSection.style.display = "none";
 
-  // Alternar solo visibilidad del cajón
+  // Función central: alternar sólo el cajón de peticiones
+  const togglePeticiones = () => {
+    const visible = !peticionesSection.classList.contains("oculto") && 
+                    peticionesSection.style.display !== "none";
+
+    if (visible) {
+      // 🔹 Oculta el cajón de peticiones
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
+    } else {
+      // 🔹 Muestra el cajón de peticiones
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
+      peticionesSection.removeAttribute("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  };
+
+  btnPeticiones.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    togglePeticiones();
+  });
+});
+
+// === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
+document.addEventListener("DOMContentLoaded", () => {
+  const btnPeticiones = document.getElementById("btn-peticiones");
+  const peticionesSection = document.getElementById("peticiones-section");
+
+  if (!btnPeticiones || !peticionesSection) {
+    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
+    return;
+  }
+
+  // Estado inicial: peticiones ocultas
+  peticionesSection.classList.add("oculto");
+  peticionesSection.style.display = "none";
+
   btnPeticiones.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
 
-    const visible = peticionesSection.style.display !== "none" && 
-                    !peticionesSection.classList.contains("oculto");
+    const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
 
     if (visible) {
-      // Ocultar cajón
+      // 🔹 Oculta el cajón de peticiones
       peticionesSection.classList.add("oculto");
       peticionesSection.style.display = "none";
     } else {
-      // Mostrar cajón
+      // 🔹 Muestra el cajón de peticiones
       peticionesSection.classList.remove("oculto");
       peticionesSection.style.display = "block";
     }
-
-    // Evita scrolls indeseados
-    window.scrollTo({ top: 0, behavior: "instant" });
   });
 });
+
 
 // ------------------ FIN app.js ------------------
