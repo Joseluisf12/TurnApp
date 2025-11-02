@@ -382,7 +382,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const peticionesSection = document.getElementById("peticiones-section");
   const peticionesBtn = document.querySelector('button[data-section="peticiones"]');
 
-  // 🔹 Garantiza que el calendario esté siempre visible
+  // 🔹 Asegura que el calendario siempre esté visible
   if (calendar) {
     calendar.classList.remove("oculto");
     calendar.style.display = "grid";
@@ -391,15 +391,26 @@ document.addEventListener("DOMContentLoaded", () => {
   // 🔹 Si no hay botón o sección, salimos
   if (!peticionesBtn || !peticionesSection) return;
 
-  // 🔹 Al pulsar el botón de Peticiones, solo alterna el cajón
+  // 🔹 Alternar visibilidad del cajón de peticiones + scroll suave
   peticionesBtn.addEventListener("click", () => {
     const visible = !peticionesSection.classList.contains("oculto");
+
     if (visible) {
+      // 🔸 Ocultar el cajón
       peticionesSection.classList.add("oculto");
       peticionesSection.style.display = "none";
+      // 🔸 Scroll hacia el calendario
+      setTimeout(() => {
+        calendar.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } else {
+      // 🔸 Mostrar el cajón
       peticionesSection.classList.remove("oculto");
       peticionesSection.style.display = "block";
+      // 🔸 Scroll hacia el cajón
+      setTimeout(() => {
+        peticionesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     }
   });
 });
