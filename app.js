@@ -470,11 +470,11 @@ function openCadenceModal(){
       if(!r) return alert('Selecciona una opción de V-1.');
       const idx = parseInt(r.value,10);
       const v1options = [
-        ['M/T','L','M/T','N','L','L','L','L'],
-        ['M/T','M/T','N','L','L','L','L','L'],
-        ['T','M/T','M/N','L','L','L','L','L'],
-        ['M/T','N','L','L','L'],
-        ['T','M/N','L','L','L']
+        ['M/T', 'L', 'M/T', 'N', 'L', 'L', 'L', 'L'],
+        ['M/T', 'M/T', 'N', 'L', 'L', 'L', 'L', 'L'],
+        ['T', 'M/T', 'M/N', 'L', 'L', 'L', 'L', 'L'],
+        ['M/T', 'N', 'L', 'L', 'L'],
+        ['T', 'M/N', 'L', 'L', 'L']
       ];
       const pattern = v1options[idx];
       cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
@@ -482,7 +482,7 @@ function openCadenceModal(){
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'V-2'){
-      const pattern = ['M/T','M/T','L','L','L','L'];
+      const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
       cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
       saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();

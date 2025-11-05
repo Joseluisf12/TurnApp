@@ -610,4 +610,40 @@ body {
   outline: 2px solid #2563eb;
   background-color: #fef9c3;
 }
+/* Estilos específicos para la tabla del Coordinador */
+#tabla-coordinador {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* Bordes elegantes */
+#tabla-coordinador th,
+#tabla-coordinador td {
+  border: 1px solid #ccc;
+  padding: 4px 6px;
+  text-align: center;
+}
+
+/* Columnas estrechas (letras/códigos) */
+#tabla-coordinador .col-orden,
+#tabla-coordinador .col-num,
+#tabla-coordinador .col-m,
+#tabla-coordinador .col-t,
+#tabla-coordinador .col-n {
+  width: 45px;
+}
+
+/* Columna de NOMBRE algo más ancha */
+#tabla-coordinador .col-nombre {
+  width: 180px;
+  text-align: left;
+}
+
+/* OBSERVACIONES amplia */
+#tabla-coordinador .col-obs {
+  width: 260px;
+  text-align: left;
+}
 
