@@ -577,4 +577,37 @@ body {
 .oculto {
   display: none !important;
 }
+#excel-coordinador-container {
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+
+#excel-coordinador {
+  border-collapse: collapse;
+  width: 100%;
+  min-width: 800px;
+  font-size: 0.9rem;
+  text-align: center;
+}
+
+#excel-coordinador th,
+#excel-coordinador td {
+  border: 1px solid #999;
+  padding: 6px 4px;
+  min-width: 70px;
+}
+
+#excel-coordinador thead th {
+  background: #e2e8f0;
+  font-weight: bold;
+}
+
+#excel-coordinador td[contenteditable="true"] {
+  background-color: #fffbea;
+}
+
+#excel-coordinador td[contenteditable="true"]:focus {
+  outline: 2px solid #2563eb;
+  background-color: #fef9c3;
+}
 

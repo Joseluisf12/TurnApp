@@ -815,6 +815,34 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+// === EXCEL DEL COORDINADOR ===
+document.addEventListener("DOMContentLoaded", () => {
+  const tabla = document.getElementById("excel-coordinador");
+  if (!tabla) return;
+
+  // Cargar desde localStorage
+  const guardado = JSON.parse(localStorage.getItem("tablaCoordinador") || "[]");
+  const filas = tabla.querySelectorAll("tbody tr");
+  guardado.forEach((fila, i) => {
+    if (filas[i]) {
+      const celdas = filas[i].querySelectorAll("td");
+      fila.forEach((valor, j) => {
+        if (celdas[j]) celdas[j].textContent = valor;
+      });
+    }
+  });
+
+  // Guardado automático en cada cambio
+  tabla.addEventListener("input", () => {
+    const datos = [];
+    tabla.querySelectorAll("tbody tr").forEach(fila => {
+      const filaDatos = [];
+      fila.querySelectorAll("td").forEach(td => filaDatos.push(td.textContent.trim()));
+      datos.push(filaDatos);
+    });
+    localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
+  });
+});
 
 
 // ------------------ FIN app.js ------------------
