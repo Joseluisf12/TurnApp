@@ -843,6 +843,31 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
   });
 });
+// === Auto-Guardado del Excel del Coordinador ===
+document.addEventListener("DOMContentLoaded", () => {
+  const tabla = document.getElementById("tabla-coordinador");
+  if (!tabla) return;
+
+  const cells = tabla.querySelectorAll("td[contenteditable], th.titulo-ciclo");
+
+  // Cargar estado guardado al abrir
+  const savedData = JSON.parse(localStorage.getItem("tablaCoordinador")) || [];
+  savedData.forEach((text, i) => {
+    if (cells[i]) cells[i].innerText = text;
+  });
+
+  // Guardar en cada cambio
+  cells.forEach((cell, i) => {
+    cell.addEventListener("input", () => {
+      const data = Array.from(cells).map(c => c.innerText);
+      localStorage.setItem("tablaCoordinador", JSON.stringify(data));
+    });
+  });
+});
+document.getElementById("limpiar-tabla").addEventListener("click", function () {
+  const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
+  celdas.forEach(celda => celda.textContent = "");
+});
 
 
 // ------------------ FIN app.js ------------------

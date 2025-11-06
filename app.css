@@ -573,77 +573,76 @@ body {
   border-bottom: 2px solid rgba(0, 0, 0, 0.1); /* línea decorativa sutil */
 }
 
-/* --- CLASE DE UTILIDAD: OCULTAR ELEMENTOS --- */
-.oculto {
-  display: none !important;
-}
-#excel-coordinador-container {
+/* === TABLA COORDINADOR (versión estable limpia) === */
+
+#tabla-coordinador-container {
   overflow-x: auto;
-  margin-top: 1rem;
+  margin-top: 1.4rem;
 }
 
-#excel-coordinador {
+#tabla-coordinador {
   border-collapse: collapse;
   width: 100%;
-  min-width: 800px;
-  font-size: 0.9rem;
+  table-layout: fixed;
+  min-width: 760px;
+  font-size: 0.92rem;
+}
+
+/* Proporciones por columnas */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 18%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(3),
+#tabla-coordinador colgroup col:nth-child(4),
+#tabla-coordinador colgroup col:nth-child(5),
+#tabla-coordinador colgroup col:nth-child(6),
+#tabla-coordinador colgroup col:nth-child(7) { width: 8%; }  /* M, T, M, T, N */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 36%; } /* OBSERVACIONES */
+
+#tabla-coordinador th,
+#tabla-coordinador td {
+  border: 1px solid #bdbdbd;
+  padding: 6px 8px;
   text-align: center;
+  vertical-align: middle;
 }
 
-#excel-coordinador th,
-#excel-coordinador td {
-  border: 1px solid #999;
-  padding: 6px 4px;
-  min-width: 70px;
+/* Encabezado */
+#tabla-coordinador thead th {
+  background: #e6eefc;
+  font-weight: 600;
 }
 
-#excel-coordinador thead th {
-  background: #e2e8f0;
-  font-weight: bold;
-}
-
-#excel-coordinador td[contenteditable="true"] {
-  background-color: #fffbea;
-}
-
-#excel-coordinador td[contenteditable="true"]:focus {
+/* Celdas editables */
+#tabla-coordinador td[contenteditable="true"] { background-color: #fffbea; }
+#tabla-coordinador td[contenteditable="true"]:focus {
   outline: 2px solid #2563eb;
   background-color: #fef9c3;
 }
-/* Estilos específicos para la tabla del Coordinador */
+
+/* Título editable del ciclo */
+.titulo-ciclo { background: #dfeaff !important; font-weight: bold; }
+
 #tabla-coordinador {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-  font-size: 14px;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 8px;
+  overflow: hidden; /* Permite que el redondeado afecte también a los bordes internos */
+  border: 1px solid #ccc;
 }
 
-/* Bordes elegantes */
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid #ccc;
-  padding: 4px 6px;
-  text-align: center;
+}
+#tabla-coordinador tbody tr:nth-child(odd) {
+  background-color: #ffffff; /* filas impares */
 }
 
-/* Columnas estrechas (letras/códigos) */
-#tabla-coordinador .col-orden,
-#tabla-coordinador .col-num,
-#tabla-coordinador .col-m,
-#tabla-coordinador .col-t,
-#tabla-coordinador .col-n {
-  width: 45px;
+#tabla-coordinador tbody tr:nth-child(even) {
+  background-color: #eaf2ff; /* filas pares en azul muy suave */
 }
 
-/* Columna de NOMBRE algo más ancha */
-#tabla-coordinador .col-nombre {
-  width: 180px;
-  text-align: left;
+/* Mantener el color crema solo cuando se está editando */
+#tabla-coordinador td[contenteditable="true"]:focus {
+  background-color: #fff8cf !important;
 }
-
-/* OBSERVACIONES amplia */
-#tabla-coordinador .col-obs {
-  width: 260px;
-  text-align: left;
-}
-
