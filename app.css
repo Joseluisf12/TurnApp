@@ -584,19 +584,19 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 760px;
+  min-width: 500px;
   font-size: 0.92rem;
 }
 
 /* Proporciones por columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 18%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 4%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 15%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 8%; }  /* M, T, M, T, N */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 36%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 4%; }  /* M, T, M, T, N */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 25%; } /* OBSERVACIONES */
 
 #tabla-coordinador th,
 #tabla-coordinador td {
@@ -635,14 +635,26 @@ body {
   border: 1px solid #ccc;
 }
 #tabla-coordinador tbody tr:nth-child(odd) {
-  background-color: #ffffff; /* filas impares */
+  background-color: #ffffff !important;
 }
 
 #tabla-coordinador tbody tr:nth-child(even) {
-  background-color: #eaf2ff; /* filas pares en azul muy suave */
+  background-color: #e6eefc; /* azul muy suave */
 }
 
-/* Mantener el color crema solo cuando se está editando */
-#tabla-coordinador td[contenteditable="true"]:focus {
-  background-color: #fff8cf !important;
+/* No perder el color crema al editar */
+#tabla-coordinador td:focus {
+  background-color: #fff7c7 !important;
+  outline: none;
+}
+/* La tabla ocupa el ancho disponible */
+#tabla-coordinador-container {
+  width: 100%;
+  overflow-x: auto; /* por si en móvil es necesario */
+}
+
+#tabla-coordinador {
+  width: 100%;
+  table-layout: fixed; /* obliga a columnas iguales */
+}
 }
