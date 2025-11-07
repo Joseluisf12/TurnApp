@@ -673,5 +673,16 @@ body {
 #tabla-coordinador tbody tr:nth-child(even) td {
   background-color: #f3f7ff !important;
 }
+/* Hover suave para filas (solo se nota en dispositivos con ratón) */
+@media (hover: hover) and (pointer: fine) {
+  #tabla-coordinador tbody tr:hover td {
+    background-color: #e0edff !important; /* un punto más visible pero suave */
+    cursor: pointer;
+  }
+/* Resaltado de fila seleccionada (móvil / click) */
+#tabla-coordinador tbody tr.seleccionada td {
+  background-color: #d6e6ff !important; /* un punto más notable que el zebra */
+}
 
 }
+

@@ -23,6 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // inicializar módulo de peticiones (listeners + render)
   initPeticiones();
+// Resaltar fila seleccionada en tabla coordinador
+const tablaCoord = document.getElementById("tabla-coordinador");
+
+if (tablaCoord) {
+  tablaCoord.addEventListener("click", (e) => {
+    let fila = e.target.closest("tr");
+    if (!fila || fila.parentNode.tagName !== "TBODY") return;
+
+    // Quitar selección previa
+    tablaCoord.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
+
+    // Añadir selección a la fila pulsada
+    fila.classList.add("seleccionada");
+  });
+}
+
 });
 
 // ---------------- estado ----------------
