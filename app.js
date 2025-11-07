@@ -629,46 +629,40 @@ function applyCadenceRender(month, year){
     }
   });
 }
-
-// ------------------ MÓDULO PETICIONES (único, coherente) ------------------
+// ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
 function initPeticiones(){
-  // IDs según tu HTML
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
-  const listaAdmin   = document.getElementById('lista-peticiones-admin');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
-  const borrarTodasAdminBtn = document.getElementById('borrar-todas-admin'); // opcional
 
-  if (!listaUsuario || !listaAdmin || !peticionTexto || !enviarPeticionBtn){
-    console.warn("initPeticiones: faltan elementos del DOM (ids esperados: lista-peticiones-usuario, lista-peticiones-admin, peticion-texto, enviar-peticion). Revisa tu HTML.");
+  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn){
+    console.warn("initPeticiones: faltan elementos del DOM.");
     return;
   }
 
   const KEY_USER = 'peticionesUsuario';
-  const KEY_ADMIN = 'peticionesAdmin';
 
-  function loadAll(){
-    const u = JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-    const a = JSON.parse(localStorage.getItem(KEY_ADMIN) || '[]');
-    return { user: u, admin: a };
+  function load(){
+    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
   }
-  function saveAll(userArr, adminArr){
-    localStorage.setItem(KEY_USER, JSON.stringify(userArr));
-    localStorage.setItem(KEY_ADMIN, JSON.stringify(adminArr));
+  function save(arr){
+    localStorage.setItem(KEY_USER, JSON.stringify(arr));
   }
 
   function render(){
-    const { user, admin } = loadAll();
+    const user = load();
     listaUsuario.innerHTML = '';
     user.forEach((p, idx) => {
       const li = document.createElement('li');
       li.className = 'peticion-item';
+
       const left = document.createElement('div');
       left.className = 'peticion-left';
+
       const textoDiv = document.createElement('div');
-      textoDiv.textContent = p.texto || String(p);
-      textoDiv.style.color = '#000';
+      textoDiv.textContent = p.texto;
       left.appendChild(textoDiv);
+
       if(p.fecha){
         const fechaDiv = document.createElement('div');
         fechaDiv.className = 'fecha-hora';
@@ -681,24 +675,23 @@ function initPeticiones(){
       const right = document.createElement('div');
       right.style.display = 'flex';
       right.style.gap = '8px';
-      right.style.alignItems = 'center';
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
       chk.checked = !!p.visto;
       chk.addEventListener('change', () => {
-        const all = loadAll();
-        if(all.user[idx]) { all.user[idx].visto = chk.checked; saveAll(all.user, all.admin); render(); }
+        const u = load();
+        u[idx].visto = chk.checked;
+        save(u);
+        render();
       });
 
       const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.title = 'Eliminar';
       delBtn.textContent = '🗑️';
       delBtn.addEventListener('click', ()=> {
-        const all = loadAll();
-        all.user.splice(idx,1);
-        saveAll(all.user, all.admin);
+        const u = load();
+        u.splice(idx,1);
+        save(u);
         render();
       });
 
@@ -709,39 +702,15 @@ function initPeticiones(){
       li.appendChild(right);
       listaUsuario.appendChild(li);
     });
-
-    listaAdmin.innerHTML = '';
-    admin.forEach((p, idx) => {
-      const li = document.createElement('li');
-      li.className = 'peticion-item';
-      const textoDiv = document.createElement('div');
-      textoDiv.textContent = p.texto || String(p);
-      textoDiv.style.color = '#000';
-      li.appendChild(textoDiv);
-
-      const delBtn = document.createElement('button');
-      delBtn.type = 'button';
-      delBtn.title = 'Eliminar (admin)';
-      delBtn.textContent = '🗑️';
-      delBtn.addEventListener('click', ()=> {
-        const all = loadAll();
-        all.admin.splice(idx,1);
-        saveAll(all.user, all.admin);
-        render();
-      });
-      li.appendChild(delBtn);
-      listaAdmin.appendChild(li);
-    });
   }
 
   function agregarPeticion(textoRaw){
     const texto = String(textoRaw || '').trim();
     if(!texto) return;
-    const nueva = { texto, fecha: (new Date()).toLocaleString(), visto: false };
-    const all = loadAll();
-    all.user.unshift(nueva);
-    all.admin.unshift(nueva);
-    saveAll(all.user, all.admin);
+    const nueva = { texto, fecha: new Date().toLocaleString(), visto: false };
+    const u = load();
+    u.unshift(nueva);
+    save(u);
     render();
   }
 
@@ -749,14 +718,6 @@ function initPeticiones(){
     agregarPeticion(peticionTexto.value);
     peticionTexto.value = '';
   });
-
-  if(borrarTodasAdminBtn){
-    borrarTodasAdminBtn.addEventListener('click', () => {
-      if(!confirm('¿Borrar TODAS las peticiones (usuario + admin)?')) return;
-      saveAll([], []);
-      render();
-    });
-  }
 
   render();
 }
