@@ -589,13 +589,13 @@ body {
 }
 
 /* Proporciones por columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 4%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 7%;  }  /* Nº */
 #tabla-coordinador colgroup col:nth-child(2)  { width: 15%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 4%; }  /* M, T, M, T, N */
+#tabla-coordinador colgroup col:nth-child(7) { width: 5%; }  /* M, T, M², T², N */
 #tabla-coordinador colgroup col:nth-child(8)  { width: 25%; } /* OBSERVACIONES */
 
 #tabla-coordinador th,
@@ -608,12 +608,21 @@ body {
 
 /* Encabezado */
 #tabla-coordinador thead th {
-  background: #e6eefc;
+  background: #d6e2f7;
   font-weight: 600;
 }
 
 /* Celdas editables */
-#tabla-coordinador td[contenteditable="true"] { background-color: #fffbea; }
+#tabla-coordinador td[contenteditable="true"] {
+  background-color: transparent !important;
+}
+
+/* Al editar, sí se pinta */
+#tabla-coordinador td[contenteditable="true"]:focus {
+  background-color: #fff7c7 !important;
+  outline: 2px solid #2563eb;
+}
+
 #tabla-coordinador td[contenteditable="true"]:focus {
   outline: 2px solid #2563eb;
   background-color: #fef9c3;
@@ -657,4 +666,12 @@ body {
   width: 100%;
   table-layout: fixed; /* obliga a columnas iguales */
 }
+#tabla-coordinador tbody tr:nth-child(odd) td {
+  background-color: #ffffff !important;
+}
+
+#tabla-coordinador tbody tr:nth-child(even) td {
+  background-color: #f3f7ff !important;
+}
+
 }
