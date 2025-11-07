@@ -97,7 +97,7 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   margin-bottom: 10px;
 }
 
@@ -160,6 +160,23 @@ body {
   font-weight: bold;
   margin-bottom: 4px;
 }
+#calendar-weekdays {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  text-align: center;
+  font-weight: 600;
+  margin-top: 12px;
+  margin-bottom: 4px;
+  color: #333;
+}
+
+#calendar-weekdays div {
+  padding: 6px 0;
+  background-color: #e6eefc; /* un gris-azul suave */
+  border-radius: 6px;
+  font-size: 0.9em;
+}
+
 
 /* --- COLORES DE DÍAS ESPECIALES --- */
 .saturday {

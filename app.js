@@ -194,8 +194,7 @@ function renderCalendar(month, year){
 
     const label = document.createElement('div');
     label.className = 'day-label';
-    const weekdayNames = ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'];
-    label.textContent = `${day} ${weekdayNames[weekday===0?6:weekday-1]}`;
+    label.textContent = `${day}`;
     cell.appendChild(label);
 
     const wrapper = document.createElement('div');
