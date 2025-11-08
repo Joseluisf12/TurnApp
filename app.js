@@ -847,5 +847,15 @@ document.getElementById("limpiar-tabla").addEventListener("click", function () {
   celdas.forEach(celda => celda.textContent = "");
 });
 
+document.addEventListener("DOMContentLoaded", () => {
+  const splash = document.getElementById("app-splash");
+  const main = document.getElementById("app-main");
+  
+  document.getElementById("splash-logo").addEventListener("click", () => {
+    splash.classList.add("oculto");
+    main.classList.remove("oculto");
+  });
+});
+
 
 // ------------------ FIN app.js ------------------

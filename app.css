@@ -784,6 +784,29 @@ body {
   .peticion-left div:first-child {
     font-size: 1rem;
   }
-
+.oculto {
+  display: none;
 }
+
+/* Centrar el logo a pantalla completa */
+#app-splash {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+#splash-logo {
+  width: 55%;
+  max-width: 260px;
+  cursor: pointer;
+  opacity: 0.95;
+  transition: 0.25s;
+}
+
+#splash-logo:active {
+  transform: scale(0.94);
+  opacity: 1;
+}
+
 
