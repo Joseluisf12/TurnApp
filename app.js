@@ -634,6 +634,8 @@ function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
+  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
+
 
   if (!listaUsuario || !peticionTexto || !enviarPeticionBtn){
     console.warn("initPeticiones: faltan elementos del DOM.");

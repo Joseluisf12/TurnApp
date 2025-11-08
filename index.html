@@ -127,6 +127,7 @@
         </div>
       </div>
     </section>
+
 <!-- Cajón de Peticiones -->
 <section id="peticiones-section" class="panel oculto">
   <h2>Gestión de Peticiones</h2>
@@ -140,9 +141,6 @@
     </div>
     <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
   </div>
-
-   <div class="peticiones-zona">
-    <h3>Zona Coordinador</h3> 
 </div>
 
 <!-- === TABLA DEL COORDINADOR === -->
@@ -437,11 +435,13 @@
     });
  </script>
 <script>
+
 document.addEventListener('DOMContentLoaded', () => {
   const textoPeticion = document.getElementById('peticion-texto');
   const botonEnviar = document.getElementById('enviar-peticion');
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
-  const listaAdmin = document.getElementById('lista-peticiones-admin');
+  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
+
 
   // Simulación: definir si el usuario actual es admin
   const esAdmin = true; // cambia a false si quieres probar la vista de usuario normal
@@ -453,11 +453,6 @@ document.addEventListener('DOMContentLoaded', () => {
   botonBorrarUsuario.style.display = esAdmin ? 'inline-block' : 'none';
   listaUsuario.parentElement.appendChild(botonBorrarUsuario);
 
-  const botonBorrarAdmin = document.createElement('button');
-  botonBorrarAdmin.textContent = '🧹 Borrar Peticiones';
-  botonBorrarAdmin.className = 'btn-borrar-todo';
-  botonBorrarAdmin.style.display = esAdmin ? 'inline-block' : 'none';
-  listaAdmin.parentElement.appendChild(botonBorrarAdmin);
 
   // Recuperar peticiones guardadas
   const peticionesUsuario = JSON.parse(localStorage.getItem('peticionesUsuario') || '[]');
@@ -465,7 +460,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Renderizar peticiones
   peticionesUsuario.forEach((p, idx) => agregarPeticionUsuario(p, idx));
-  peticionesAdmin.forEach((p, idx) => agregarPeticionAdmin(p, idx));
 
   // Enviar nueva petición
   botonEnviar.addEventListener('click', () => {
@@ -532,7 +526,6 @@ li.appendChild(fechaSpan);
   }
 
   // --- Función: agregar a zona Administrador ---
-  function agregarPeticionAdmin(p, idx) {
     const li = document.createElement('li');
     li.className = 'peticion-item';
     li.textContent = p.texto;
@@ -562,14 +555,7 @@ li.appendChild(fechaSpan);
     }
   });
 
-  botonBorrarAdmin.addEventListener('click', () => {
-    if (confirm('¿Seguro que quieres borrar las peticiones de la zona de Administrador?')) {
-      peticionesAdmin.length = 0;
-      localStorage.setItem('peticionesAdmin', '[]');
-      recargarListas();
-    }
-  });
-
+  
   // --- Recargar ambas zonas ---
   function recargarListas() {
     listaUsuario.innerHTML = '';
