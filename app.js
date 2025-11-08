@@ -846,7 +846,6 @@ document.getElementById("limpiar-tabla").addEventListener("click", function () {
   const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
   celdas.forEach(celda => celda.textContent = "");
 });
-
 document.addEventListener("DOMContentLoaded", () => {
 
   const splash = document.getElementById("splash");
@@ -856,19 +855,23 @@ document.addEventListener("DOMContentLoaded", () => {
   const calendarioSection = document.getElementById("calendar-panel");
   const licenciasSection = document.getElementById("licencias-container");
 
-  // Estado inicial: mostrar solo splash
+  // Estado inicial
   app.classList.add("oculto");
   calendarioSection.classList.add("oculto");
   licenciasSection.classList.add("oculto");
 
-  // Al tocar el splash → entrar a la app mostrando solo calendario
   splash.addEventListener("click", () => {
-    splash.classList.add("oculto");     // Oculta la pantalla inicial
-    app.classList.remove("oculto");     // Muestra la aplicación
-    app.classList.add("fade-in");       // (Por si tienes animación a entrada)
+    splash.classList.add("oculto");
+    app.classList.remove("oculto");
+    app.classList.add("fade-in");
 
-    calendarioSection.classList.remove("oculto"); // Muestra calendario
-    licenciasSection.classList.add("oculto");     // Asegura licencias ocultas
+    calendarioSection.classList.remove("oculto");
+    licenciasSection.classList.add("oculto");
+
+    // 🌟 Aquí está la mejora:
+    setTimeout(() => {
+      calendarioSection.scrollIntoView({ behavior: "smooth" });
+    }, 200); 
   });
 
 });
