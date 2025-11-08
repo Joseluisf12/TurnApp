@@ -848,35 +848,29 @@ document.getElementById("limpiar-tabla").addEventListener("click", function () {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-const splash = document.getElementById("splash");
-  const app = document.getElementById("app");
-  const logo = document.getElementById("splash-logo");
 
-  logo.addEventListener("click", () => {
-    splash.classList.add("oculto");
-    app.classList.remove("oculto");
-  });
-});
   const splash = document.getElementById("splash");
-const app = document.getElementById("app");
+  const app = document.getElementById("app");
 
-// IMPORTANTE: referencia a secciones
-const calendarioSection = document.getElementById("calendario-section");
-const licenciasSection = document.getElementById("licencias-section");
+  // Referencias reales
+  const calendarioSection = document.getElementById("calendar-panel");
+  const licenciasSection = document.getElementById("licencias-container");
 
-// Ocultamos todo excepto splash al inicio
-app.classList.add("oculto");
-calendarioSection.classList.add("oculto");
-licenciasSection.classList.add("oculto");
+  // Estado inicial: mostrar solo splash
+  app.classList.add("oculto");
+  calendarioSection.classList.add("oculto");
+  licenciasSection.classList.add("oculto");
 
-// Cuando se toca el logo -> mostramos solo el calendario
-splash.addEventListener("click", () => {
-  splash.classList.add("oculto");       // Oculta el splash
-  app.classList.remove("oculto");       // Muestra la app
-  app.classList.add("fade-in");         // Animación suave
-  
-  calendarioSection.classList.remove("oculto");  // Mostrar calendario
-  licenciasSection.classList.add("oculto");      // Asegurar licencias ocultas
+  // Al tocar el splash → entrar a la app mostrando solo calendario
+  splash.addEventListener("click", () => {
+    splash.classList.add("oculto");     // Oculta la pantalla inicial
+    app.classList.remove("oculto");     // Muestra la aplicación
+    app.classList.add("fade-in");       // (Por si tienes animación a entrada)
+
+    calendarioSection.classList.remove("oculto"); // Muestra calendario
+    licenciasSection.classList.add("oculto");     // Asegura licencias ocultas
+  });
+
 });
 
 // ------------------ FIN app.js ------------------
