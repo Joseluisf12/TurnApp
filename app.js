@@ -848,12 +848,13 @@ document.getElementById("limpiar-tabla").addEventListener("click", function () {
 });
 
 document.addEventListener("DOMContentLoaded", () => {
-  const splash = document.getElementById("app-splash");
-  const main = document.getElementById("app-main");
-  
-  document.getElementById("splash-logo").addEventListener("click", () => {
+  const splash = document.getElementById("splash");
+  const app = document.getElementById("app");
+  const logo = document.getElementById("splash-logo");
+
+  logo.addEventListener("click", () => {
     splash.classList.add("oculto");
-    main.classList.remove("oculto");
+    app.classList.remove("oculto");
   });
 });
 
