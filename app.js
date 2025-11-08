@@ -846,34 +846,37 @@ document.getElementById("limpiar-tabla").addEventListener("click", function () {
   const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
   celdas.forEach(celda => celda.textContent = "");
 });
-document.addEventListener("DOMContentLoaded", () => {
 
+document.addEventListener("DOMContentLoaded", () => {
   const splash = document.getElementById("splash");
   const app = document.getElementById("app");
+  const logo = document.getElementById("splash-logo");
 
-  // Referencias reales
   const calendarioSection = document.getElementById("calendar-panel");
   const licenciasSection = document.getElementById("licencias-container");
 
-  // Estado inicial
+  // Estado inicial: solo splash visible
   app.classList.add("oculto");
   calendarioSection.classList.add("oculto");
   licenciasSection.classList.add("oculto");
 
-  splash.addEventListener("click", () => {
+  logo.addEventListener("click", () => {
+    // Oculta splash y muestra app
     splash.classList.add("oculto");
     app.classList.remove("oculto");
-    app.classList.add("fade-in");
 
+    // Mostrar solo el calendario
     calendarioSection.classList.remove("oculto");
     licenciasSection.classList.add("oculto");
 
-    // 🌟 Aquí está la mejora:
+    // Animación
+    calendarioSection.classList.add("fade-in-up");
+
+    // Desplazar suave al calendario
     setTimeout(() => {
       calendarioSection.scrollIntoView({ behavior: "smooth" });
-    }, 200); 
+    }, 200);
   });
-
 });
 
-// ------------------ FIN app.js ------------------
+  // ------------------ FIN app.js ------------------
