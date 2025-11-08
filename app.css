@@ -61,6 +61,12 @@ body {
   100% { transform: scale(1); opacity: 1; }
 }
 
+@media (max-width: 480px) {
+  .logo-img {
+    width: 220px;
+  }
+}
+
 
 .slogan {
   font-size: 1.2em;
