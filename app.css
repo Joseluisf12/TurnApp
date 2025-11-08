@@ -45,11 +45,22 @@ body {
 }
 
 .logo-img {
-  width: 120px;
+  width: 300px;   /* antes 120px */
   height: auto;
   display: block;
   margin: 0 auto;
+  transition: transform 0.4s ease; /* opcional: suavidad */
 }
+
+#splash .logo-img {
+  animation: logo-pop 0.6s ease forwards;
+}
+
+@keyframes logo-pop {
+  0% { transform: scale(0.7); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
 
 .slogan {
   font-size: 1.2em;
