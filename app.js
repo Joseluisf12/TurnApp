@@ -821,6 +821,7 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
   });
 });
+
 // === Auto-Guardado del Excel del Coordinador ===
 document.addEventListener("DOMContentLoaded", () => {
   const tabla = document.getElementById("tabla-coordinador");
@@ -830,13 +831,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Cargar estado guardado al abrir
   const savedData = JSON.parse(localStorage.getItem("tablaCoordinador")) || [];
-  savedData.forEach((text, i) => {
-    if (cells[i]) cells[i].innerText = text;
+  savedData.forEach((valor, i) => {
+    if (cells[i]) cells[i].innerText = valor;
   });
 
   // Guardar en cada cambio
-  cells.forEach((cell, i) => {
-    cell.addEventListener("input", () => {
+  cells.forEach(() => {
+    tabla.addEventListener("input", () => {
       const data = Array.from(cells).map(c => c.innerText);
       localStorage.setItem("tablaCoordinador", JSON.stringify(data));
     });
@@ -845,6 +846,32 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // Abre un selector de color tipo "paleta" y aplica el callback
 function openColorPicker(targetCell, callback, paletteColors = []) {
+
+}
+
+// Y JUSTO DESPUÉS va nuestro bloque de aplicar color
+document.querySelectorAll("tbody tr").forEach(fila => {
+  const celdas = fila.querySelectorAll("td");
+  celdas.forEach((celda, index) => {
+    if (index >= 2 && index <= 6) {
+      celda.classList.add("turno-editable");
+      celda.addEventListener("click", function (e) {
+        e.stopPropagation();
+        openColorPicker(celda, (color) => {
+          celda.style.backgroundColor = color;
+          guardarTurnos(); // ✅ ahora sí se aplica
+        }, [
+          "#4d9ef7",
+          "#f7a64d",
+          "#6fd773",
+          "#e65252",
+          "#c9c9c9"
+        ]);
+      });
+    }
+  });
+});
+
 
   // Elimina paletas anteriores si quedaran abiertas
   const existing = document.getElementById("temp-color-picker");
@@ -935,15 +962,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-// Añade clase solo a las casillas de turnos (3ª a 7ª columna)
-document.querySelectorAll("tbody tr").forEach(fila => {
-  const celdas = fila.querySelectorAll("td");
-  celdas.forEach((celda, index) => {
-    if (index >= 2 && index <= 6) {
-      celda.classList.add("turno-editable");
-    }
-  });
-});
+
 
 function guardarTurnos() {
   const filas = [];
