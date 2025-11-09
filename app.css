@@ -46,8 +46,8 @@ body {
 }
 
 .logo-img {
-  width: 70vw;       /* Esto hace que crezca según pantalla */
-  max-width: 520px;  /* Tamaño gigante en móviles grandes */
+  width: 80vw;       /* Esto hace que crezca según pantalla */
+  max-width: 600px;  /* Tamaño gigante en móviles grandes */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -819,8 +819,8 @@ body {
   .peticion-left div:first-child {
     font-size: 1rem;
   }
-
 }
+
 @keyframes epicEntrance {
   0% {
     opacity: 0;
@@ -839,6 +839,3 @@ body {
 .splash .logo-img {
   animation: epicEntrance 1.4s ease-out forwards;
 }
-
-
-
