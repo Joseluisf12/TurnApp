@@ -879,4 +879,43 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
+// Añade clase solo a las casillas de turnos (3ª a 7ª columna)
+document.querySelectorAll("tbody tr").forEach(fila => {
+  const celdas = fila.querySelectorAll("td");
+  celdas.forEach((celda, index) => {
+    if (index >= 2 && index <= 6) {
+      celda.classList.add("turno-editable");
+    }
+  });
+});
+
+let longPressTimer;
+const menu = document.getElementById("color-menu");
+
+document.querySelectorAll(".turno-editable").forEach(celda => {
+
+  celda.addEventListener("touchstart", () => {
+    longPressTimer = setTimeout(() => {
+      mostrarMenu(celda);
+    }, 600);
+  });
+
+  celda.addEventListener("touchend", () => clearTimeout(longPressTimer));
+  celda.addEventListener("click", () => mostrarMenu(celda)); // También útil en PC
+});
+
+function mostrarMenu(celda) {
+  const rect = celda.getBoundingClientRect();
+  menu.style.left = rect.left + "px";
+  menu.style.top = rect.bottom + "px";
+  menu.style.display = "flex";
+
+  menu.querySelectorAll(".color-btn").forEach(btn => {
+    btn.onclick = () => {
+      celda.style.backgroundColor = btn.dataset.color;
+      menu.style.display = "none";
+    };
+  });
+}
+
   // ------------------ FIN app.js ------------------
