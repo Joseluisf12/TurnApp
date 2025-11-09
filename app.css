@@ -47,7 +47,7 @@ body {
 
 .logo-img {
   width: 70vw;       /* Esto hace que crezca según pantalla */
-  max-width: 520px;  /* Tamaño gigante en móviles grandes */
+  max-width: 700px;  /* Tamaño gigante en móviles grandes */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -819,4 +819,5 @@ body {
   .peticion-left div:first-child {
     font-size: 1rem;
   }
+
 }
