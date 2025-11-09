@@ -43,11 +43,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: center;
+  width: 100%;    /* importante */
 }
 
 .logo-img {
-  width: 80vw;       /* Esto hace que crezca según pantalla */
-  max-width: 600px;  /* Tamaño gigante en móviles grandes */
+  width: 65vw;       /* Tamaño grande relativo a pantalla */
+  max-width: 500px;  /* Límite para móviles grandes tipo Xiaomo 15T Pro */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -60,12 +61,6 @@ body {
 @keyframes logo-pop {
   0% { transform: scale(0.7); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
-}
-
-@media (max-width: 480px) {
-  .logo-img {
-    width: 220px;
-  }
 }
 
 
