@@ -795,142 +795,50 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 // === EXCEL DEL COORDINADOR ===
 document.addEventListener("DOMContentLoaded", () => {
-  const tabla = document.getElementById("excel-coordinador");
-  if (!tabla) return;
 
-  // Cargar desde localStorage
-  const guardado = JSON.parse(localStorage.getItem("tablaCoordinador") || "[]");
-  const filas = tabla.querySelectorAll("tbody tr");
-  guardado.forEach((fila, i) => {
-    if (filas[i]) {
-      const celdas = filas[i].querySelectorAll("td");
-      fila.forEach((valor, j) => {
-        if (celdas[j]) celdas[j].textContent = valor;
+  // ============= EXCEL DEL COORDINADOR =============
+  const tabla1 = document.getElementById("excel-coordinador");
+  if (tabla1) {
+    const guardado = JSON.parse(localStorage.getItem("tablaCoordinador") || "[]");
+    const filas = tabla1.querySelectorAll("tbody tr");
+    guardado.forEach((fila, i) => {
+      if (filas[i]) {
+        const celdas = filas[i].querySelectorAll("td");
+        fila.forEach((valor, j) => {
+          if (celdas[j]) celdas[j].textContent = valor;
+        });
+      }
+    });
+
+    tabla1.addEventListener("input", () => {
+      const datos = [];
+      tabla1.querySelectorAll("tbody tr").forEach(fila => {
+        const filaDatos = [];
+        fila.querySelectorAll("td").forEach(td => filaDatos.push(td.textContent.trim()));
+        datos.push(filaDatos);
       });
-    }
-  });
-
-  // Guardado automático en cada cambio
-  tabla.addEventListener("input", () => {
-    const datos = [];
-    tabla.querySelectorAll("tbody tr").forEach(fila => {
-      const filaDatos = [];
-      fila.querySelectorAll("td").forEach(td => filaDatos.push(td.textContent.trim()));
-      datos.push(filaDatos);
+      localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
     });
-    localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
-  });
-});
+  }
 
-// === Auto-Guardado del Excel del Coordinador ===
-document.addEventListener("DOMContentLoaded", () => {
-  const tabla = document.getElementById("tabla-coordinador");
-  if (!tabla) return;
-
-  const cells = tabla.querySelectorAll("td[contenteditable], th.titulo-ciclo");
-
-  // Cargar estado guardado al abrir
-  const savedData = JSON.parse(localStorage.getItem("tablaCoordinador")) || [];
-  savedData.forEach((valor, i) => {
-    if (cells[i]) cells[i].innerText = valor;
-  });
-
-  // Guardar en cada cambio
-  cells.forEach(() => {
-    tabla.addEventListener("input", () => {
-      const data = Array.from(cells).map(c => c.innerText);
-      localStorage.setItem("tablaCoordinador", JSON.stringify(data));
+  // ============= GUARDADO AUTO CELDA A CELDA =============
+  const tabla2 = document.getElementById("tabla-coordinador");
+  if (tabla2) {
+    const cells = tabla2.querySelectorAll("td[contenteditable], th.titulo-ciclo");
+    const savedData = JSON.parse(localStorage.getItem("tablaCoordinador")) || [];
+    savedData.forEach((text, i) => {
+      if (cells[i]) cells[i].innerText = text;
     });
-  });
-});
 
-// Abre un selector de color tipo "paleta" y aplica el callback
-function openColorPicker(targetCell, callback, paletteColors = []) {
-
-}
-
-// Y JUSTO DESPUÉS va nuestro bloque de aplicar color
-document.querySelectorAll("tbody tr").forEach(fila => {
-  const celdas = fila.querySelectorAll("td");
-  celdas.forEach((celda, index) => {
-    if (index >= 2 && index <= 6) {
-      celda.classList.add("turno-editable");
-      celda.addEventListener("click", function (e) {
-        e.stopPropagation();
-        openColorPicker(celda, (color) => {
-          celda.style.backgroundColor = color;
-          guardarTurnos(); // ✅ ahora sí se aplica
-        }, [
-          "#4d9ef7",
-          "#f7a64d",
-          "#6fd773",
-          "#e65252",
-          "#c9c9c9"
-        ]);
+    cells.forEach((cell, i) => {
+      cell.addEventListener("input", () => {
+        const data = Array.from(cells).map(c => c.innerText);
+        localStorage.setItem("tablaCoordinador", JSON.stringify(data));
       });
-    }
-  });
-});
-
-
-  // Elimina paletas anteriores si quedaran abiertas
-  const existing = document.getElementById("temp-color-picker");
-  if (existing) existing.remove();
-
-  // Crear contenedor flotante
-  const picker = document.createElement("div");
-  picker.id = "temp-color-picker";
-  picker.style.position = "absolute";
-  picker.style.padding = "8px";
-  picker.style.background = "white";
-  picker.style.border = "1px solid #ccc";
-  picker.style.borderRadius = "6px";
-  picker.style.display = "flex";
-  picker.style.gap = "6px";
-  picker.style.zIndex = "9999";
-  picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
-
-  // Posicionar cerca de la celda pulsada
-  const rect = targetCell.getBoundingClientRect();
-  picker.style.top = (window.scrollY + rect.bottom + 5) + "px";
-  picker.style.left = (window.scrollX + rect.left) + "px";
-
-  // Añadir colores
-  paletteColors.forEach(color => {
-    const dot = document.createElement("div");
-    dot.style.width = "28px";
-    dot.style.height = "28px";
-    dot.style.borderRadius = "50%";
-    dot.style.border = "1px solid #666";
-    dot.style.cursor = "pointer";
-    dot.style.background = color;
-
-    dot.addEventListener("click", () => {
-      callback(color); // ✅ AQUÍ SE APLICA EL COLOR
-      picker.remove(); // cerrar paleta
     });
+  }
 
-    picker.appendChild(dot);
-  });
-
-  document.body.appendChild(picker);
-
-  // Cerrar si clicas fuera
-  document.addEventListener("click", function close(e){
-    if (!picker.contains(e.target) && e.target !== targetCell) {
-      picker.remove();
-      document.removeEventListener("click", close);
-    }
-  });
-
-}
-
-document.getElementById("limpiar-tabla").addEventListener("click", function () {
-  const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
-  celdas.forEach(celda => celda.textContent = "");
-});
-
-document.addEventListener("DOMContentLoaded", () => {
+  // ============= SPLASH =============
   const splash = document.getElementById("splash");
   const app = document.getElementById("app");
   const logo = document.getElementById("splash-logo");
@@ -938,30 +846,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const calendarioSection = document.getElementById("calendar-panel");
   const licenciasSection = document.getElementById("licencias-container");
 
-  // Estado inicial: solo splash visible
   app.classList.add("oculto");
   calendarioSection.classList.add("oculto");
   licenciasSection.classList.add("oculto");
 
   logo.addEventListener("click", () => {
-    // Oculta splash y muestra app
     splash.classList.add("oculto");
     app.classList.remove("oculto");
-
-    // Mostrar solo el calendario
     calendarioSection.classList.remove("oculto");
     licenciasSection.classList.add("oculto");
-
-    // Animación
     calendarioSection.classList.add("fade-in-up");
-
-    // Desplazar suave al calendario
     setTimeout(() => {
       calendarioSection.scrollIntoView({ behavior: "smooth" });
     }, 200);
   });
-});
 
+});
 
 
 function guardarTurnos() {
