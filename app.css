@@ -46,7 +46,7 @@ body {
 }
 
 .logo-img {
-  width: 90vw;       /* Esto hace que crezca según pantalla */
+  width: 70vw;       /* Esto hace que crezca según pantalla */
   max-width: 520px;  /* Tamaño gigante en móviles grandes */
   height: auto;
   display: block;
@@ -821,4 +821,5 @@ body {
   }
 
 }
+
 
