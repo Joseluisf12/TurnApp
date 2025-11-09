@@ -945,4 +945,57 @@ document.querySelectorAll("tbody tr").forEach(fila => {
   });
 });
 
+function guardarTurnos() {
+  const filas = [];
+  document.querySelectorAll("tbody tr").forEach(tr => {
+    const fila = [];
+    tr.querySelectorAll("td").forEach(td => {
+      fila.push({
+        texto: td.textContent.trim(),
+        fondo: td.style.backgroundColor || ""
+      });
+    });
+    filas.push(fila);
+  });
+  localStorage.setItem("turnosColoreados", JSON.stringify(filas));
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const guardado = JSON.parse(localStorage.getItem("turnosColoreados") || "[]");
+  const filas = document.querySelectorAll("tbody tr");
+  guardado.forEach((fila, i) => {
+    const celdas = filas[i]?.querySelectorAll("td");
+    fila.forEach((celda, j) => {
+      if (celdas[j]) {
+        celdas[j].textContent = celda.texto || "";
+        celdas[j].style.backgroundColor = celda.fondo || "";
+      }
+    });
+  });
+});
+
+// === ACTIVAR PALETA DE COLORES EN CADA CELDA EDITABLE ===
+document.querySelectorAll("tbody tr").forEach(fila => {
+  const celdas = fila.querySelectorAll("td");
+  celdas.forEach((celda, index) => {
+    if (index >= 2 && index <= 6) {
+      celda.classList.add("turno-editable");
+      celda.addEventListener("click", function (e) {
+        e.stopPropagation();
+
+        openColorPicker(celda, (color) => {
+          celda.style.backgroundColor = color;
+          guardarTurnos();
+        }, [
+          "#4d9ef7", // Azul garantizado
+          "#f7a64d", // Naranja probable
+          "#6fd773", // Verde descanso
+          "#e65252", // Rojo baja
+          "#c9c9c9"  // Gris otros
+        ]);
+      });
+    }
+  });
+});
+
   // ------------------ FIN app.js ------------------
