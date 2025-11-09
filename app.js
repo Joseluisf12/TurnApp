@@ -842,6 +842,62 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+// Abre un selector de color tipo "paleta" y aplica el callback
+function openColorPicker(targetCell, callback, paletteColors = []) {
+
+  // Elimina paletas anteriores si quedaran abiertas
+  const existing = document.getElementById("temp-color-picker");
+  if (existing) existing.remove();
+
+  // Crear contenedor flotante
+  const picker = document.createElement("div");
+  picker.id = "temp-color-picker";
+  picker.style.position = "absolute";
+  picker.style.padding = "8px";
+  picker.style.background = "white";
+  picker.style.border = "1px solid #ccc";
+  picker.style.borderRadius = "6px";
+  picker.style.display = "flex";
+  picker.style.gap = "6px";
+  picker.style.zIndex = "9999";
+  picker.style.boxShadow = "0 4px 12px rgba(0,0,0,0.15)";
+
+  // Posicionar cerca de la celda pulsada
+  const rect = targetCell.getBoundingClientRect();
+  picker.style.top = (window.scrollY + rect.bottom + 5) + "px";
+  picker.style.left = (window.scrollX + rect.left) + "px";
+
+  // Añadir colores
+  paletteColors.forEach(color => {
+    const dot = document.createElement("div");
+    dot.style.width = "28px";
+    dot.style.height = "28px";
+    dot.style.borderRadius = "50%";
+    dot.style.border = "1px solid #666";
+    dot.style.cursor = "pointer";
+    dot.style.background = color;
+
+    dot.addEventListener("click", () => {
+      callback(color); // ✅ AQUÍ SE APLICA EL COLOR
+      picker.remove(); // cerrar paleta
+    });
+
+    picker.appendChild(dot);
+  });
+
+  document.body.appendChild(picker);
+
+  // Cerrar si clicas fuera
+  document.addEventListener("click", function close(e){
+    if (!picker.contains(e.target) && e.target !== targetCell) {
+      picker.remove();
+      document.removeEventListener("click", close);
+    }
+  });
+
+}
+
 document.getElementById("limpiar-tabla").addEventListener("click", function () {
   const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
   celdas.forEach(celda => celda.textContent = "");
@@ -888,34 +944,5 @@ document.querySelectorAll("tbody tr").forEach(fila => {
     }
   });
 });
-
-let longPressTimer;
-const menu = document.getElementById("color-menu");
-
-document.querySelectorAll(".turno-editable").forEach(celda => {
-
-  celda.addEventListener("touchstart", () => {
-    longPressTimer = setTimeout(() => {
-      mostrarMenu(celda);
-    }, 600);
-  });
-
-  celda.addEventListener("touchend", () => clearTimeout(longPressTimer));
-  celda.addEventListener("click", () => mostrarMenu(celda)); // También útil en PC
-});
-
-function mostrarMenu(celda) {
-  const rect = celda.getBoundingClientRect();
-  menu.style.left = rect.left + "px";
-  menu.style.top = rect.bottom + "px";
-  menu.style.display = "flex";
-
-  menu.querySelectorAll(".color-btn").forEach(btn => {
-    btn.onclick = () => {
-      celda.style.backgroundColor = btn.dataset.color;
-      menu.style.display = "none";
-    };
-  });
-}
 
   // ------------------ FIN app.js ------------------
