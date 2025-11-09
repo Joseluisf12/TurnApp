@@ -36,6 +36,7 @@ body {
   justify-content: center;
   height: 100vh;
   text-align: center;
+  padding: 0; /* ← si lo tienes, quítalo */
 }
 
 .logo-wrap {
@@ -45,11 +46,11 @@ body {
 }
 
 .logo-img {
-  width: 500px;   /* antes 120px */
+  width: 70vw;       /* Esto hace que crezca según pantalla */
+  max-width: 520px;  /* Tamaño gigante en móviles grandes */
   height: auto;
   display: block;
   margin: 0 auto;
-  transition: transform 0.4s ease; /* opcional: suavidad */
 }
 
 #splash .logo-img {
