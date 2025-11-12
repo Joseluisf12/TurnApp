@@ -207,13 +207,14 @@ function renderCalendar(month, year) {
 
   applyCadenceRender(month, year);
 }
+
 function createShiftElement(year, month, day, shiftKey) {
     const container = document.createElement('div');
     container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
 
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    shift.contentEditable = false; // El texto no es editable por defecto
+    shift.contentEditable = false;
     shift.spellcheck = false;
 
     const dk = dateKey(year, month, day);
@@ -227,7 +228,7 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE PULSACIÓN (VERSIÓN 2.0 - MÁS COMPATIBLE) ---
+    // --- LÓGICA DE PULSACIÓN (VERSIÓN 3.0 - ANTI GHOST CLICK) ---
     let pressTimer = null;
     let isLongPress = false;
     let hasMoved = false;
@@ -236,29 +237,34 @@ function createShiftElement(year, month, day, shiftKey) {
         isLongPress = false;
         hasMoved = false;
         pressTimer = window.setTimeout(() => {
-            if (hasMoved) return; // Si se movió, no es pulsación larga
+            if (hasMoved) return;
             isLongPress = true;
             
-            // PULSACIÓN LARGA: Activar edición de texto
             shift.contentEditable = true;
             shift.focus();
             try {
-                // Seleccionar texto para facilitar la edición
                 const selection = window.getSelection();
                 const range = document.createRange();
                 range.selectNodeContents(shift);
                 selection.removeAllRanges();
                 selection.addRange(range);
             } catch (err) { console.error("Error seleccionando texto:", err); }
-        }, 500); // 500ms de espera
+        }, 500);
     };
 
     const endPress = (e) => {
         clearTimeout(pressTimer);
-        // Solo si no fue pulsación larga y el dedo/cursor no se movió
+        
         if (!isLongPress && !hasMoved) {
+            // *** LA CORRECCIÓN DEFINITIVA PARA MÓVIL ***
+            // Prevenimos el "clic fantasma" que los navegadores móviles disparan tras un toque.
+            // Esto evita que la paleta se cierre inmediatamente después de abrirse.
+            if (e.type === 'touchend') {
+                e.preventDefault();
+            }
             e.stopPropagation();
-            // PULSACIÓN CORTA: Abrir paleta de colores
+
+            // Abrir paleta de colores
             openColorPicker(shift, (color) => {
                 shift.style.backgroundColor = color;
                 shift.style.color = isColorLight(color) ? '#000' : '#fff';
@@ -271,26 +277,24 @@ function createShiftElement(year, month, day, shiftKey) {
             }, colorPalette);
         }
     };
-    
-    // Si el dedo/cursor se mueve, se cancela la acción
+
     const handleMove = () => {
         hasMoved = true;
         clearTimeout(pressTimer);
     };
 
-    // --- Asignación de Eventos ---
+    // Asignación de Eventos
     shift.addEventListener('mousedown', startPress);
-    shift.addEventListener('touchstart', startPress, { passive: true });
+    shift.addEventListener('touchstart', startPress); // Quitamos 'passive:true' para poder usar preventDefault()
     
     shift.addEventListener('mouseup', endPress);
     shift.addEventListener('touchend', endPress);
 
     shift.addEventListener('mousemove', handleMove);
-    shift.addEventListener('touchmove', handleMove, { passive: true });
+    shift.addEventListener('touchmove', handleMove);
 
-    // Evento para guardar texto tras la edición
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false; // Desactivar edición al perder foco
+        shift.contentEditable = false;
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
@@ -299,7 +303,6 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
     });
 
-    // Evento para que 'Enter' finalice la edición
     shift.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
