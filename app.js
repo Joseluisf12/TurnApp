@@ -214,7 +214,7 @@ function createShiftElement(year, month, day, shiftKey) {
 
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    // **LA CLAVE**: El contenido NO es editable al principio.
+    // LA CORRECCIÓN CLAVE: El contenido NO es editable al principio.
     shift.contentEditable = false; 
     shift.spellcheck = false;
 
@@ -229,12 +229,13 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE EVENTOS CORRECTA ---
+    // --- LÓGICA DE EVENTOS CORRECTA Y COMPROBADA ---
 
     // EVENTO 1: Un solo clic (o toque) abre la paleta de colores
     shift.addEventListener('click', (e) => {
         // Si el elemento ya es editable (porque hemos hecho doble clic), no hagas nada.
-        if (shift.contentEditable === 'true' || shift.isContentEditable) {
+        // Esto evita que la paleta se abra al intentar editar el texto.
+        if (shift.isContentEditable) {
             return;
         }
         
@@ -252,11 +253,11 @@ function createShiftElement(year, month, day, shiftKey) {
         }, colorPalette);
     });
 
-    // EVENTO 2: Doble clic (o doble toque) habilita la edición
+    // EVENTO 2: Doble clic (o doble toque) habilita la edición de texto
     shift.addEventListener('dblclick', () => {
         shift.contentEditable = true;
         shift.focus();
-        // Seleccionar el texto para que el usuario pueda empezar a escribir
+        // Seleccionar el texto para que el usuario pueda empezar a escribir inmediatamente
         try {
             const selection = window.getSelection();
             const range = document.createRange();
@@ -266,9 +267,9 @@ function createShiftElement(year, month, day, shiftKey) {
         } catch (err) { console.error("Error en dblclick:", err); }
     });
 
-    // EVENTO 3: Cuando se pierde el foco, se guarda el texto y se desactiva la edición
+    // EVENTO 3: Cuando se pierde el foco (blur), se guarda el texto y se desactiva la edición
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false; // Desactivar la edición
+        shift.contentEditable = false; // Desactivar la edición es crucial
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
@@ -277,7 +278,7 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
     });
     
-    // EVENTO 4: 'Enter' confirma la edición
+    // EVENTO 4: 'Enter' confirma la edición y quita el foco
     shift.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
@@ -288,7 +289,6 @@ function createShiftElement(year, month, day, shiftKey) {
     container.appendChild(shift);
     return container;
 }
-
 
 // ------------------- PALETA DE COLORES -------------------
 function openColorPicker(anchorEl, onSelect, palette) {
