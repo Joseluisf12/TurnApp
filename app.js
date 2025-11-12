@@ -214,9 +214,8 @@ function createShiftElement(year, month, day, shiftKey) {
 
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    // El contenido es editable desde el principio, pero el usuario no lo notará
-    // hasta que haga doble clic.
-    shift.contentEditable = true; 
+    // **LA CLAVE**: El contenido NO es editable al principio.
+    shift.contentEditable = false; 
     shift.spellcheck = false;
 
     const dk = dateKey(year, month, day);
@@ -230,22 +229,16 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE EVENTOS SIMPLIFICADA (CLIC Y DOBLE CLIC) ---
-
-    // Variable para controlar si la paleta de colores está abierta
-    let isPickerOpen = false;
+    // --- LÓGICA DE EVENTOS CORRECTA ---
 
     // EVENTO 1: Un solo clic (o toque) abre la paleta de colores
     shift.addEventListener('click', (e) => {
-        // Si la paleta ya está abierta o si la celda está en modo de edición (con el cursor parpadeando),
-        // no hacemos nada.
-        const selection = window.getSelection();
-        if (isPickerOpen || (selection.isCollapsed && shift.contains(selection.anchorNode))) {
+        // Si el elemento ya es editable (porque hemos hecho doble clic), no hagas nada.
+        if (shift.contentEditable === 'true' || shift.isContentEditable) {
             return;
         }
-
+        
         e.stopPropagation();
-        isPickerOpen = true;
 
         openColorPicker(shift, (color) => {
             shift.style.backgroundColor = color;
@@ -256,28 +249,26 @@ function createShiftElement(year, month, day, shiftKey) {
             if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
             manualEdits[dk][shiftKey].color = color;
             saveManualEdits();
-            
-            // Importante: resetear el estado cuando la paleta se cierra.
-            isPickerOpen = false; 
         }, colorPalette);
     });
 
-    // EVENTO 2: Doble clic (o doble toque rápido) activa la selección de texto para edición
+    // EVENTO 2: Doble clic (o doble toque) habilita la edición
     shift.addEventListener('dblclick', () => {
+        shift.contentEditable = true;
+        shift.focus();
+        // Seleccionar el texto para que el usuario pueda empezar a escribir
         try {
-            shift.focus();
             const selection = window.getSelection();
             const range = document.createRange();
             range.selectNodeContents(shift);
             selection.removeAllRanges();
             selection.addRange(range);
-        } catch (err) {
-            console.error("Error al seleccionar texto en doble clic:", err);
-        }
+        } catch (err) { console.error("Error en dblclick:", err); }
     });
 
-    // EVENTO 3: Guardar el texto cuando se pierde el foco
+    // EVENTO 3: Cuando se pierde el foco, se guarda el texto y se desactiva la edición
     shift.addEventListener('blur', () => {
+        shift.contentEditable = false; // Desactivar la edición
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
@@ -286,17 +277,18 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
     });
     
-    // EVENTO 4: 'Enter' confirma la edición en lugar de crear una línea nueva
+    // EVENTO 4: 'Enter' confirma la edición
     shift.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            shift.blur(); // Confirma la edición y sale del foco
+            shift.blur();
         }
     });
 
     container.appendChild(shift);
     return container;
 }
+
 
 // ------------------- PALETA DE COLORES -------------------
 function openColorPicker(anchorEl, onSelect, palette) {
