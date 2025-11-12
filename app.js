@@ -120,6 +120,11 @@ const spanishHolidays = [
 
 // paleta color
 const colorPalette = [
+ "#4d9ef7", // azul garantizado
+  "#f7a64d", // naranja probable
+  "#6fd773", // verde descanso
+  "#e65252", // rojo baja
+  "#c9c9c9", // gris otros
   "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
   "rgba(232,240,255,1)","rgba(163,193,255,0.65)","rgba(255,179,179,0.45)"
@@ -269,7 +274,7 @@ function createShiftElement(year, month, day, shiftKey){
   handle.className = 'color-handle';
   handle.title = 'Elegir color';
   handle.innerText = '●';
-  handle.style.height = '10px';
+  handle.style.height = '12px';
   handle.style.width = '24px';
   handle.style.fontSize = '10px';
   handle.style.opacity = '0.28';
@@ -629,6 +634,7 @@ function applyCadenceRender(month, year){
     }
   });
 }
+
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
 function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
@@ -723,6 +729,7 @@ function initPeticiones(){
 
   render();
 }
+
 // === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
 document.addEventListener("DOMContentLoaded", () => {
   const btnPeticiones = document.getElementById("btn-peticiones");
@@ -761,7 +768,6 @@ document.addEventListener("DOMContentLoaded", () => {
     togglePeticiones();
   });
 });
-
 // === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
 document.addEventListener("DOMContentLoaded", () => {
   const btnPeticiones = document.getElementById("btn-peticiones");
@@ -793,6 +799,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
 // === EXCEL DEL COORDINADOR ===
 document.addEventListener("DOMContentLoaded", () => {
   const tabla = document.getElementById("excel-coordinador");
@@ -842,10 +849,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
-document.getElementById("limpiar-tabla").addEventListener("click", function () {
-  const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable='true']");
-  celdas.forEach(celda => celda.textContent = "");
-});
+
+// === BOTÓN LIMPIAR TABLA COORDINADOR ===
+const btnLimpiar = document.getElementById("limpiar-tabla");
+if (btnLimpiar) {
+  btnLimpiar.addEventListener("click", function () {
+    const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable]");
+    celdas.forEach(td => td.textContent = "");
+
+    // Borrar también del localStorage
+    localStorage.removeItem("tablaCoordinador");
+  });
+}
 
 document.addEventListener("DOMContentLoaded", () => {
   const splash = document.getElementById("splash");
