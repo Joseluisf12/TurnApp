@@ -209,64 +209,119 @@ function renderCalendar(month, year) {
 }
 
 function createShiftElement(year, month, day, shiftKey) {
-  const container = document.createElement('div');
-  container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
+    const container = document.createElement('div');
+    container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
 
-  const shift = document.createElement('div');
-  shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-  shift.contentEditable = true;
-  shift.spellcheck = false;
+    const shift = document.createElement('div');
+    shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
+    // El texto ya no es editable por defecto. Se activará con la pulsación larga.
+    shift.contentEditable = false; 
+    shift.spellcheck = false;
 
-  const dk = dateKey(year, month, day);
-  const savedShift = manualEdits[dk]?.[shiftKey] || {};
+    const dk = dateKey(year, month, day);
+    const savedShift = manualEdits[dk]?.[shiftKey] || {};
 
-  shift.textContent = savedShift.text ?? defaultTextFor(shiftKey);
+    shift.textContent = savedShift.text ?? defaultTextFor(shiftKey);
 
-  if (savedShift.color) {
-    shift.style.backgroundColor = savedShift.color;
-    shift.style.color = isColorLight(savedShift.color) ? '#000' : '#fff';
-    shift.dataset.userColor = 'true';
-  }
-
-  shift.addEventListener('blur', () => {
-    const newText = shift.textContent.trim();
-    if (!manualEdits[dk]) manualEdits[dk] = {};
-    if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
-    manualEdits[dk][shiftKey].text = newText;
-    saveManualEdits();
-    shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
-  });
-
-  shift.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      shift.blur();
+    if (savedShift.color) {
+        shift.style.backgroundColor = savedShift.color;
+        shift.style.color = isColorLight(savedShift.color) ? '#000' : '#fff';
+        shift.dataset.userColor = 'true';
     }
-  });
 
-  const handle = document.createElement('button');
-  handle.type = 'button';
-  handle.className = 'color-handle';
-  handle.title = 'Elegir color';
-  handle.innerHTML = '&#9679;'; // Círculo
-  handle.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    openColorPicker(handle, (color) => {
-      shift.style.backgroundColor = color;
-      shift.style.color = isColorLight(color) ? '#000' : '#fff';
-      shift.dataset.userColor = 'true';
-      if (!manualEdits[dk]) manualEdits[dk] = {};
-      if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
-      manualEdits[dk][shiftKey].color = color;
-      saveManualEdits();
-    }, colorPalette);
-  });
+    // --- LÓGICA DE DETECCIÓN DE PULSACIÓN CORTA VS LARGA ---
 
-  container.appendChild(shift);
-  container.appendChild(handle);
-  return container;
+    let pressTimer = null;
+    let isLongPress = false;
+    let isPointerDown = false;
+
+    const startPress = (e) => {
+        isPointerDown = true;
+        isLongPress = false;
+        
+        // Inicia un temporizador. Si sigue presionado después de 500ms, es pulsación larga.
+        pressTimer = window.setTimeout(() => {
+            if (isPointerDown) {
+                isLongPress = true;
+                // HABILITA la edición de texto
+                shift.contentEditable = true;
+                shift.focus();
+                
+                // Selecciona el texto para que el usuario pueda empezar a escribir
+                try {
+                    const range = document.createRange();
+                    range.selectNodeContents(shift);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                } catch (err) {
+                    console.error("Error al seleccionar el texto:", err);
+                }
+            }
+        }, 500); // 500ms para considerar pulsación larga
+    };
+
+    const cancelPress = () => {
+        isPointerDown = false;
+        clearTimeout(pressTimer);
+    };
+    
+    // El evento 'click' solo se dispara si NO fue una pulsación larga.
+    const handleClick = (ev) => {
+        if (!isLongPress) {
+            // PULSACIÓN CORTA: Abre la paleta de colores
+            ev.stopPropagation();
+            openColorPicker(shift, (color) => {
+                shift.style.backgroundColor = color;
+                shift.style.color = isColorLight(color) ? '#000' : '#fff';
+                shift.dataset.userColor = 'true';
+                
+                if (!manualEdits[dk]) manualEdits[dk] = {};
+                if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
+                manualEdits[dk][shiftKey].color = color;
+                saveManualEdits();
+            }, colorPalette);
+        }
+        // Previene comportamientos extraños del navegador
+        ev.preventDefault();
+    };
+
+    // Asignar los eventos para ratón y pantalla táctil
+    shift.addEventListener('mousedown', startPress);
+    shift.addEventListener('touchstart', startPress, { passive: true });
+    
+    shift.addEventListener('mouseup', cancelPress);
+    shift.addEventListener('mouseleave', cancelPress);
+    shift.addEventListener('touchend', cancelPress);
+    shift.addEventListener('touchcancel', cancelPress);
+    
+    shift.addEventListener('click', handleClick);
+    
+    // Cuando el usuario termina de editar el texto (pierde el foco)...
+    shift.addEventListener('blur', () => {
+        // DESHABILITA la edición de texto
+        shift.contentEditable = false;
+        
+        // Guarda el texto
+        const newText = shift.textContent.trim();
+        if (!manualEdits[dk]) manualEdits[dk] = {};
+        if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
+        manualEdits[dk][shiftKey].text = newText;
+        saveManualEdits();
+        shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
+    });
+
+    // Para que 'Enter' confirme la edición en lugar de crear una nueva línea
+    shift.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            shift.blur(); // Confirma la edición y sale del modo de edición
+        }
+    });
+
+    container.appendChild(shift);
+    return container;
 }
-
 
 // ------------------- PALETA DE COLORES -------------------
 function openColorPicker(anchorEl, onSelect, palette) {
@@ -473,65 +528,56 @@ function buildCadenceDataFromSpec() {
 }
 
 function applyCadenceRender(month, year) {
-  if (cadenceData.length === 0) return;
+    if (cadenceData.length === 0) return;
 
-  document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
-      const day = parseInt(cell.querySelector('.day-label').textContent, 10);
-      if (isNaN(day)) return;
+    document.querySelectorAll('.day-cell:not(.empty)').forEach(cell => {
+        const day = parseInt(cell.querySelector('.day-label').textContent, 10);
+        if (isNaN(day)) return;
 
-      // Crear una fecha para la celda a medianoche UTC para una comparación fiable
-      const cellDate = new Date(Date.UTC(year, month, day));
-      
-      const cd = cadenceData.find(c => {
-          // Crear una fecha para la cadencia a medianoche UTC
-          const cadenceDate = new Date(c.date);
-          const cadenceUtcDate = new Date(Date.UTC(cadenceDate.getFullYear(), cadenceDate.getMonth(), cadenceDate.getDate()));
-          return cadenceUtcDate.getTime() === cellDate.getTime();
-      });
+        const cellDate = new Date(year, month, day);
+        const cd = cadenceData.find(c => c.date.getTime() === cellDate.getTime());
 
-      const shifts = {
-          M: cell.querySelector('.shift-m'),
-          T: cell.querySelector('.shift-t'),
-          N: cell.querySelector('.shift-n')
-      };
-      
-      const resetShift = (shiftEl) => {
-          if (shiftEl && shiftEl.dataset.cadenceApplied === 'true' && shiftEl.dataset.userColor !== 'true') {
-              shiftEl.style.backgroundColor = '';
-              shiftEl.style.color = '';
-              delete shiftEl.dataset.cadenceApplied;
-          }
-      };
+        const shifts = {
+            M: cell.querySelector('.shift-m'),
+            T: cell.querySelector('.shift-t'),
+            N: cell.querySelector('.shift-n')
+        };
+        
+        const resetShift = (shiftEl) => {
+            if (shiftEl && shiftEl.dataset.cadenceApplied === 'true' && shiftEl.dataset.userColor !== 'true') {
+                shiftEl.style.backgroundColor = '';
+                shiftEl.style.color = '';
+                delete shiftEl.dataset.cadenceApplied;
+            }
+        };
 
-      // Primero, reseteamos siempre los turnos del día por si la cadencia ha cambiado o se ha limpiado
-      Object.values(shifts).forEach(resetShift);
+        if (cd) {
+            const types = cd.type.split('/').map(t => t.trim());
+            
+            const cadColorMT = '#ffa94d';
+            const cadColorN = '#d87d00';
 
-      if (cd) {
-          const types = cd.type.split('/').map(t => t.trim().toUpperCase());
-          
-          const cadColorMT = '#ffa94d';
-          const cadColorN = '#d87d00';
+            const applyStyle = (shiftEl, shiftKey, color, condition) => {
+                if (shiftEl && condition && shiftEl.dataset.userColor !== 'true') {
+                    shiftEl.style.backgroundColor = color;
+                    shiftEl.style.color = isColorLight(color) ? '#000' : '#fff';
+                    shiftEl.dataset.cadenceApplied = 'true';
+                }
+            };
+            
+            // Primero reseteamos por si la cadencia ha cambiado
+            Object.values(shifts).forEach(resetShift);
 
-          const applyStyle = (shiftEl, color) => {
-              if (shiftEl && shiftEl.dataset.userColor !== 'true') {
-                  shiftEl.style.backgroundColor = color;
-                  shiftEl.style.color = isColorLight(color) ? '#000' : '#fff';
-                  shiftEl.dataset.cadenceApplied = 'true';
-              }
-          };
-          
-          // Aplicamos nuevos estilos basados en la cadencia del día
-          if (types.includes('M') || types.includes('M/T')) {
-              applyStyle(shifts.M, cadColorMT);
-          }
-          if (types.includes('T') || types.includes('M/T')) {
-              applyStyle(shifts.T, cadColorMT);
-          }
-          if (types.includes('N') || types.includes('M/N')) {
-              applyStyle(shifts.N, cadColorN);
-          }
-      }
-  });
+            // Aplicamos nuevos estilos
+            applyStyle(shifts.M, 'M', cadColorMT, types.includes('M') || types.includes('MT'));
+            applyStyle(shifts.T, 'T', cadColorMT, types.includes('T') || types.includes('MT'));
+            applyStyle(shifts.N, 'N', cadColorN, types.includes('N') || types.includes('M/N'));
+
+        } else {
+            // Si no hay cadencia para este día, reseteamos todos los turnos
+            Object.values(shifts).forEach(resetShift);
+        }
+    });
 }
 
 

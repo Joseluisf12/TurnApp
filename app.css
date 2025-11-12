@@ -284,33 +284,6 @@ body {
   --color-sunday: rgba(255,179,179,0.45);
 }
 
-/* HANDLE de color (discreto y centrado en la parte inferior de la celda de turno) */
-/* REEMPLAZA únicamente la regla .color-handle por esto */
-.color-handle {
-  position: absolute;
-  top: -8px;               /* <-- mover hacia arriba (antes bottom: 2px) */
-  left: 50%;
-  transform: translate(-50%); /* centrar horizontal y desplazar ligeramente arriba */
-  height: 16px;           /* punto más fácil de tocar (aumentado un poco) */
-  width: 16px;
-  font-size: 12px;
-  line-height: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  opacity: 0.35;
-  cursor: pointer;
-  z-index: 10;             /* por encima de la celda*/
-  padding: 0;
-}
-
-/* hover: hacerlo más visible sin cambiar el resto */
-.color-handle:hover {
-  opacity: 0.8;
-}
 
 /* --- CAJÓN DE LICENCIAS --- */
 #licencias-container {
