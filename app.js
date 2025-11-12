@@ -207,7 +207,6 @@ function renderCalendar(month, year) {
 
   applyCadenceRender(month, year);
 }
-
 function createShiftElement(year, month, day, shiftKey) {
     const container = document.createElement('div');
     container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
@@ -228,37 +227,36 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE PULSACIÓN (VERSIÓN ROBUSTA PARA MÓVIL Y ESCRITORIO) ---
-
+    // --- LÓGICA DE PULSACIÓN (VERSIÓN 2.0 - MÁS COMPATIBLE) ---
     let pressTimer = null;
     let isLongPress = false;
+    let hasMoved = false;
 
     const startPress = (e) => {
-        // Previene comportamientos por defecto en móvil (selección de texto, etc.)
-        if (e.type === 'touchstart') {
-            e.preventDefault();
-        }
         isLongPress = false;
+        hasMoved = false;
         pressTimer = window.setTimeout(() => {
+            if (hasMoved) return; // Si se movió, no es pulsación larga
             isLongPress = true;
+            
             // PULSACIÓN LARGA: Activar edición de texto
             shift.contentEditable = true;
             shift.focus();
             try {
+                // Seleccionar texto para facilitar la edición
+                const selection = window.getSelection();
                 const range = document.createRange();
                 range.selectNodeContents(shift);
-                const sel = window.getSelection();
-                sel.removeAllRanges();
-                sel.addRange(range);
-            } catch (err) { /* Ignorar error en navegadores antiguos */ }
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } catch (err) { console.error("Error seleccionando texto:", err); }
         }, 500); // 500ms de espera
     };
 
     const endPress = (e) => {
         clearTimeout(pressTimer);
-        
-        // Si el temporizador no se completó, fue una pulsación corta
-        if (!isLongPress) {
+        // Solo si no fue pulsación larga y el dedo/cursor no se movió
+        if (!isLongPress && !hasMoved) {
             e.stopPropagation();
             // PULSACIÓN CORTA: Abrir paleta de colores
             openColorPicker(shift, (color) => {
@@ -274,22 +272,25 @@ function createShiftElement(year, month, day, shiftKey) {
         }
     };
     
+    // Si el dedo/cursor se mueve, se cancela la acción
+    const handleMove = () => {
+        hasMoved = true;
+        clearTimeout(pressTimer);
+    };
+
     // --- Asignación de Eventos ---
-    // Eventos de inicio de pulsación
     shift.addEventListener('mousedown', startPress);
-    shift.addEventListener('touchstart', startPress);
+    shift.addEventListener('touchstart', startPress, { passive: true });
     
-    // Eventos de fin de pulsación
     shift.addEventListener('mouseup', endPress);
     shift.addEventListener('touchend', endPress);
 
-    // Cancelar si el dedo o ratón se mueve fuera del elemento
-    shift.addEventListener('mouseleave', () => clearTimeout(pressTimer));
-    shift.addEventListener('touchcancel', () => clearTimeout(pressTimer));
+    shift.addEventListener('mousemove', handleMove);
+    shift.addEventListener('touchmove', handleMove, { passive: true });
 
     // Evento para guardar texto tras la edición
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false; // Siempre desactivar edición al perder el foco
+        shift.contentEditable = false; // Desactivar edición al perder foco
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
