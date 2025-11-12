@@ -214,7 +214,9 @@ function createShiftElement(year, month, day, shiftKey) {
 
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    shift.contentEditable = false;
+    // El contenido es editable desde el principio, pero el usuario no lo notará
+    // hasta que haga doble clic.
+    shift.contentEditable = true; 
     shift.spellcheck = false;
 
     const dk = dateKey(year, month, day);
@@ -228,73 +230,54 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE PULSACIÓN (VERSIÓN 3.0 - ANTI GHOST CLICK) ---
-    let pressTimer = null;
-    let isLongPress = false;
-    let hasMoved = false;
+    // --- LÓGICA DE EVENTOS SIMPLIFICADA (CLIC Y DOBLE CLIC) ---
 
-    const startPress = (e) => {
-        isLongPress = false;
-        hasMoved = false;
-        pressTimer = window.setTimeout(() => {
-            if (hasMoved) return;
-            isLongPress = true;
-            
-            shift.contentEditable = true;
-            shift.focus();
-            try {
-                const selection = window.getSelection();
-                const range = document.createRange();
-                range.selectNodeContents(shift);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            } catch (err) { console.error("Error seleccionando texto:", err); }
-        }, 500);
-    };
+    // Variable para controlar si la paleta de colores está abierta
+    let isPickerOpen = false;
 
-    const endPress = (e) => {
-        clearTimeout(pressTimer);
-        
-        if (!isLongPress && !hasMoved) {
-            // *** LA CORRECCIÓN DEFINITIVA PARA MÓVIL ***
-            // Prevenimos el "clic fantasma" que los navegadores móviles disparan tras un toque.
-            // Esto evita que la paleta se cierre inmediatamente después de abrirse.
-            if (e.type === 'touchend') {
-                e.preventDefault();
-            }
-            e.stopPropagation();
-
-            // Abrir paleta de colores
-            openColorPicker(shift, (color) => {
-                shift.style.backgroundColor = color;
-                shift.style.color = isColorLight(color) ? '#000' : '#fff';
-                shift.dataset.userColor = 'true';
-                
-                if (!manualEdits[dk]) manualEdits[dk] = {};
-                if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
-                manualEdits[dk][shiftKey].color = color;
-                saveManualEdits();
-            }, colorPalette);
+    // EVENTO 1: Un solo clic (o toque) abre la paleta de colores
+    shift.addEventListener('click', (e) => {
+        // Si la paleta ya está abierta o si la celda está en modo de edición (con el cursor parpadeando),
+        // no hacemos nada.
+        const selection = window.getSelection();
+        if (isPickerOpen || (selection.isCollapsed && shift.contains(selection.anchorNode))) {
+            return;
         }
-    };
 
-    const handleMove = () => {
-        hasMoved = true;
-        clearTimeout(pressTimer);
-    };
+        e.stopPropagation();
+        isPickerOpen = true;
 
-    // Asignación de Eventos
-    shift.addEventListener('mousedown', startPress);
-    shift.addEventListener('touchstart', startPress); // Quitamos 'passive:true' para poder usar preventDefault()
-    
-    shift.addEventListener('mouseup', endPress);
-    shift.addEventListener('touchend', endPress);
+        openColorPicker(shift, (color) => {
+            shift.style.backgroundColor = color;
+            shift.style.color = isColorLight(color) ? '#000' : '#fff';
+            shift.dataset.userColor = 'true';
+            
+            if (!manualEdits[dk]) manualEdits[dk] = {};
+            if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
+            manualEdits[dk][shiftKey].color = color;
+            saveManualEdits();
+            
+            // Importante: resetear el estado cuando la paleta se cierra.
+            isPickerOpen = false; 
+        }, colorPalette);
+    });
 
-    shift.addEventListener('mousemove', handleMove);
-    shift.addEventListener('touchmove', handleMove);
+    // EVENTO 2: Doble clic (o doble toque rápido) activa la selección de texto para edición
+    shift.addEventListener('dblclick', () => {
+        try {
+            shift.focus();
+            const selection = window.getSelection();
+            const range = document.createRange();
+            range.selectNodeContents(shift);
+            selection.removeAllRanges();
+            selection.addRange(range);
+        } catch (err) {
+            console.error("Error al seleccionar texto en doble clic:", err);
+        }
+    });
 
+    // EVENTO 3: Guardar el texto cuando se pierde el foco
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false;
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
@@ -302,11 +285,12 @@ function createShiftElement(year, month, day, shiftKey) {
         saveManualEdits();
         shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
     });
-
+    
+    // EVENTO 4: 'Enter' confirma la edición en lugar de crear una línea nueva
     shift.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            shift.blur();
+            shift.blur(); // Confirma la edición y sale del foco
         }
     });
 
