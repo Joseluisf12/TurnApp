@@ -250,17 +250,17 @@ body {
 }
 
 .shift-cell {
-  width: 100%;
-  height: 100%;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 0.85em;
+  padding: 6px 11px;
   text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #000; /* texto negro */
-  user-select: text;
+  border-radius: 4px;
+  min-height: 14px;
+  font-size: 14px;
+  line-height: 1.4;
+  background-clip: padding-box;
+  position: relative;
+  transition: background-color 0.2s;
+  /* LA LÍNEA MÁS IMPORTANTE PARA MÓVILES: */
+  touch-action: manipulation;
 }
 
 /* Colores de fondo por defecto de M/T/N según tipo de día */

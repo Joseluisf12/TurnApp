@@ -214,13 +214,11 @@ function createShiftElement(year, month, day, shiftKey) {
 
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    // LA CORRECCIÓN CLAVE: El contenido NO es editable al principio.
-    shift.contentEditable = false; 
+    shift.contentEditable = false; // NO editable por defecto
     shift.spellcheck = false;
 
     const dk = dateKey(year, month, day);
     const savedShift = manualEdits[dk]?.[shiftKey] || {};
-
     shift.textContent = savedShift.text ?? defaultTextFor(shiftKey);
 
     if (savedShift.color) {
@@ -229,56 +227,68 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- LÓGICA DE EVENTOS CORRECTA Y COMPROBADA ---
+    // --- GESTOR DE TOQUES/CLICS (A PRUEBA DE FALLOS) ---
+    let tapTimer = null;
+    let lastTap = 0;
 
-    // EVENTO 1: Un solo clic (o toque) abre la paleta de colores
-    shift.addEventListener('click', (e) => {
-        // Si el elemento ya es editable (porque hemos hecho doble clic), no hagas nada.
-        // Esto evita que la paleta se abra al intentar editar el texto.
-        if (shift.isContentEditable) {
-            return;
-        }
-        
+    const handleTap = (e) => {
+        e.preventDefault(); // Previene clics fantasma y otros comportamientos no deseados
         e.stopPropagation();
 
-        openColorPicker(shift, (color) => {
-            shift.style.backgroundColor = color;
-            shift.style.color = isColorLight(color) ? '#000' : '#fff';
-            shift.dataset.userColor = 'true';
+        const currentTime = new Date().getTime();
+        const tapLength = currentTime - lastTap;
+
+        if (tapLength < 300 && tapLength > 0) { // DOBLE TOQUE/CLIC
+            clearTimeout(tapTimer);
             
-            if (!manualEdits[dk]) manualEdits[dk] = {};
-            if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
-            manualEdits[dk][shiftKey].color = color;
-            saveManualEdits();
-        }, colorPalette);
-    });
+            // --- Acción de Doble Toque: Editar Texto ---
+            shift.contentEditable = true;
+            shift.focus();
+            try {
+                const selection = window.getSelection();
+                const range = document.createRange();
+                range.selectNodeContents(shift);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } catch (err) { console.error("Error en doble toque:", err); }
 
-    // EVENTO 2: Doble clic (o doble toque) habilita la edición de texto
-    shift.addEventListener('dblclick', () => {
-        shift.contentEditable = true;
-        shift.focus();
-        // Seleccionar el texto para que el usuario pueda empezar a escribir inmediatamente
-        try {
-            const selection = window.getSelection();
-            const range = document.createRange();
-            range.selectNodeContents(shift);
-            selection.removeAllRanges();
-            selection.addRange(range);
-        } catch (err) { console.error("Error en dblclick:", err); }
-    });
+        } else { // PRIMER TOQUE/CLIC
+            // Inicia un temporizador. Si no hay un segundo toque, se ejecutará la acción de un solo toque.
+            tapTimer = setTimeout(() => {
+                // --- Acción de Toque Único: Abrir Paleta ---
+                if (shift.isContentEditable) return; // Seguridad: no abrir si ya está en modo edición
+                
+                openColorPicker(shift, (color) => {
+                    shift.style.backgroundColor = color;
+                    shift.style.color = isColorLight(color) ? '#000' : '#fff';
+                    shift.dataset.userColor = 'true';
+                    
+                    if (!manualEdits[dk]) manualEdits[dk] = {};
+                    if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
+                    manualEdits[dk][shiftKey].color = color;
+                    saveManualEdits();
+                }, colorPalette);
 
-    // EVENTO 3: Cuando se pierde el foco (blur), se guarda el texto y se desactiva la edición
+            }, 300); // Espera 300ms para ver si es un doble toque
+        }
+        lastTap = currentTime;
+    };
+    
+    // --- Asignación de Eventos ---
+    // Usamos 'mousedown' para el ordenador y 'touchstart' para el móvil.
+    shift.addEventListener('mousedown', handleTap);
+    shift.addEventListener('touchstart', handleTap);
+    
+    // --- Guardado y confirmación ---
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false; // Desactivar la edición es crucial
+        shift.contentEditable = false;
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
         manualEdits[dk][shiftKey].text = newText;
         saveManualEdits();
-        shift.dataset.edited = (newText !== defaultTextFor(shiftKey)).toString();
     });
-    
-    // EVENTO 4: 'Enter' confirma la edición y quita el foco
+
     shift.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
