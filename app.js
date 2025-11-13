@@ -212,76 +212,25 @@ function createShiftElement(year, month, day, shiftKey) {
     const container = document.createElement('div');
     container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
 
+    // 1. La celda de texto, editable directamente
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-    shift.contentEditable = false; // NO editable por defecto
+    shift.contentEditable = true;
     shift.spellcheck = false;
 
+    // --- Carga de datos ---
     const dk = dateKey(year, month, day);
     const savedShift = manualEdits[dk]?.[shiftKey] || {};
-    shift.textContent = savedShift.text ?? defaultTextFor(shiftKey);
 
+    shift.textContent = savedShift.text ?? defaultTextFor(shiftKey);
     if (savedShift.color) {
         shift.style.backgroundColor = savedShift.color;
         shift.style.color = isColorLight(savedShift.color) ? '#000' : '#fff';
         shift.dataset.userColor = 'true';
     }
 
-    // --- GESTOR DE TOQUES/CLICS (A PRUEBA DE FALLOS) ---
-    let tapTimer = null;
-    let lastTap = 0;
-
-    const handleTap = (e) => {
-        e.preventDefault(); // Previene clics fantasma y otros comportamientos no deseados
-        e.stopPropagation();
-
-        const currentTime = new Date().getTime();
-        const tapLength = currentTime - lastTap;
-
-        if (tapLength < 300 && tapLength > 0) { // DOBLE TOQUE/CLIC
-            clearTimeout(tapTimer);
-            
-            // --- Acción de Doble Toque: Editar Texto ---
-            shift.contentEditable = true;
-            shift.focus();
-            try {
-                const selection = window.getSelection();
-                const range = document.createRange();
-                range.selectNodeContents(shift);
-                selection.removeAllRanges();
-                selection.addRange(range);
-            } catch (err) { console.error("Error en doble toque:", err); }
-
-        } else { // PRIMER TOQUE/CLIC
-            // Inicia un temporizador. Si no hay un segundo toque, se ejecutará la acción de un solo toque.
-            tapTimer = setTimeout(() => {
-                // --- Acción de Toque Único: Abrir Paleta ---
-                if (shift.isContentEditable) return; // Seguridad: no abrir si ya está en modo edición
-                
-                openColorPicker(shift, (color) => {
-                    shift.style.backgroundColor = color;
-                    shift.style.color = isColorLight(color) ? '#000' : '#fff';
-                    shift.dataset.userColor = 'true';
-                    
-                    if (!manualEdits[dk]) manualEdits[dk] = {};
-                    if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
-                    manualEdits[dk][shiftKey].color = color;
-                    saveManualEdits();
-                }, colorPalette);
-
-            }, 300); // Espera 300ms para ver si es un doble toque
-        }
-        lastTap = currentTime;
-    };
-    
-    // --- Asignación de Eventos ---
-    // Usamos 'mousedown' para el ordenador y 'touchstart' para el móvil.
-    shift.addEventListener('mousedown', handleTap);
-    shift.addEventListener('touchstart', handleTap);
-    
-    // --- Guardado y confirmación ---
+    // --- Lógica para guardar el texto ---
     shift.addEventListener('blur', () => {
-        shift.contentEditable = false;
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
         if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
@@ -296,7 +245,31 @@ function createShiftElement(year, month, day, shiftKey) {
         }
     });
 
+    // 2. El botón ("handle") para el color, separado del texto
+    const handle = document.createElement('button');
+    handle.type = 'button';
+    handle.className = 'color-handle';
+    handle.innerHTML = '&#9679;'; // Un círculo, como probablemente tenías
+    handle.title = 'Elegir color';
+
+    // --- Lógica para abrir la paleta de colores ---
+    handle.addEventListener('click', (ev) => {
+        ev.stopPropagation(); // Evita que el clic afecte a otros elementos
+        openColorPicker(handle, (color) => {
+            shift.style.backgroundColor = color;
+            shift.style.color = isColorLight(color) ? '#000' : '#fff';
+            shift.dataset.userColor = 'true';
+            
+            if (!manualEdits[dk]) manualEdits[dk] = {};
+            if (!manualEdits[dk][shiftKey]) manualEdits[dk][shiftKey] = {};
+            manualEdits[dk][shiftKey].color = color;
+            saveManualEdits();
+        }, colorPalette);
+    });
+
+    // --- Montaje final ---
     container.appendChild(shift);
+    container.appendChild(handle);
     return container;
 }
 

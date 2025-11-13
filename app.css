@@ -250,17 +250,17 @@ body {
 }
 
 .shift-cell {
-  padding: 6px 11px;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85em;
   text-align: center;
-  border-radius: 4px;
-  min-height: 14px;
-  font-size: 14px;
-  line-height: 1.4;
-  background-clip: padding-box;
-  position: relative;
-  transition: background-color 0.2s;
-  /* LA LÍNEA MÁS IMPORTANTE PARA MÓVILES: */
-  touch-action: manipulation;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #000; /* texto negro */
+  user-select: text;
 }
 
 /* Colores de fondo por defecto de M/T/N según tipo de día */
@@ -807,7 +807,6 @@ body {
 .splash .logo-img {
   animation: epicEntrance 1.4s ease-out forwards;
 }
-
 /* --- ESTILOS DE LA PALETA DE COLORES (POPUP) --- */
 .color-picker-popup {
   position: absolute;
@@ -836,4 +835,34 @@ body {
 .color-picker-btn:hover {
   transform: scale(1.15);
   border-color: #999;
+}
+
+/* --- ESTILO DEL BOTÓN DE COLOR (HANDLE) --- */
+/* Restaura el botón para abrir la paleta de colores,
+   posicionado de forma absoluta sobre la celda del turno. */
+.color-handle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  height: 18px;
+  width: 18px;
+  font-size: 14px;
+  line-height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  color: rgba(0,0,0,0.3);
+  opacity: 0.5;
+  cursor: pointer;
+  z-index: 10;
+  padding: 0;
+  transition: opacity 0.2s, color 0.2s;
+}
+
+.color-handle:hover {
+  opacity: 1;
+  color: rgba(0,0,0,0.7);
 }
