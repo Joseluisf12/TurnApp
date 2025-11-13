@@ -838,31 +838,37 @@ body {
 }
 
 /* --- ESTILO DEL BOTÓN DE COLOR (HANDLE) --- */
-/* Restaura el botón para abrir la paleta de colores,
-   posicionado de forma absoluta sobre la celda del turno. */
+/* Posiciona el botón centrado, FUERA de la parte superior de la celda */
 .color-handle {
   position: absolute;
-  top: 1px;
-  right: 1px;
-  height: 18px;
-  width: 18px;
-  font-size: 14px;
-  line-height: 18px;
+  top: -10px; /* Lo mueve 10px POR ENCIMA de su contenedor */
+  left: 50%;
+  transform: translateX(-50%); /* Lo centra horizontalmente */
+  
+  /* Tamaño y apariencia correctos para ordenador y móvil */
+  height: 20px;
+  width: 20px;
+  font-size: 10px; /* Tamaño del círculo interior */
+  line-height: 20px; /* Centra el círculo verticalmente */
+  
   display: flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: none;
-  border-radius: 50%;
-  color: rgba(0,0,0,0.3);
-  opacity: 0.5;
+  
+  background: #f0f0f0; /* Un fondo sutil para que sea fácil de tocar */
+  border: 1px solid #ccc;
+  border-radius: 50%; /* Círculo perfecto */
+  
+  color: rgba(0,0,0,0.5);
+  opacity: 0.6; /* Un poco transparente para no ser intrusivo */
   cursor: pointer;
   z-index: 10;
   padding: 0;
-  transition: opacity 0.2s, color 0.2s;
+  
+  transition: opacity 0.2s, transform 0.2s;
 }
 
 .color-handle:hover {
   opacity: 1;
-  color: rgba(0,0,0,0.7);
+  transform: translateX(-50%) scale(1.1); /* Ligero zoom al pasar el ratón */
 }

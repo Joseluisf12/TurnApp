@@ -212,13 +212,11 @@ function createShiftElement(year, month, day, shiftKey) {
     const container = document.createElement('div');
     container.className = `shift-container ${shiftKey === 'N' ? 'night' : ''}`;
 
-    // 1. La celda de texto, editable directamente
     const shift = document.createElement('div');
     shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
     shift.contentEditable = true;
     shift.spellcheck = false;
 
-    // --- Carga de datos ---
     const dk = dateKey(year, month, day);
     const savedShift = manualEdits[dk]?.[shiftKey] || {};
 
@@ -229,7 +227,6 @@ function createShiftElement(year, month, day, shiftKey) {
         shift.dataset.userColor = 'true';
     }
 
-    // --- Lógica para guardar el texto ---
     shift.addEventListener('blur', () => {
         const newText = shift.textContent.trim();
         if (!manualEdits[dk]) manualEdits[dk] = {};
@@ -245,16 +242,20 @@ function createShiftElement(year, month, day, shiftKey) {
         }
     });
 
-    // 2. El botón ("handle") para el color, separado del texto
     const handle = document.createElement('button');
     handle.type = 'button';
     handle.className = 'color-handle';
-    handle.innerHTML = '&#9679;'; // Un círculo, como probablemente tenías
+    handle.innerHTML = '&#9679;';
     handle.title = 'Elegir color';
 
-    // --- Lógica para abrir la paleta de colores ---
-    handle.addEventListener('click', (ev) => {
-        ev.stopPropagation(); // Evita que el clic afecte a otros elementos
+    // --- GESTOR DE EVENTOS PARA EL BOTÓN (A PRUEBA DE MÓVILES) ---
+    const handleColorClick = (ev) => {
+        ev.stopPropagation();
+        // Si el evento es un toque, lo prevenimos para que no se dispare un "clic fantasma" después
+        if (ev.type === 'touchstart') {
+            ev.preventDefault();
+        }
+        
         openColorPicker(handle, (color) => {
             shift.style.backgroundColor = color;
             shift.style.color = isColorLight(color) ? '#000' : '#fff';
@@ -265,9 +266,12 @@ function createShiftElement(year, month, day, shiftKey) {
             manualEdits[dk][shiftKey].color = color;
             saveManualEdits();
         }, colorPalette);
-    });
+    };
 
-    // --- Montaje final ---
+    // Asignamos el MISMO gestor a los dos tipos de evento para unificar comportamiento
+    handle.addEventListener('mousedown', handleColorClick);
+    handle.addEventListener('touchstart', handleColorClick);
+
     container.appendChild(shift);
     container.appendChild(handle);
     return container;
