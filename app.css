@@ -284,6 +284,33 @@ body {
   --color-sunday: rgba(255,179,179,0.45);
 }
 
+/* HANDLE de color (discreto y centrado en la parte inferior de la celda de turno) */
+/* REEMPLAZA únicamente la regla .color-handle por esto */
+.color-handle {
+  position: absolute;
+  top: -8px;               /* <-- mover hacia arriba (antes bottom: 2px) */
+  left: 50%;
+  transform: translate(-50%); /* centrar horizontal y desplazar ligeramente arriba */
+  height: 16px;           /* punto más fácil de tocar (aumentado un poco) */
+  width: 16px;
+  font-size: 12px;
+  line-height: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  border-radius: 50%;
+  opacity: 0.35;
+  cursor: pointer;
+  z-index: 10;             /* por encima de la celda*/
+  padding: 0;
+}
+
+/* hover: hacerlo más visible sin cambiar el resto */
+.color-handle:hover {
+  opacity: 0.8;
+}
 
 /* --- CAJÓN DE LICENCIAS --- */
 #licencias-container {
@@ -806,71 +833,4 @@ body {
 
 .splash .logo-img {
   animation: epicEntrance 1.4s ease-out forwards;
-}
-/* --- ESTILOS DE LA PALETA DE COLORES (POPUP) --- */
-.color-picker-popup {
-  position: absolute;
-  background-color: #fff;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  padding: 8px;
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 6px;
-  z-index: 1000;
-  max-width: 180px;
-}
-
-.color-picker-btn {
-  width: 24px;
-  height: 24px;
-  border: 1px solid #eee;
-  border-radius: 50%;
-  cursor: pointer;
-  padding: 0;
-  transition: transform 0.1s ease;
-}
-
-.color-picker-btn:hover {
-  transform: scale(1.15);
-  border-color: #999;
-}
-
-/* --- ESTILO DEL BOTÓN DE COLOR (HANDLE) - VERSIÓN DEFINITIVA --- */
-/* Posiciona el botón FUERA de la casilla, centrado y sutil. */
-.color-handle {
-  position: absolute;
-  top: -14px;             /* Lo sube 14px POR ENCIMA de la celda */
-  left: 50%;
-  transform: translateX(-50%);
-
-  /* Tamaño DIMINUTO como pediste */
-  height: 16px;
-  width: 16px;
-  
-  /* El círculo interior, casi imperceptible */
-  font-size: 8px;        
-  line-height: 16px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  
-  background: transparent; /* Sin fondo */
-  border: none;            /* Sin borde */
-  border-radius: 50%;
-  
-  color: rgba(0,0,0,0.25); /* Color del punto muy sutil */
-  opacity: 0.4;             /* Casi transparente por defecto */
-  cursor: pointer;
-  z-index: 10;
-  padding: 0;
-  
-  transition: opacity 0.2s, color 0.2s;
-}
-
-.color-handle:hover {
-  opacity: 1;
-  color: rgba(0,0,0,0.6);
 }
