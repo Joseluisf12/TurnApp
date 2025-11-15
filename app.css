@@ -483,7 +483,7 @@ body {
   width: 100%;
   height: 70px;
   border-radius: 10px;
-  border: none;
+  border: 1px solid #dcdcdc; /* <-- BORDE GRIS SUTIL */
   padding: 10px;
   resize: none;
   margin-bottom: 10px;
@@ -587,13 +587,14 @@ body {
 }
 
 /* === Subcajones (usuario y administrador) === */
-#peticiones-section .peticiones-zona {
+#ajustes-section .peticiones-zona {
   background-color: #ffffff;
   border-radius: 10px;
   padding: 15px;
-  margin-bottom: 20px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  margin: 0 15px 20px 15px; /* <-- AÑADIMOS MÁRGENES LATERALES DE 15px */
 }
+
 /* --- Estilo del título principal del cajón de peticiones --- */
 #peticiones-section h2 {
   text-align: center;
@@ -602,12 +603,13 @@ body {
 }
 
 /* --- Estilo de los subtítulos de las zonas --- */
-#peticiones-section .peticiones-zona h3 {
-  color: #333; /* Un tono ligeramente más oscuro */
+#ajustes-section .peticiones-zona h3 {
+  color: #222; /* Gris oscuro */
   font-weight: 500;
-  margin-bottom: 10px;
-  padding-bottom: 5px;
-  border-bottom: 2px solid rgba(0, 0, 0, 0.1); /* línea decorativa sutil */
+  margin-bottom: 15px; /* Más espacio inferior */
+  padding-bottom: 0;   /* Quitamos el padding inferior */
+  border-bottom: none; /* Quitamos la línea para un look más limpio al centrar */
+  text-align: center;  /* <-- CENTRAMOS EL TEXTO */
 }
 
 /* === TABLA COORDINADOR (versión estable limpia) === */
@@ -621,7 +623,7 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
 }
 
 /* Proporciones por columnas */
@@ -753,9 +755,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #fff8e1; /* <-- FONDO NARANJA MUY CLARO */
+  background-color: #ffffff; /* <-- FONDO BLANCO */
   color: #000;               /* <-- TEXTO NEGRO */
-  border: 1px solid #f0eada;   /* Un borde suave a juego con el fondo */
+  border: 1px solid #e0e0e0;   /* Un borde gris neutro */
   border-radius: 8px;
   padding: 10px 12px;
   margin-bottom: 8px;
