@@ -497,11 +497,11 @@ body {
 }
 
 #enviar-peticion {
-  background-color: rgba(100, 150, 255, 0.3);
+  background-color: #0b5ed7; /* <-- AZUL PRINCIPAL */
   color: #fff;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: none; /* Ya no necesita borde */
   border-radius: 8px;
-  padding: 6px 15px;
+  padding: 8px 15px; /* Un poco más de padding para mejor aspecto */
   cursor: pointer;
   transition: all 0.3s ease;
 }
@@ -514,17 +514,6 @@ body {
   list-style: none;
   padding: 0;
   margin: 0;
-}
-
-.lista-peticiones li {
-  background-color: rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
-  padding: 10px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  color: #fff;
 }
 
 .lista-peticiones li .info {
@@ -651,7 +640,7 @@ body {
   padding: 5px 3px; /* Un poco menos de padding horizontal */
   text-align: center;
   vertical-align: middle;
-  font-size: 0.82rem; /* Un poco más pequeño para asegurar el ajuste */
+  font-size: 0.8rem; /* Un poco más pequeño para asegurar el ajuste */
   overflow-wrap: break-word; /* ¡LA CLAVE! Parte el texto largo */
   word-wrap: break-word;     /* Compatibilidad con navegadores antiguos */
 }
@@ -764,11 +753,12 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #f7faff; /* fondo muy suave */
-  border: 1px solid #c9d7f0;
+  background-color: #fff8e1; /* <-- FONDO NARANJA MUY CLARO */
+  color: #000;               /* <-- TEXTO NEGRO */
+  border: 1px solid #f0eada;   /* Un borde suave a juego con el fondo */
   border-radius: 8px;
-  padding: 6px 10px;
-  margin-bottom: 6px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
   font-size: 0.95rem;
 }
 
@@ -817,13 +807,17 @@ body {
   padding: 8px;
   margin-top: 8px;
   border-radius: 8px;
-  background: #ffe1e1;
-  border: 1px solid #ff9d9d;
+  background-color: #dc3545; /* Fondo rojo */
+  color: white;             /* <-- TEXTO BLANCO */
+  border: none;
   font-size: 0.95rem;
+  font-weight: 500;
 }
 
+/* Y su hover también con texto blanco */
 .btn-borrar-todo:hover {
-  background: #ffbdbd;
+  background-color: #bb2d3b; /* Rojo más oscuro */
+  color: white;
 }
 
 /* Modo táctil (móvil): aumenta ligeramente área de toque */
