@@ -184,6 +184,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  min-height: 70px; /* AUMENTAMOS LA ALTURA DE LA CELDA */
 }
 
 .day-label {
