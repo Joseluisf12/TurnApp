@@ -624,8 +624,12 @@ body {
 /* === TABLA COORDINADOR (versión estable limpia) === */
 
 #tabla-coordinador-container {
-  overflow-x: auto;
-  margin-top: 1.4rem;
+  background-color: #fff6eb; /* Naranja muy suave, igual que peticiones */
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  border-radius: 14px;
+  padding: 20px;
+  margin: 20px auto;
+  overflow-x: auto; /* Mantenemos el scroll por si acaso */
 }
 
 #tabla-coordinador {
@@ -637,21 +641,22 @@ body {
 }
 
 /* Proporciones por columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 7%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 15%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 8%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 25%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 5%; }  /* M, T, M², T², N */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 25%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 6%; }  /* M, T, M², T², N */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 29%; } /* OBSERVACIONES */
 
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid #bdbdbd;
-  padding: 6px 8px;
+  padding: 5px 4px; /* <-- PADDING REDUCIDO */
   text-align: center;
   vertical-align: middle;
+  font-size: 0.85rem; /* <-- FUENTE REDUCIDA */
 }
 
 /* Encabezado */
