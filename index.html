@@ -118,9 +118,10 @@
     
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
-      <button data-section="turnos" class="nav-btn active">Turnos</button>
+      <button data-section="turnos" class="nav-btn active">Calendario / Turnos</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
       <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Carga Días</button>
+      <button id="btn-install-pwa" class="nav-btn" style="display: none;">⬇️ Instalar</button>
     </nav>
 </main>
 
@@ -281,6 +282,47 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- 5. INICIALIZACIÓN DE LA VISTA ---
     switchPanel('turnos');
 });
+
+    // --- 6. LÓGICA DE INSTALACIÓN PWA ---
+    let deferredPrompt;
+    const installButton = document.getElementById('btn-install-pwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      // Prevenir que el mini-infobar aparezca en Chrome/Edge
+      e.preventDefault();
+      // Guardar el evento para poder lanzarlo después
+      deferredPrompt = e;
+      // Mostrar nuestro botón de instalación personalizado
+      if (installButton) {
+        installButton.style.display = 'block';
+      }
+    });
+
+    if (installButton) {
+      installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          // Mostrar el diálogo de instalación
+          deferredPrompt.prompt();
+          // Esperar a que el usuario responda
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`Respuesta del usuario al diálogo de instalación: ${outcome}`);
+          // Ya no necesitaremos el evento guardado
+          deferredPrompt = null;
+          // Ocultar el botón, ya que la acción se ha realizado
+          installButton.style.display = 'none';
+        }
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      // Si la app se instala por otros medios, ocultar el botón
+      if (installButton) {
+        installButton.style.display = 'none';
+      }
+      deferredPrompt = null;
+      console.log('PWA fue instalada');
+    });
+
 </script>
 
 </body>
