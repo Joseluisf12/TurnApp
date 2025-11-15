@@ -636,27 +636,28 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  min-width: 500px;
   font-size: 0.92rem;
 }
 
 /* Proporciones por columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 8%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 25%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 15%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 6%; }  /* M, T, M², T², N */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 29%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 3%; }  /* M, T, M², T², N */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 20%; } /* OBSERVACIONES */
 
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid #bdbdbd;
-  padding: 5px 4px; /* <-- PADDING REDUCIDO */
+  padding: 5px 3px; /* Un poco menos de padding horizontal */
   text-align: center;
   vertical-align: middle;
-  font-size: 0.85rem; /* <-- FUENTE REDUCIDA */
+  font-size: 0.82rem; /* Un poco más pequeño para asegurar el ajuste */
+  overflow-wrap: break-word; /* ¡LA CLAVE! Parte el texto largo */
+  word-wrap: break-word;     /* Compatibilidad con navegadores antiguos */
 }
 
 /* Encabezado */
@@ -745,6 +746,12 @@ body {
   margin-left: auto;
   margin-right: auto;
   margin-bottom: 15px; /* Un poco más de espacio inferior */
+}
+/* Alinea a la izquierda las columnas con más texto para mejor legibilidad */
+#tabla-coordinador td:nth-child(2), /* Columna NOMBRE */
+#tabla-coordinador td:nth-child(8)  /* Columna OBSERVACIONES */
+{
+  text-align: left;
 }
 
 /* === ESTILO COMPACTO PARA PETICIONES (Móvil + Desktop) === */
