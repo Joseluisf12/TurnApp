@@ -587,8 +587,9 @@ body {
 .btn-borrar-todo:hover {
   background-color: #c9302c;
 }
-/* === Fondo del cajón de peticiones === */
-#peticiones-section {
+/* === Estilo unificado para paneles de contenido === */
+#peticiones-section,
+#ajustes-section {
   background-color: #fff6eb; /* Naranja muy suave */
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
@@ -624,12 +625,8 @@ body {
 /* === TABLA COORDINADOR (versión estable limpia) === */
 
 #tabla-coordinador-container {
-  background-color: #fff6eb; /* Naranja muy suave, igual que peticiones */
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  border-radius: 14px;
-  padding: 20px;
-  margin: 20px auto;
-  overflow-x: auto; /* Mantenemos el scroll por si acaso */
+  overflow-x: auto; /* Su única función: gestionar el scroll */
+  margin-top: 1.4rem;
 }
 
 #tabla-coordinador {
@@ -640,14 +637,14 @@ body {
 }
 
 /* Proporciones por columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 15%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 3%; }  /* M, T, M², T², N */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 20%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 4%; }  /* M, T, M², T², N */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES */
 
 #tabla-coordinador th,
 #tabla-coordinador td {
