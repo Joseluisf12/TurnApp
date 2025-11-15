@@ -590,12 +590,11 @@ body {
 /* === Estilo unificado para paneles de contenido === */
 #peticiones-section,
 #ajustes-section {
-  background-color: #fff6eb; /* Naranja muy suave */
+  background-color: #fff6eb;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
   padding: 20px;
   margin: 20px auto;
-  max-width: 900px;
 }
 
 /* === Subcajones (usuario y administrador) === */

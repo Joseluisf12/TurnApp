@@ -66,7 +66,7 @@
     </section>
 
     <!-- ========= PANEL 2: PETICIONES (Cajón y Tabla) ========= -->
-    <section id="peticiones-section" class="panel oculto">
+    <section id="ajustes-section" class="panel oculto">
       <h2>Gestión de Peticiones</h2>
       <div class="peticiones-zona">
         <h3>Zona Usuario</h3>
@@ -76,9 +76,7 @@
         </div>
         <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
       </div>
-    </section>
     
-    <div id="tabla-coordinador-container" class="panel oculto">
       <button id="limpiar-tabla" class="modern-btn red">🧹 Limpiar tabla</button>
       <table id="tabla-coordinador">
         <colgroup><col><col><col><col><col><col><col><col></colgroup>
@@ -86,7 +84,7 @@
           <tr>
             <th colspan="2">FUNCIONARIO/A</th>
             <th colspan="5" contenteditable="true" class="titulo-ciclo">CICLO</th>
-            <th contenteditable="true">OBSERVACIONES</th>
+            <th colspan="true">OBSERVACIONES</th>
           </tr>
           <tr>
             <th>Nº</th><th>NOMBRE</th><th>M¹</th><th>T¹</th><th>M²</th><th>T²</th><th>N</th><th contenteditable="true">COCINA</th>
@@ -115,10 +113,11 @@
         </tbody>
       </table>
     </div>
-    
+   </section>
+
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
-      <button data-section="turnos" class="nav-btn active">Calendario / Turnos</button>
+      <button data-section="turnos" class="nav-btn active">Calendario/Turnos</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
       <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Carga Días</button>
       <button id="btn-install-pwa" class="nav-btn" style="display: none;">⬇️ Instalar</button>
@@ -176,10 +175,10 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ELEMENTOS Y PANELES ---
+    // --- 1. ELEMENTOS Y PANELES (CORREGIDO) ---
     const mainContent = document.getElementById('content');
-    const peticionesSection = document.getElementById('peticiones-section');
-    const tablaCoordinadorContainer = document.getElementById('tabla-coordinador-container');
+    // APUNTAMOS AL NUEVO CONTENEDOR PRINCIPAL DE AJUSTES
+    const ajustesSection = document.getElementById('ajustes-section'); 
     const licenciasContainer = document.getElementById('licencias-container');
     const calendarPanel = document.getElementById('calendar-panel');
     
@@ -188,48 +187,54 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
     const btnCargaDias = document.querySelector('.nav-btn[data-section="ajustes"]');
 
-    // --- 2. LÓGICA DE NAVEGACIÓN MEJORADA ---
-
-    // Función que cambia de panel principal (Turnos o Peticiones)
+    // --- 2. LÓGICA DE NAVEGACIÓN (CORREGIDA) ---
     function switchPanel(targetSection) {
+        // Ocultamos los dos paneles principales
         mainContent.classList.add('oculto');
-        peticionesSection.classList.add('oculto');
-        tablaCoordinadorContainer.classList.add('oculto');
-        licenciasContainer.classList.add('oculto'); // Siempre oculta licencias al cambiar de panel
+        ajustesSection.classList.add('oculto');
+        
+        // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
+        licenciasContainer.classList.add('oculto');
 
+        // Mostramos el panel principal correcto
         if (targetSection === 'turnos') {
             mainContent.classList.remove('oculto');
         } else if (targetSection === 'peticiones') {
-            peticionesSection.classList.remove('oculto');
-            tablaCoordinadorContainer.classList.remove('oculto');
-            peticionesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            ajustesSection.classList.remove('oculto');
+            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
+        // Actualizamos el botón activo
         navButtons.forEach(btn => {
             btn.classList.toggle('active', btn.dataset.section === targetSection);
         });
     }
 
-    // Botón "Turnos": Siempre te lleva a la vista de turnos.
+    // Botón "Calendario / Turnos"
     btnTurnos.addEventListener('click', () => {
         switchPanel('turnos');
     });
 
-    // Botón "Peticiones": Muestra/Oculta la vista de peticiones.
+    // Botón "Peticiones" (Ahora alterna el panel de Ajustes)
     btnPeticiones.addEventListener('click', () => {
-        const isPeticionesVisible = !peticionesSection.classList.contains('oculto');
-        if (isPeticionesVisible) {
-            switchPanel('turnos'); // Si está visible, ocúltalo y muestra turnos.
+        const isAjustesVisible = !ajustesSection.classList.contains('oculto');
+        if (isAjustesVisible) {
+            switchPanel('turnos'); // Si está visible, vuelve a turnos
         } else {
-            switchPanel('peticiones'); // Si está oculto, muéstralo.
+            switchPanel('peticiones'); // Si no, muestra el panel de ajustes
         }
     });
 
-    // Botón "Carga Días": Muestra/Oculta el panel de licencias dentro de la vista de turnos.
+    // Botón "Carga Días" (Sin cambios en su lógica interna)
     btnCargaDias.addEventListener('click', () => {
+        // Primero nos aseguramos de estar en la vista de turnos
+        if (mainContent.classList.contains('oculto')) {
+            switchPanel('turnos');
+        }
+        
+        // Luego alternamos la visibilidad del cajón de licencias
         const isLicenciasHidden = licenciasContainer.classList.contains('oculto');
         if (isLicenciasHidden) {
-            switchPanel('turnos'); // Nos aseguramos de estar en el panel de turnos
             licenciasContainer.classList.remove('oculto');
             licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else {
@@ -238,7 +243,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (Sin cambios) ---
+    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (SIN CAMBIOS) ---
     const totalLicenciasField = document.getElementById('total-licencias');
     const cantidadInputs = Array.from(document.querySelectorAll('#licencias-container .cantidad-input'));
     if (totalLicenciasField && cantidadInputs.length > 0) {
@@ -251,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
       recalculateTotal();
     }
 
-    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (Sin cambios) ---
+    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (SIN CAMBIOS) ---
     const textoPeticionInput = document.getElementById('peticion-texto');
     const enviarPeticionBtn = document.getElementById('enviar-peticion');
     const listaPeticionesUsuario = document.getElementById('lista-peticiones-usuario');
@@ -279,20 +284,17 @@ document.addEventListener('DOMContentLoaded', () => {
         saveAndRenderPeticiones();
     }
 
-    // --- 5. INICIALIZACIÓN DE LA VISTA ---
+    // --- 5. INICIALIZACIÓN DE LA VISTA (CORREGIDO) ---
+    // Nos aseguramos de empezar siempre en la vista de turnos.
     switchPanel('turnos');
-});
 
-    // --- 6. LÓGICA DE INSTALACIÓN PWA ---
+    // --- 6. LÓGICA DE INSTALACIÓN PWA (SIN CAMBIOS) ---
     let deferredPrompt;
     const installButton = document.getElementById('btn-install-pwa');
 
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Prevenir que el mini-infobar aparezca en Chrome/Edge
       e.preventDefault();
-      // Guardar el evento para poder lanzarlo después
       deferredPrompt = e;
-      // Mostrar nuestro botón de instalación personalizado
       if (installButton) {
         installButton.style.display = 'block';
       }
@@ -301,27 +303,23 @@ document.addEventListener('DOMContentLoaded', () => {
     if (installButton) {
       installButton.addEventListener('click', async () => {
         if (deferredPrompt) {
-          // Mostrar el diálogo de instalación
           deferredPrompt.prompt();
-          // Esperar a que el usuario responda
           const { outcome } = await deferredPrompt.userChoice;
           console.log(`Respuesta del usuario al diálogo de instalación: ${outcome}`);
-          // Ya no necesitaremos el evento guardado
           deferredPrompt = null;
-          // Ocultar el botón, ya que la acción se ha realizado
           installButton.style.display = 'none';
         }
       });
     }
 
     window.addEventListener('appinstalled', () => {
-      // Si la app se instala por otros medios, ocultar el botón
       if (installButton) {
         installButton.style.display = 'none';
       }
       deferredPrompt = null;
       console.log('PWA fue instalada');
     });
+});
 
 </script>
 
