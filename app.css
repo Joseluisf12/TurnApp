@@ -642,7 +642,8 @@ body {
   padding: 5px 3px; /* Un poco menos de padding horizontal */
   text-align: center;
   vertical-align: middle;
-  font-size: 0.8rem; /* Un poco más pequeño para asegurar el ajuste */
+  font-size: 0.7rem; /* Un poco más pequeño para asegurar el ajuste */
+  font-weight: bold;      /* <-- TEXTO EN NEGRITA */
   overflow-wrap: break-word; /* ¡LA CLAVE! Parte el texto largo */
   word-wrap: break-word;     /* Compatibilidad con navegadores antiguos */
 }
