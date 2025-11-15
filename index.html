@@ -6,9 +6,10 @@
   <meta name="theme-color" content="#0b5ed7">
   <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
   <link rel="manifest" href="manifest.json">
-  <link rel="stylesheet" href="app.css?v=3.0">
+  <link rel="stylesheet" href="app.css">
 </head>
 <body class="light">
+
   <!-- Pantalla inicial / Splash -->
   <div id="splash" class="splash">
     <div class="logo-wrap">
@@ -16,95 +17,345 @@
     </div>
     <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
   </div>
+
   <!-- App principal -->
   <main id="app" class="oculto">
     <header class="app-header">
       <h2 id="app-title">TurnApp</h2>
       <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
     </header>
+
     <section id="content" class="content">
       <p>Bienvenido a  <strong>TurnApp</strong></p>
+
       <!-- Botones de cadencia -->
       <div style="margin-top:12px; margin-bottom:25px; text-align:center;">
         <button id="btn-apply-cadence" class="modern-btn green">Aplicar cadencia</button>
         <button id="btn-clear-cadence" class="modern-btn red">Limpiar cadencia</button>
       </div>
+
       <div class="calendar-controls">
         <button id="prevMonth">◀ Anterior</button>
         <span id="monthLabel"></span>
         <button id="nextMonth">Siguiente ▶</button>
       </div>
-      <div id="calendar-weekdays">
-        <div>LUN</div>
-        <div>MAR</div>
-        <div>MIÉ</div>
-        <div>JUE</div>
-        <div>VIE</div>
-        <div>SÁB</div>
-        <div>DOM</div>
-      </div>
+
+<div id="calendar-weekdays">
+  <div>LUN</div>
+  <div>MAR</div>
+  <div>MIÉ</div>
+  <div>JUE</div>
+  <div>VIE</div>
+  <div>SÁB</div>
+  <div>DOM</div>
+</div>
+
       <section id="calendar-panel" class="panel">
-        <div id="calendar"></div>
-      </section>
+  <div id="calendar"></div>
+</section>
+
       <!-- Contenedor de licencias -->
-      <div id="licencias-container" class="licencias oculto" aria-hidden="true">
+      <div id="licencias-container" class="licencias oculto" aria-hidden="true" style="margin-top:20px;">
         <h3>Gestión de Permisos y Licencias</h3>
-        <div class="licencia-item" data-tipo="vacaciones"><label class="licencia-nombre">Vacaciones: V</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="compfest"><label class="licencia-nombre">Compensación de Festivos: CF</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="asuntos"><label class="licencia-nombre">Asuntos Propios: AP</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="delegacion"><label class="licencia-nombre">Delegación de Gobierno: DG</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="adicionales"><label class="licencia-nombre">Días Adicionales: DA</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="acumuladas"><label class="licencia-nombre">Jornadas Acumuladas: JA</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="otros"><label class="licencia-nombre">Otros: O</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="baja_medica"><label class="licencia-nombre">Baja Médica: BM</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="articulo_48"><label class="licencia-nombre">Artículo 48: AR</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="deber_inexcusable"><label class="licencia-nombre">Deber Inexcusable: DI</label><input type="number" min="0" class="cantidad-input" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <hr>
-        <div class="licencia-total"><label class="licencia-nombre"><strong>Total:</strong></label><input type="text" id="total-licencias" readonly value="0"></div>
-      </div>
-    </section>
-    <!-- Cajón de Peticiones -->
-    <section id="peticiones-section" class="panel oculto">
-      <h2>Gestión de Peticiones</h2>
-      <div class="peticiones-zona">
-        <h3>Tus Peticiones</h3>
-        <textarea id="peticion-texto" placeholder="Escribe aquí tu petición..."></textarea>
-        <div class="peticiones-controles">
-          <button id="enviar-peticion">Enviar Petición</button>
-          <button id="btn-borrar-peticiones" class="btn-borrar-todo">🧹 Borrar Todo</button>
+
+        <div class="licencia-item" data-tipo="vacaciones">
+          <label class="licencia-nombre">Vacaciones:  V</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
         </div>
-        <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
+
+        <div class="licencia-item" data-tipo="compfest">
+          <label class="licencia-nombre">Compensación de Festivos:  CF</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="asuntos">
+          <label class="licencia-nombre">Asuntos Propios:  AP</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="delegacion">
+          <label class="licencia-nombre">Delegación de Gobierno:  DG</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="adicionales">
+          <label class="licencia-nombre">Días Adicionales:  DA</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="acumuladas">
+          <label class="licencia-nombre">Jornadas Acumuladas:  JA</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="otros">
+          <label class="licencia-nombre">Otros:  O</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <!-- Nuevas licencias añadidas (tal como pediste) -->
+        <div class="licencia-item" data-tipo="baja_medica">
+          <label class="licencia-nombre">Baja Médica:  BM</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="articulo_48">
+          <label class="licencia-nombre">Artículo 48:  AR</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <div class="licencia-item" data-tipo="deber_inexcusable">
+          <label class="licencia-nombre">Deber Inexcusable:  DI</label>
+          <input type="number" min="0" class="cantidad-input licencia-cantidad" value="0">
+          <button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button>
+        </div>
+
+        <hr>
+
+        <div class="licencia-total">
+          <label class="licencia-nombre"><strong>Total:</strong></label>
+          <input type="text" id="total-licencias" readonly class="licencia-cantidad" value="0">
+        </div>
       </div>
     </section>
-    <!-- Tabla del Coordinador -->
-    <div id="tabla-coordinador-container">
-        <button id="limpiar-tabla">🧹 Limpiar tabla</button>
-        <table id="tabla-coordinador">
-            <thead>
-                <tr>
-                    <th colspan="2">FUNCIONARIO/A</th>
-                    <th colspan="5" contenteditable="true" class="titulo-ciclo">CICLO (haz clic para editar fechas)</th>
-                    <th contenteditable="true">OBSERVACIONES</th>
-                </tr>
-                <tr>
-                    <th>Nº</th><th>NOMBRE</th><th>M¹</th><th>T¹</th><th>M²</th><th>T²</th><th>N</th><th contenteditable="true">COCINA</th>
-                </tr>
-            </thead>
-            <tbody>
-                <!-- Las filas se generarán dinámicamente con JavaScript -->
-            </tbody>
-        </table>
+
+<!-- Cajón de Peticiones -->
+<section id="peticiones-section" class="panel oculto">
+  <h2>Gestión de Peticiones</h2>
+
+  <!-- Zona Usuario -->
+  <div class="peticiones-zona">
+    <h3>Zona Usuario</h3>
+    <textarea id="peticion-texto" placeholder="Escribe aquí tu petición..."></textarea>
+    <div class="peticiones-controles">
+      <button id="enviar-peticion">Enviar petición</button>
     </div>
-    <nav class="bottom-nav">
+    <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
+  </div>
+</div>
+
+<!-- === TABLA DEL COORDINADOR === -->
+<div id="tabla-coordinador-container">
+  <table id="tabla-coordinador">
+<button id="limpiar-tabla" style="margin-bottom: 10px;">🧹 Limpiar tabla</button>
+
+    <colgroup>
+      <col><col><col><col><col><col><col><col>
+    </colgroup>
+
+    <thead>
+  <tr>
+    <th colspan="2">FUNCIONARIO/A</th>
+    <th colspan="5" contenteditable="true" class="titulo-ciclo">CICLO (haz clic para editar fechas)</th>
+    <th contenteditable="true">OBSERVACIONES</th>
+  </tr>
+  <tr>
+    <th>Nº</th>
+    <th>NOMBRE</th>
+    <th>M¹</th>
+    <th>T¹</th>
+    <th>M²</th>
+    <th>T²</th>
+    <th>N</th>
+    <th contenteditable="true">COCINA</th>
+  </tr>
+</thead>
+
+    <tbody>
+      <!-- 18 filas -->
+       <tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+        <td contenteditable="true"></td>
+<tr>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+</section>
+
+
+    <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Turnos</button>
-      <button id="btn-peticiones" type="button" class="nav-btn">Peticiones</button>
-      <button id="btn-carga-dias" class="nav-btn">Carga Días</button>
+      <button id="btn-peticiones" type="button" data-section="peticiones" class="nav-btn">Peticiones</button>
+
+      <button data-section="ajustes" class="nav-btn" id="btn-carga-dias">Carga Días</button>
     </nav>
   </main>
-  <!-- MODAL CADENCIAS -->
-  <div id="cadence-modal-overlay" class="modal-overlay oculto" aria-hidden="true">
+
+  <!-- MODAL CADENCIAS (translúcido) -->
+  <div id="cadence-modal-overlay" class="modal-overlay" aria-hidden="true" style="display:none;">
     <div id="cadence-modal" class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cadence-title">
       <h3 id="cadence-title">Seleccione la cadencia</h3>
+
       <div class="modal-section">
         <label class="modal-label">Tipo:</label>
         <div class="modal-row">
@@ -113,7 +364,8 @@
           <button data-type="Personalizada" class="modal-type-btn">Personalizada</button>
         </div>
       </div>
-      <div id="v1-options" style="display:none;">
+
+      <div id="v1-options" class="modal-section" style="display:none;">
         <label class="modal-label">Opciones V-1:</label>
         <div class="modal-row radio-row">
           <label><input type="radio" name="v1opt" value="0"> 1 — M/T, L, M/T, N, L, L, L, L</label>
@@ -123,24 +375,238 @@
           <label><input type="radio" name="v1opt" value="4"> 5 — T, M/N, L, L, L</label>
         </div>
       </div>
-      <div id="v2-options" style="display:none;">
+
+      <div id="v2-options" class="modal-section" style="display:none;">
         <label class="modal-label">V-2: patrón fijo de 6 días (M/T, M/T, L, L, L, L)</label>
       </div>
-      <div id="custom-section" style="display:none;">
+
+      <div id="custom-section" class="modal-section" style="display:none;">
         <label class="modal-label">Patrón personalizado (separado por comas):</label>
-        <input id="custom-pattern" type="text" placeholder="ej: M/T, L, M/T, N, L, L, L, L">
+        <input id="custom-pattern" type="text" placeholder="ej: M/T, L, M/T, N, L, L, L, L" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;">
       </div>
+
       <div class="modal-section">
         <label class="modal-label">Fecha inicio (DD/MM/AAAA):</label>
-        <input id="cadence-start" type="text" placeholder="DD/MM/AAAA">
+        <input id="cadence-start" type="text" placeholder="DD/MM/AAAA" style="width:140px;padding:8px;border-radius:6px;border:1px solid #ccc;">
       </div>
+
       <div class="modal-actions">
         <button id="apply-cadence-confirm" class="modal-action primary">Aplicar</button>
         <button id="close-cadence" class="modal-action">Cerrar</button>
       </div>
     </div>
   </div>
-  <script src="app.js" defer></script>
-</body>
 
+  <script src="app.js" defer></script>
+
+  <script>
+    // pequeño script para toggle del contenedor licencias y scroll (no toca nada más)
+    document.addEventListener('DOMContentLoaded', () => {
+      const btnCarga = document.getElementById('btn-carga-dias');
+      const licencias = document.getElementById('licencias-container');
+      const calendar = document.getElementById('calendar');
+      if(!btnCarga || !licencias || !calendar) return;
+
+      btnCarga.addEventListener('click', () => {
+        const isHidden = licencias.style.display === 'none' || licencias.classList.contains('hidden');
+        if(isHidden){
+          licencias.style.display = 'block';
+          licencias.classList.remove('hidden');
+          licencias.setAttribute('aria-hidden','false');
+          setTimeout(()=> licencias.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+        } else {
+          licencias.style.display = 'none';
+          licencias.classList.add('hidden');
+          licencias.setAttribute('aria-hidden','true');
+          setTimeout(()=> calendar.scrollIntoView({behavior:'smooth', block:'start'}), 50);
+        }
+      });
+
+      // total licencias
+      const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
+      const totalField = document.getElementById('total-licencias');
+      const recalc = () => {
+        let total = 0;
+        inputs.forEach(i => total += Number(i.value)||0);
+        totalField.value = total;
+      };
+      inputs.forEach(i=> i.addEventListener('input', recalc));
+      recalc();
+    });
+ </script>
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+  const textoPeticion = document.getElementById('peticion-texto');
+  const botonEnviar = document.getElementById('enviar-peticion');
+  const listaUsuario = document.getElementById('lista-peticiones-usuario');
+  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
+
+
+  // Simulación: definir si el usuario actual es admin
+  const esAdmin = true; // cambia a false si quieres probar la vista de usuario normal
+
+  // Crear botones de borrado total (uno por zona)
+  const botonBorrarUsuario = document.createElement('button');
+  botonBorrarUsuario.textContent = '🧹 Borrar Peticiones';
+  botonBorrarUsuario.className = 'btn-borrar-todo';
+  botonBorrarUsuario.style.display = esAdmin ? 'inline-block' : 'none';
+  listaUsuario.parentElement.appendChild(botonBorrarUsuario);
+
+
+  // Recuperar peticiones guardadas
+  const peticionesUsuario = JSON.parse(localStorage.getItem('peticionesUsuario') || '[]');
+  const peticionesAdmin = JSON.parse(localStorage.getItem('peticionesAdmin') || '[]');
+
+  // Renderizar peticiones
+  peticionesUsuario.forEach((p, idx) => agregarPeticionUsuario(p, idx));
+
+  // Enviar nueva petición
+  botonEnviar.addEventListener('click', () => {
+    const texto = textoPeticion.value.trim();
+    if (!texto) {
+      alert('Por favor escribe una petición antes de enviarla.');
+      return;
+    }
+
+    const fechaHora = new Date().toLocaleString();
+    const nueva = { texto, revisada: false, fechaHora };
+
+    // Guardar en ambas listas
+    peticionesUsuario.push(nueva);
+    peticionesAdmin.push({ texto });
+    localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+    localStorage.setItem('peticionesAdmin', JSON.stringify(peticionesAdmin));
+
+    agregarPeticionUsuario(nueva, peticionesUsuario.length - 1);
+    agregarPeticionAdmin({ texto }, peticionesAdmin.length - 1);
+    textoPeticion.value = '';
+  });
+
+  // --- Función: agregar a zona Usuario ---
+  function agregarPeticionUsuario(p, idx) {
+    const li = document.createElement('li');
+    li.className = 'peticion-item';
+
+    const check = document.createElement('input');
+    check.type = 'checkbox';
+    check.checked = p.revisada;
+    check.addEventListener('change', () => {
+      peticionesUsuario[idx].revisada = check.checked;
+      localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+    });
+
+    const span = document.createElement('span');
+span.textContent = p.texto;
+
+const fechaSpan = document.createElement('span');
+fechaSpan.className = 'fecha-hora';
+fechaSpan.textContent = p.fechaHora;
+
+li.appendChild(check);
+li.appendChild(span);
+li.appendChild(fechaSpan);
+
+
+    // Botón individual de borrado (solo admin)
+    if (esAdmin) {
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '❌';
+      btnDel.className = 'btn-eliminar';
+      btnDel.style.marginLeft = '8px';
+      btnDel.addEventListener('click', () => {
+        peticionesUsuario.splice(idx, 1);
+        localStorage.setItem('peticionesUsuario', JSON.stringify(peticionesUsuario));
+        recargarListas();
+      });
+      li.appendChild(btnDel);
+    }
+
+    listaUsuario.appendChild(li);
+  }
+
+  // --- Función: agregar a zona Administrador ---
+    const li = document.createElement('li');
+    li.className = 'peticion-item';
+    li.textContent = p.texto;
+
+    if (esAdmin) {
+      const btnDel = document.createElement('button');
+      btnDel.textContent = '❌';
+      btnDel.className = 'btn-eliminar';
+      btnDel.style.marginLeft = '8px';
+      btnDel.addEventListener('click', () => {
+        peticionesAdmin.splice(idx, 1);
+        localStorage.setItem('peticionesAdmin', JSON.stringify(peticionesAdmin));
+        recargarListas();
+      });
+      li.appendChild(btnDel);
+    }
+
+    listaAdmin.appendChild(li);
+  }
+
+  // --- Botones de borrado total (cada uno borra su zona) ---
+  botonBorrarUsuario.addEventListener('click', () => {
+    if (confirm('¿Seguro que quieres borrar las peticiones de la zona de Usuario?')) {
+      peticionesUsuario.length = 0;
+      localStorage.setItem('peticionesUsuario', '[]');
+      recargarListas();
+    }
+  });
+
+  
+  // --- Recargar ambas zonas ---
+  function recargarListas() {
+    listaUsuario.innerHTML = '';
+    listaAdmin.innerHTML = '';
+    const nuevasU = JSON.parse(localStorage.getItem('peticionesUsuario') || '[]');
+    const nuevasA = JSON.parse(localStorage.getItem('peticionesAdmin') || '[]');
+    nuevasU.forEach((p, idx) => agregarPeticionUsuario(p, idx));
+    nuevasA.forEach((p, idx) => agregarPeticionAdmin(p, idx));
+  }
+});
+</script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  const calendar = document.getElementById("calendar");
+  const peticionesSection = document.getElementById("peticiones-section");
+  const peticionesBtn = document.querySelector('button[data-section="peticiones"]');
+
+  // 🔹 Asegura que el calendario siempre esté visible
+  if (calendar) {
+    calendar.classList.remove("oculto");
+    calendar.style.display = "grid";
+  }
+
+  // 🔹 Si no hay botón o sección, salimos
+  if (!peticionesBtn || !peticionesSection) return;
+
+  // 🔹 Alternar visibilidad del cajón de peticiones + scroll suave
+  peticionesBtn.addEventListener("click", () => {
+    const visible = !peticionesSection.classList.contains("oculto");
+
+    if (visible) {
+      // 🔸 Ocultar el cajón
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
+      // 🔸 Scroll hacia el calendario
+      setTimeout(() => {
+        calendar.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    } else {
+      // 🔸 Mostrar el cajón
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
+      // 🔸 Scroll hacia el cajón
+      setTimeout(() => {
+        peticionesSection.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
+    }
+  });
+});
+</script>
+
+
+</body>
 </html>

@@ -1,4 +1,3 @@
-// Version: 4.0
 self.addEventListener("install", (e) => {
   e.waitUntil(
     caches.open("turnapp-cache").then(cache => {
