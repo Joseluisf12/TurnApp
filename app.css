@@ -733,6 +733,14 @@ body {
   background-color: #d6e6ff !important; /* un punto más notable que el zebra */
 }
 
+/* Posicionamiento del botón para limpiar la tabla del coordinador */
+#limpiar-tabla {
+  display: block; /* Necesario para poder usar márgenes automáticos */
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 15px; /* Un poco más de espacio inferior */
+}
+
 /* === ESTILO COMPACTO PARA PETICIONES (Móvil + Desktop) === */
 
 /* Contenedor general */
@@ -836,4 +844,47 @@ body {
 
 .splash .logo-img {
   animation: epicEntrance 1.4s ease-out forwards;
+}
+
+/* --- ESTILOS DE BOTÓN MODERNOS --- */
+
+/* Estilo base para los botones */
+.modern-btn {
+  display: inline-block;
+  font-family: "Roboto", sans-serif;
+  font-weight: 500;
+  font-size: 15px;
+  text-align: center;
+  border: 1px solid transparent;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease-in-out;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Color Verde (para acciones positivas) */
+.modern-btn.green {
+  background-color: #198754; /* Verde oscuro */
+  color: white;
+  border-color: #198754;
+}
+
+.modern-btn.green:hover {
+  background-color: #157347; /* Verde más oscuro al pasar el ratón */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+/* Color Rojo (para acciones de limpieza o peligro) */
+.modern-btn.red {
+  background-color: #dc3545; /* Rojo */
+  color: white;
+  border-color: #dc3545;
+}
+
+.modern-btn.red:hover {
+  background-color: #bb2d3b; /* Rojo más oscuro al pasar el ratón */
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
