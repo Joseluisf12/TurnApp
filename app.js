@@ -42,7 +42,9 @@ function initThemeSwitcher() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
-  initApp();
+ initThemeSwitcher(); // <--- AÑADIR ESTA LÍNEA
+ 
+initApp();
 
   initThemeSwitcher();
 
