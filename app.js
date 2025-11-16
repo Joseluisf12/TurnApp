@@ -875,7 +875,7 @@ document.addEventListener("DOMContentLoaded", () => {
   calendarioSection.classList.add("oculto");
   licenciasSection.classList.add("oculto");
 
-  logo.addEventListener("click", () => {
+logo.addEventListener("click", () => {
     // Oculta splash y muestra app
     splash.classList.add("oculto");
     app.classList.remove("oculto");
@@ -887,11 +887,11 @@ document.addEventListener("DOMContentLoaded", () => {
     // Animación
     calendarioSection.classList.add("fade-in-up");
 
-    // Desplazar suave al calendario
+    // ¡LA SOLUCIÓN! Desplazar suave al inicio de TODA LA APP
     setTimeout(() => {
-      calendarioSection.scrollIntoView({ behavior: "smooth" });
-    }, 200);
+      app.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 50); // Un timeout más corto para que se sienta más instantáneo
+   });
   });
-});
 
   // ------------------ FIN app.js ------------------
