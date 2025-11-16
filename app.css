@@ -685,7 +685,7 @@ body {
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin: 0 8px 20px 8px;
+  margin: 0 6px 20px 6px;
   transition: background-color 0.3s; /* Transición suave */
 }
 
@@ -716,18 +716,18 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   border-radius: 8px;
   overflow: hidden;
 }
 /* Proporciones de las columnas */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
 #tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 3.5%; }
+#tabla-coordinador colgroup col:nth-child(7) { width: 3.75%; }
 #tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES */
 
 /* Estilo general para celdas y cabeceras */
