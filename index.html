@@ -175,9 +175,9 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ELEMENTOS Y PANELES (CORREGIDO) ---
+    // --- 1. ELEMENTOS Y PANELES (CORREGIDO Y AMPLIADO) ---
+    const appContainer = document.getElementById('app'); // Elemento principal de la app para el scroll
     const mainContent = document.getElementById('content');
-    // APUNTAMOS AL NUEVO CONTENEDOR PRINCIPAL DE AJUSTES
     const ajustesSection = document.getElementById('ajustes-section'); 
     const licenciasContainer = document.getElementById('licencias-container');
     const calendarPanel = document.getElementById('calendar-panel');
@@ -187,7 +187,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
     const btnCargaDias = document.querySelector('.nav-btn[data-section="ajustes"]');
 
-    // --- 2. LÓGICA DE NAVEGACIÓN (CORREGIDA) ---
+    // --- 2. LÓGICA DE NAVEGACIÓN (CON SCROLL CORREGIDO) ---
     function switchPanel(targetSection) {
         // Ocultamos los dos paneles principales
         mainContent.classList.add('oculto');
@@ -199,6 +199,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Mostramos el panel principal correcto
         if (targetSection === 'turnos') {
             mainContent.classList.remove('oculto');
+            // ¡LA SOLUCIÓN! Hacemos scroll al inicio del contenedor de la app
+            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (targetSection === 'peticiones') {
             ajustesSection.classList.remove('oculto');
             ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -215,24 +217,22 @@ document.addEventListener('DOMContentLoaded', () => {
         switchPanel('turnos');
     });
 
-    // Botón "Peticiones" (Ahora alterna el panel de Ajustes)
+    // Botón "Peticiones"
     btnPeticiones.addEventListener('click', () => {
         const isAjustesVisible = !ajustesSection.classList.contains('oculto');
         if (isAjustesVisible) {
-            switchPanel('turnos'); // Si está visible, vuelve a turnos
+            switchPanel('turnos');
         } else {
-            switchPanel('peticiones'); // Si no, muestra el panel de ajustes
+            switchPanel('peticiones');
         }
     });
 
-    // Botón "Carga Días" (Sin cambios en su lógica interna)
+    // Botón "Carga Días"
     btnCargaDias.addEventListener('click', () => {
-        // Primero nos aseguramos de estar en la vista de turnos
         if (mainContent.classList.contains('oculto')) {
             switchPanel('turnos');
         }
         
-        // Luego alternamos la visibilidad del cajón de licencias
         const isLicenciasHidden = licenciasContainer.classList.contains('oculto');
         if (isLicenciasHidden) {
             licenciasContainer.classList.remove('oculto');
@@ -285,7 +285,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- 5. INICIALIZACIÓN DE LA VISTA (CORREGIDO) ---
-    // Nos aseguramos de empezar siempre en la vista de turnos.
     switchPanel('turnos');
 
     // --- 6. LÓGICA DE INSTALACIÓN PWA (SIN CAMBIOS) ---
