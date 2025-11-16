@@ -20,6 +20,7 @@
 
   --panel-bg: #ffffff;               /* Fondo de los paneles y tarjetas */
   --panel-border: #e0e0e0;           /* Borde de los paneles */
+  --user-zone-bg: #fff6eb;           /* Naranja Pálido para tema claro */
 
   --button-primary-bg: #0b5ed7;      /* Fondo de botones primarios */
   --button-primary-text: #ffffff;    /* Texto de botones primarios */
@@ -56,6 +57,8 @@
   
   --panel-bg: #1e1e1e;
   --panel-border: #333;
+  --user-zone-bg: var(--panel-bg); /* Usa el fondo de panel oscuro */
+
   
   --button-primary-bg: #0d6efd;
   --button-danger-bg: #e53935;
@@ -573,15 +576,17 @@ body {
 }
 
 #peticion-texto {
-  width: 100%;
+  display: block;             /* Aseguramos que es un bloque para poder centrarlo */
+  width: 95%;                 /* Lo hacemos un poco más estrecho que el contenedor */
   height: 70px;
-  border-radius: 10px;
-  border: 1px solid #dcdcdc; /* Borde gris sutil */
-  background-color: #e7f5fe; /* <-- FONDO AZUL CELESTE */
+  margin: 0 auto 15px auto;   /* ¡La clave! Lo centramos y le damos margen inferior */
   padding: 10px;
-  resize: none;
-  margin-bottom: 10px;
+  border-radius: 10px;
+  border: 1px solid #dcdcdc;
+  background-color: #ffffff; 
   font-size: 0.95em;
+  resize: none;
+  box-sizing: border-box;     /* Buena práctica para que el padding no desborde */
 }
 
 .peticiones-controles {
@@ -659,7 +664,7 @@ body {
 /* === Estilo unificado para paneles de contenido === */
 #peticiones-section,
 #ajustes-section {
-  background-color: #fff6eb;
+  background-color: #FAD7A0; /* <-- CAMBIO A NARANJA INTERMEDIO */
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
   padding: 20px;
@@ -667,14 +672,14 @@ body {
 }
 
 /* === Subcajones (usuario y administrador) === */
+/* === Subcajones (usuario y administrador) === */
 #ajustes-section .peticiones-zona {
-  background-color: var(--panel-bg);     /* VARIABLE APLICADA */
-  border: 1px solid var(--panel-border); /* VARIABLE APLICADA */
+  background-color: var(--user-zone-bg); /* <-- VARIABLE APLICADA */
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   margin: 0 15px 20px 15px;
-  transition: background-color 0.3s, border-color 0.3s;
+  transition: background-color 0.3s; /* Transición suave */
 }
 
 /* --- Estilo del título principal del cajón de peticiones --- */
@@ -730,9 +735,9 @@ body {
 
 /* Cabecera de la tabla */
 #tabla-coordinador thead th {
-  background: var(--header-bg-color);
+  background-color: #0b5ed7; /* <-- CAMBIO A AZUL CORPORATIVO */
   font-weight: 600;
-  color: var(--text-color);
+  color: #ffffff;             /* <-- TEXTO BLANCO PARA CONTRASTE */
 }
 
 /* Celdas del cuerpo de la tabla */
