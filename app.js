@@ -42,8 +42,6 @@ function initThemeSwitcher() {
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
- initThemeSwitcher(); // <--- AÑADIR ESTA LÍNEA
- 
 initApp();
 
   initThemeSwitcher();
