@@ -2,12 +2,49 @@
 // Versión 1.2.1 - Unificado, corregido (sin duplicados), mantiene la misma lógica
 // Mantén exactamente este archivo como reemplazo único para solucionar el error de sintaxis.
 
+/**
+ * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
+ */
+function initThemeSwitcher() {
+    const themeToggleButton = document.getElementById("btn-toggle-theme");
+    const body = document.body;
+
+    // Función que aplica el tema y actualiza el botón y localStorage
+    const applyTheme = (theme) => {
+        // Usamos un atributo 'data-theme' para poder usarlo en CSS
+        body.dataset.theme = theme; 
+        
+        // Guardamos la preferencia para que no se pierda al recargar
+        localStorage.setItem('turnapp_theme', theme);
+        
+        // Cambiamos el icono del botón para que refleje el estado actual
+        if (themeToggleButton) {
+            themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
+        }
+    };
+    
+    // Función que se ejecuta al hacer clic en el botón
+    const toggleTheme = () => {
+        // Comprobamos cuál es el tema actual y lo cambiamos
+        const newTheme = body.dataset.theme === 'light' ? 'dark' : 'light';
+        applyTheme(newTheme);
+    };
+
+    // Añadimos el "escuchador" de clics al botón
+    if (themeToggleButton) {
+        themeToggleButton.addEventListener('click', toggleTheme);
+    }
+    
+    // Al cargar la app, aplicamos el tema guardado o el claro por defecto
+    const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
+    applyTheme(savedTheme);
+}
+
 // Init
 document.addEventListener('DOMContentLoaded', () => {
   initApp();
 
-  const themeBtn = document.getElementById('btn-toggle-theme');
-  if (themeBtn) themeBtn.addEventListener('click', () => document.body.classList.toggle('dark'));
+  initThemeSwitcher();
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');

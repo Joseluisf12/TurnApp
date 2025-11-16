@@ -2,14 +2,90 @@
    Mantén este archivo tal cual; contiene los estilos de la app y del modal.
 */
 
+/* ==========================================================================
+   1. VARIABLES DE COLOR PARA LOS TEMAS
+   ========================================================================== */
+
+/* [TEMA CLARO] - Por defecto */
+:root {
+  --bg-color: #f8f9fa;               /* Fondo general muy claro */
+  --text-color: #212529;             /* Texto principal oscuro */
+  --text-color-light: #555;          /* Texto secundario/grisáceo */
+  
+  --splash-bg-color: #ffffff;        /* Fondo de la pantalla de bienvenida */
+  --logo-filter: invert(0%);         /* Filtro para el logo (en claro no se invierte) */
+  
+  --header-bg-color: #ffffff;        /* Fondo de la cabecera */
+  --header-shadow: rgba(0, 0, 0, 0.05); /* Sombra de la cabecera */
+
+  --panel-bg: #ffffff;               /* Fondo de los paneles y tarjetas */
+  --panel-border: #e0e0e0;           /* Borde de los paneles */
+
+  --button-primary-bg: #0b5ed7;      /* Fondo de botones primarios */
+  --button-primary-text: #ffffff;    /* Texto de botones primarios */
+  --button-danger-bg: #dc3545;       /* Fondo de botones de peligro */
+  --button-danger-text: #ffffff;     /* Texto de botones de peligro */
+  
+  --nav-bg: #ffffff;                 /* Fondo de la barra de navegación */
+  --nav-text: #495057;               /* Texto de los botones de navegación */
+  --nav-active-bg: #dee2e6;          /* Fondo del botón de navegación activo */
+  --nav-active-text: #000;           /* Texto del botón de navegación activo */
+  --icon-filter: invert(0%);         /* Filtro para los iconos de navegación */
+
+  /* Colores específicos de la app */
+  --peticion-item-bg: #ffffff;
+  --peticion-item-border: #e0e0e0;
+  --peticion-revisada-bg: #f0f0f0;
+  --peticion-revisada-text: #888;
+  --day-cell-bg: #e8f0ff;
+  --saturday-bg: rgba(163, 193, 255, 0.65);
+  --sunday-holiday-bg: rgba(255, 179, 179, 0.45);
+}
+
+/* [TEMA OSCURO] - Se activa cuando body tiene el atributo data-theme="dark" */
+[data-theme="dark"] {
+  --bg-color: #121212;
+  --text-color: #e0e0e0;
+  --text-color-light: #aaa;
+
+  --splash-bg-color: #121212;
+  --logo-filter: invert(100%);
+  
+  --header-bg-color: #1f1f1f;
+  --header-shadow: rgba(255, 255, 255, 0.05);
+  
+  --panel-bg: #1e1e1e;
+  --panel-border: #333;
+  
+  --button-primary-bg: #0d6efd;
+  --button-danger-bg: #e53935;
+  
+  --nav-bg: #1f1f1f;
+  --nav-text: #adb5bd;
+  --nav-active-bg: #343a40;
+  --nav-active-text: #fff;
+  --icon-filter: invert(100%) brightness(0.8);
+  
+  /* Colores específicos de la app */
+  --peticion-item-bg: #2c2c2c;
+  --peticion-item-border: #444;
+  --peticion-revisada-bg: #2a2a2a;
+  --peticion-revisada-text: #666;
+  --day-cell-bg: #1c2a38;
+  --saturday-bg: #2a3a50;
+  --sunday-holiday-bg: #4d2a2a;
+}
+
 /* --- CONFIGURACIÓN GENERAL --- */
 body {
-  font-family: "Roboto", sans-serif;
+    font-family: "Roboto", sans-serif;
   margin: 0;
   padding: 0;
-  background-color: #ffffff; /* fondo blanco */
-  color: #333;
+  background-color: var(--bg-color); /* VARIABLE APLICADA */
+  color: var(--text-color);         /* VARIABLE APLICADA */
+  transition: background-color 0.3s, color 0.3s; /* Transición suave para el cambio de tema */
 }
+
 /* Oculta elementos que no deben verse al inicio */
 .oculto {
   display: none;
@@ -36,7 +112,8 @@ body {
   justify-content: center;
   height: 100vh;
   text-align: center;
-  padding: 0; /* ← si lo tienes, quítalo */
+  background-color: var(--splash-bg-color); /* VARIABLE APLICADA */
+  transition: background-color 0.3s;
 }
 
 .logo-wrap {
@@ -49,6 +126,8 @@ body {
 .logo-img {
   width: 65vw;       /* Tamaño grande relativo a pantalla */
   max-width: 500px;  /* Límite para móviles grandes tipo Xiaomo 15T Pro */
+  filter: var(--logo-filter); /* LÍNEA AÑADIDA */
+  transition: filter 0.3s;    /* LÍNEA AÑADIDA */
   height: auto;
   display: block;
   margin: 0 auto;
@@ -93,6 +172,7 @@ body {
   font-size: 1.5em;
 }
 
+/* Estilo para el botón de cambio de tema y otros botones de icono */
 .icon-btn {
   background: none;
   border: none;
@@ -175,7 +255,7 @@ body {
 }
 
 .day-cell {
-  background-color: #e8f0ff; /* día laboral azul muy suave */
+  background-color: var(--day-cell-bg); /* VARIABLE APLICADA */
   border-radius: 10px;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   padding: 5px;
@@ -184,7 +264,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 70px; /* AUMENTAMOS LA ALTURA DE LA CELDA */
+  min-height: 70px;
 }
 
 .day-label {
@@ -211,12 +291,12 @@ body {
 
 /* --- COLORES DE DÍAS ESPECIALES --- */
 .saturday {
-  background-color: rgba(163,193,255,0.65); /* sábado un punto más oscuro */
+  background-color: var(--saturday-bg); /* VARIABLE APLICADA */
 }
 
 .sunday, 
 .holiday {
-  background-color: rgba(255,179,179,0.45); /* rosa festivo ligeramente más opaco */
+  background-color: var(--sunday-holiday-bg); /* VARIABLE APLICADA */
 }
 
 /* --- TURNOS --- */
@@ -324,26 +404,32 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #f7f9ff;
+  background-color: var(--panel-bg); /* VARIABLE APLICADA */
+  border: 1px solid var(--panel-border); /* VARIABLE APLICADA */
   border-radius: 8px;
   margin-bottom: 6px;
   padding: 8px 10px;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 .licencia-nombre {
   flex: 1;
   text-align: left;
   font-weight: 500;
+  color: var(--text-color); /* VARIABLE APLICADA */
 }
 
 .licencia-cantidad {
-  width: 40px; /* más pequeña según petición */
+  width: 40px;
   text-align: center;
   margin: 0 10px;
   padding: 3px;
   border-radius: 6px;
-  border: 1px solid #ccc;
+  border: 1px solid var(--panel-border); /* VARIABLE APLICADA */
+  background-color: var(--bg-color);     /* VARIABLE APLICADA */
+  color: var(--text-color);              /* VARIABLE APLICADA */
 }
+
 
 .licencia-color {
   margin-left: auto;
@@ -357,29 +443,36 @@ body {
 
 /* --- NAVEGACIÓN INFERIOR --- */
 .bottom-nav {
+  display: flex;
+  justify-content: space-around;
+  padding: 10px 0;
+  background-color: var(--nav-bg); /* VARIABLE APLICADA */
+  box-shadow: 0 -2px 5px rgba(0, 0, 0, 0.05);
   position: fixed;
   bottom: 0;
   left: 0;
-  width: 100%;
-  display: flex;
-  justify-content: space-around;
-  background-color: #0b5ed7;
-  padding: 8px 0;
-  border-radius: 10px 10px 0 0;
-  z-index: 10;
+  right: 0;
+  z-index: 100;
+  transition: background-color 0.3s;
 }
 
 .nav-btn {
   background: none;
   border: none;
-  color: white;
-  font-size: 1em;
+  color: var(--nav-text); /* VARIABLE APLICADA */
+  font-size: 14px;
+  font-weight: 500;
+  padding: 8px 12px;
+  border-radius: 8px;
   cursor: pointer;
+  flex-grow: 1;
+  text-align: center;
+  transition: background-color 0.2s, color 0.2s;
 }
 
 .nav-btn.active {
-  font-weight: bold;
-  text-decoration: underline;
+  background-color: var(--nav-active-bg); /* VARIABLE APLICADA */
+  color: var(--nav-active-text);         /* VARIABLE APLICADA */
 }
 
 /* ---------------------- MODAL CADENCIA (translúcido, centrado) ---------------------- */
@@ -528,55 +621,41 @@ body {
 /* --- Estilo del texto de hora y fecha en las peticiones --- */
 #lista-peticiones-usuario li span.fecha-hora {
   display: block;
-  font-size: 0.85em;              /* más pequeño que el texto principal */
-  color: #0b5ed7;                 /* mismo azul que los botones */
+  font-size: 0.85em;
+  color: var(--text-color-light); /* VARIABLE APLICADA */
   margin-top: 2px;
   font-weight: 500;
 }
 
-
-/* Botones de borrado en peticiones */
+/* Botones de borrado en peticiones (Unificado) */
 .btn-borrar-todo {
-  background-color: rgba(220, 53, 69, 0.8);
-  color: #fff;
+  background-color: var(--button-danger-bg); /* VARIABLE APLICADA */
+  color: var(--button-danger-text);         /* VARIABLE APLICADA */
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  opacity: 0.85;
+  transition: opacity 0.2s ease, background-color 0.3s;
 }
 .btn-borrar-todo:hover {
-  background-color: rgba(200, 35, 50, 0.9);
+  opacity: 1;
 }
 
 /* Icono de borrar individual */
-.btn-borrar-peticion {
+.btn-borrar-peticion, .btn-eliminar { 
   background: none;
   border: none;
-  color: #c00;
+  color: var(--button-danger-bg); /* VARIABLE APLICADA */
   cursor: pointer;
   font-size: 1.1em;
-  margin-left: 8px;
+  opacity: 0.7;
+  transition: opacity 0.2s ease, color 0.3s;
 }
-.btn-borrar-peticion:hover {
-  color: #f00;
-}
-
-.btn-borrar-todo {
-  background-color: #d9534f;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  margin-top: 10px;
-  transition: background-color 0.2s ease-in-out;
+.btn-borrar-peticion:hover, .btn-eliminar:hover {
+  opacity: 1;
 }
 
-.btn-borrar-todo:hover {
-  background-color: #c9302c;
-}
 /* === Estilo unificado para paneles de contenido === */
 #peticiones-section,
 #ajustes-section {
@@ -589,11 +668,13 @@ body {
 
 /* === Subcajones (usuario y administrador) === */
 #ajustes-section .peticiones-zona {
-  background-color: #ffffff;
+  background-color: var(--panel-bg);     /* VARIABLE APLICADA */
+  border: 1px solid var(--panel-border); /* VARIABLE APLICADA */
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin: 0 15px 20px 15px; /* <-- AÑADIMOS MÁRGENES LATERALES DE 15px */
+  margin: 0 15px 20px 15px;
+  transition: background-color 0.3s, border-color 0.3s;
 }
 
 /* --- Estilo del título principal del cajón de peticiones --- */
@@ -605,7 +686,7 @@ body {
 
 /* --- Estilo de los subtítulos de las zonas --- */
 #ajustes-section .peticiones-zona h3 {
-  color: #222; /* Gris oscuro */
+  color: var(--text-color); /* Variable aplicada */
   font-weight: 500;
   margin-bottom: 15px; /* Más espacio inferior */
   padding-bottom: 0;   /* Quitamos el padding inferior */
@@ -613,134 +694,87 @@ body {
   text-align: center;  /* <-- CENTRAMOS EL TEXTO */
 }
 
-/* === TABLA COORDINADOR (versión estable limpia) === */
-
+/* === TABLA COORDINADOR === */
 #tabla-coordinador-container {
-  overflow-x: auto; /* Su única función: gestionar el scroll */
+  overflow-x: auto;
   margin-top: 1.4rem;
 }
-
 #tabla-coordinador {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
+  border-radius: 8px;
+  overflow: hidden;
 }
-
-/* Proporciones por columnas */
+/* Proporciones de las columnas */
 #tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
 #tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 4%; }  /* M, T, M², T², N */
+#tabla-coordinador colgroup col:nth-child(7) { width: 4%; }
 #tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES */
 
+/* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
 #tabla-coordinador td {
-  border: 1px solid #bdbdbd;
-  padding: 5px 3px; /* Un poco menos de padding horizontal */
+  border: 1px solid var(--panel-border);
+  padding: 6px 4px;
   text-align: center;
   vertical-align: middle;
-  font-size: 0.7rem; /* Un poco más pequeño para asegurar el ajuste */
-  font-weight: bold;      /* <-- TEXTO EN NEGRITA */
-  overflow-wrap: break-word; /* ¡LA CLAVE! Parte el texto largo */
-  word-wrap: break-word;     /* Compatibilidad con navegadores antiguos */
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  word-wrap: break-word;
 }
 
-/* Encabezado */
+/* Cabecera de la tabla */
 #tabla-coordinador thead th {
-  background: #d6e2f7;
+  background: var(--header-bg-color);
   font-weight: 600;
+  color: var(--text-color);
 }
 
-/* Celdas editables */
-#tabla-coordinador td[contenteditable="true"] {
-  background-color: transparent !important;
+/* Celdas del cuerpo de la tabla */
+#tabla-coordinador tbody td {
+  color: var(--text-color-light);
+  background-color: var(--panel-bg);
 }
 
-/* Al editar, sí se pinta */
-#tabla-coordinador td[contenteditable="true"]:focus {
-  background-color: #fff7c7 !important;
-  outline: 2px solid #2563eb;
-}
-
-#tabla-coordinador td[contenteditable="true"]:focus {
-  outline: 2px solid #2563eb;
-  background-color: #fef9c3;
-}
-
-/* Título editable del ciclo */
-.titulo-ciclo { background: #dfeaff !important; font-weight: bold; }
-
-#tabla-coordinador {
-  border-collapse: separate;
-  border-spacing: 0;
-  border-radius: 8px;
-  overflow: hidden; /* Permite que el redondeado afecte también a los bordes internos */
-  border: 1px solid #ccc;
-}
-
-#tabla-coordinador th,
-#tabla-coordinador td {
-  border: 1px solid #ccc;
-}
-#tabla-coordinador tbody tr:nth-child(odd) {
-  background-color: #ffffff !important;
-}
-
-#tabla-coordinador tbody tr:nth-child(even) {
-  background-color: #e6eefc; /* azul muy suave */
-}
-
-/* No perder el color crema al editar */
-#tabla-coordinador td:focus {
-  background-color: #fff7c7 !important;
-  outline: none;
-}
-/* La tabla ocupa el ancho disponible */
-#tabla-coordinador-container {
-  width: 100%;
-  overflow-x: auto; /* por si en móvil es necesario */
-}
-
-#tabla-coordinador {
-  width: 100%;
-  table-layout: fixed; /* obliga a columnas iguales */
-}
-#tabla-coordinador tbody tr:nth-child(odd) td {
-  background-color: #ffffff !important;
-}
-
+/* Rayado "cebra" para filas pares */
 #tabla-coordinador tbody tr:nth-child(even) td {
-  background-color: #f3f7ff !important;
+  background-color: var(--table-zebra-bg);
 }
-/* Hover suave para filas (solo se nota en dispositivos con ratón) */
+
+/* Efecto hover sobre las filas (solo en escritorio) */
 @media (hover: hover) and (pointer: fine) {
   #tabla-coordinador tbody tr:hover td {
-    background-color: #e0edff !important; /* un punto más visible pero suave */
-    cursor: pointer;
+    background-color: var(--table-hover-bg) !important;
   }
 }
 
-/* Resaltado de fila seleccionada (móvil / click) */
-#tabla-coordinador tbody tr.seleccionada td {
-  background-color: #d6e6ff !important; /* un punto más notable que el zebra */
+/* Celdas editables y en foco */
+#tabla-coordinador td[contenteditable="true"] {
+  font-weight: bold;
+  color: var(--text-color);
 }
 
-/* Posicionamiento del botón para limpiar la tabla del coordinador */
-#limpiar-tabla {
-  display: block; /* Necesario para poder usar márgenes automáticos */
-  margin-left: auto;
-  margin-right: auto;
-  margin-bottom: 15px; /* Un poco más de espacio inferior */
+#tabla-coordinador td[contenteditable="true"]:focus {
+  background-color: var(--table-focus-bg) !important;
+  outline: 2px solid var(--button-primary-bg);
+  color: var(--text-color);
 }
-/* Alinea a la izquierda las columnas con más texto para mejor legibilidad */
-#tabla-coordinador td:nth-child(2), /* Columna NOMBRE */
-#tabla-coordinador td:nth-child(8)  /* Columna OBSERVACIONES */
-{
+
+/* Alineación para columnas con mucho texto */
+#tabla-coordinador td:nth-child(2),
+#tabla-coordinador td:nth-child(8) {
   text-align: left;
+}
+
+/* Estilo del botón para limpiar tabla (ahora usa la clase genérica) */
+#limpiar-tabla {
+    display: block;
+    margin: 0 auto 15px auto;
 }
 
 /* === ESTILO COMPACTO PARA PETICIONES (Móvil + Desktop) === */
@@ -757,13 +791,22 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background-color: #ffffff; /* <-- FONDO BLANCO */
-  color: #000;               /* <-- TEXTO NEGRO */
-  border: 1px solid #e0e0e0;   /* Un borde gris neutro */
+  background-color: var(--peticion-item-bg);
+  border: 1px solid var(--peticion-item-border);
+  color: var(--text-color);
+  padding: 10px 15px;
   border-radius: 8px;
-  padding: 10px 12px;
   margin-bottom: 8px;
-  font-size: 0.95rem;
+  transition: background-color 0.3s, border-color 0.3s;
+}
+
+.peticion-item.revisada {
+  background-color: var(--peticion-revisada-bg);
+}
+
+.peticion-item.revisada .peticion-contenido span {
+   color: var(--peticion-revisada-text);
+   text-decoration: line-through;
 }
 
 /* Zona izquierda (texto + fecha) */
