@@ -694,6 +694,7 @@ body {
   text-align: center;
   font-weight: 600;
   margin-bottom: 25px;
+  color: #212529 !important; /* <-- CAMBIO: ¡Forzamos el Color negro fijo para máximo contraste */
 }
 
 /* --- Estilo de los subtítulos de las zonas --- */
@@ -715,7 +716,7 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   border-radius: 8px;
   overflow: hidden;
 }
