@@ -22,6 +22,10 @@
   --panel-border: #e0e0e0;           /* Borde de los paneles */
   --user-zone-bg: #fff6eb;           /* Naranja Pálido para tema claro */
 
+  --table-zebra-bg: var(--user-zone-bg);  /* <-- ¡Usa el naranja suave que querías! */
+  --table-hover-bg: #e8f0ff;             /* Color para el hover (azul muy claro) */
+  --table-focus-bg: rgba(13, 110, 253, 0.15); /* Color para la celda editada */
+
   --button-primary-bg: #0b5ed7;      /* Fondo de botones primarios */
   --button-primary-text: #ffffff;    /* Texto de botones primarios */
   --button-danger-bg: #dc3545;       /* Fondo de botones de peligro */
@@ -59,7 +63,10 @@
   --panel-border: #333;
   --user-zone-bg: var(--panel-bg); /* Usa el fondo de panel oscuro */
 
-  
+  --table-zebra-bg: #2c2c2c;       /* <-- Gris sutil para el efecto cebra oscuro */
+  --table-hover-bg: #343a40;       /* Color para el hover (gris más claro) */
+  --table-focus-bg: rgba(13, 110, 253, 0.2); /* Color para la celda editada */
+
   --button-primary-bg: #0d6efd;
   --button-danger-bg: #e53935;
   
@@ -742,7 +749,7 @@ body {
 
 /* Celdas del cuerpo de la tabla */
 #tabla-coordinador tbody td {
-  color: var(--text-color-light);
+  color: var(--text-color); /* <-- CAMBIO CLAVE: Texto principal para más contraste */
   background-color: var(--panel-bg);
 }
 
