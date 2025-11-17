@@ -41,8 +41,8 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.FINAL CORREGIDA] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
-// Corregida la detección de columnas de turno para que coincida con M¹, T¹, etc.
+// [V.DEF] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
+// Corregidos los 3 errores reportados: colocación, color de texto y limpieza.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -54,18 +54,11 @@ function initCoordinatorTable() {
     const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
     const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
     
-    // --- LÓGICA CORREGIDA ---
-    // Encontrar las columnas de turno aunque tengan números (M¹, T¹, etc.)
-    const headers = Array.from(tabla.querySelectorAll("thead th"));
-    const turnoColumnIndices = [];
-    headers.forEach((th, index) => {
-        const text = th.textContent.trim();
-        if (text.startsWith('M') || text.startsWith('T') || text.startsWith('N')) {
-            turnoColumnIndices.push(index);
-        }
-    });
+    // --- CORRECCIÓN 1: Colocación de Handles ---
+    // Usamos los índices de columna exactos (0-based) para M¹, T¹, M², T², N.
+    const turnoColumnIndices = [2, 3, 4, 5, 6];
 
-    // Iterar sobre todas las celdas para aplicarles su ID y funcionalidades
+    // Iterar sobre todas las celdas
     tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
         row.querySelectorAll("td").forEach((cell, cellIndex) => {
             
@@ -77,14 +70,20 @@ function initCoordinatorTable() {
                 cell.innerText = savedTexts[cellId];
             }
 
-            // Aplicar funcionalidad de color SOLO a las celdas de turno
             if (isTurnoCell) {
                 cell.style.position = 'relative';
 
-                // Restaurar color de fondo
+                // --- CORRECCIÓN 2: Color de Texto ---
+                // Se establece el negro como color de texto por defecto en estas celdas.
+                cell.style.color = '#000';
+
+                // Restaurar color de fondo y ajustar texto si es necesario
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
-                    cell.style.color = isColorLight(savedColors[cellId]) ? '#000' : '#fff';
+                    // Solo si el fondo es oscuro, cambiamos el texto a blanco
+                    if (!isColorLight(savedColors[cellId])) {
+                        cell.style.color = '#fff';
+                    }
                 }
 
                 // Crear y añadir el handle de color
@@ -93,7 +92,6 @@ function initCoordinatorTable() {
                 handle.title = 'Elegir color';
                 handle.innerHTML = '&#9679;';
                 
-                // Estilos para el handle
                 handle.style.position = 'absolute';
                 handle.style.top = '0';
                 handle.style.right = '0';
@@ -126,21 +124,19 @@ function initCoordinatorTable() {
         });
     });
 
-    // LISTENER ÚNICO PARA GUARDAR TEXTO
+    // LISTENER ÚNICO PARA GUARDAR TEXTO (sin cambios)
     tabla.addEventListener("input", (e) => {
         const cell = e.target.closest('td');
         if (!cell || !cell.isContentEditable) return;
-
         const rowIndex = cell.parentElement.rowIndex - 1;
         const cellIndex = cell.cellIndex;
         const cellId = `r${rowIndex}-c${cellIndex}`;
-        
         const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
         currentTexts[cellId] = cell.innerText;
         localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
     });
 
-    // LISTENER ÚNICO PARA SELECCIONAR FILA
+    // LISTENER ÚNICO PARA SELECCIONAR FILA (sin cambios)
     tabla.addEventListener("click", (e) => {
         if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
@@ -158,7 +154,17 @@ function initCoordinatorTable() {
         newBtn.addEventListener("click", function () {
             if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla?")) {
                 tabla.querySelectorAll("tbody td").forEach(cell => {
-                    if (cell.isContentEditable) cell.innerText = "";
+                    // --- CORRECCIÓN 3: Limpieza Inteligente ---
+                    // Borra solo el texto, no los botones de handle.
+                    if (cell.isContentEditable) {
+                        const childNodes = Array.from(cell.childNodes);
+                        childNodes.forEach(node => {
+                            // Si es un nodo de texto, lo vaciamos.
+                            if (node.nodeType === Node.TEXT_NODE) {
+                                node.textContent = '';
+                            }
+                        });
+                    }
                     cell.style.backgroundColor = '';
                     cell.style.color = '';
                 });
