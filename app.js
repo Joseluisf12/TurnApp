@@ -41,8 +41,9 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.DEF-CORREGIDA] GESTOR DE TABLA DEL COORDINADOR
-// Corregido el fallo de editabilidad y la altura de las filas.
+// [V.CORONACIÓN] GESTOR DE TABLA DEL COORDINADOR
+// Implementada la solución de diseño propuesta por el usuario para una UX móvil superior.
+// Handle en la parte inferior, texto a ancho completo.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -61,40 +62,37 @@ function initCoordinatorTable() {
         row.querySelectorAll("td").forEach((cell, cellIndex) => {
             const cellId = `r${rowIndex}-c${cellIndex}`;
             const isTurnoCell = turnoColumnIndices.includes(cellIndex);
-            
-            // --- CORRECCIÓN 1: Identificar correctamente si la celda original era editable ---
             const wasCellEditable = cell.getAttribute('contenteditable') === 'true';
 
-            // La celda <td> actúa como contenedor principal
+            // La celda <td> actúa como contenedor relativo
             cell.style.position = 'relative'; 
-            cell.contentEditable = false; // Desactivamos la edición en la celda
+            cell.contentEditable = false;
 
-            // Creamos el 'div' interno que SÍ será editable
+            // El 'div' interno para el texto
             const textEditor = document.createElement('div');
             textEditor.className = 'text-editor';
-            textEditor.style.color = '#000'; // Texto negro por defecto
+            textEditor.style.color = '#000';
+            textEditor.style.minHeight = '1.5em'; // Ligeramente más alto para mejor toque
+            textEditor.style.padding = '6px 5px'; // Padding vertical y horizontal
+            textEditor.style.width = '100%';    // ANCHO COMPLETO
+            textEditor.style.boxSizing = 'border-box'; // Asegura que el padding no afecte al ancho
 
-            // --- CORRECCIÓN 2: Asegurar la altura de la fila y el padding ---
-            textEditor.style.minHeight = '1.4em'; // Evita que la fila se colapse
-            textEditor.style.padding = '5px 4px';    // Espaciado interno para que el texto respire
-
-            // Si la celda original era editable, hacemos nuestro nuevo div editable
             if (wasCellEditable) {
                 textEditor.contentEditable = true;
             }
 
-            // Si es una celda de turno, añadimos espacio a la derecha para el handle
+            // --- SOLUCIÓN DE DISEÑO ---
+            // Si es una celda de turno, añadimos espacio ABAJO para el handle
             if (isTurnoCell) {
-                textEditor.style.paddingRight = '22px'; 
+                textEditor.style.paddingBottom = '16px'; 
             }
 
-            // Restaurar texto guardado
             if (savedTexts[cellId]) {
                 textEditor.innerText = savedTexts[cellId];
             }
             cell.appendChild(textEditor);
             
-            // Lógica para crear el handle (ahora separado del texto)
+            // Lógica para crear el handle
             if (isTurnoCell) {
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
@@ -108,21 +106,23 @@ function initCoordinatorTable() {
                 handle.title = 'Elegir color';
                 handle.innerHTML = '&#9679;';
                 
+                // --- NUEVO ESTILO DEL HANDLE (BARRA INFERIOR) ---
                 handle.style.position = 'absolute';
-                handle.style.top = '0';
-                handle.style.right = '0';
                 handle.style.bottom = '0';
-                handle.style.width = '20px';
+                handle.style.left = '0';
+                handle.style.width = '100%';
+                handle.style.height = '14px'; // Una barra delgada
                 handle.style.background = 'transparent';
                 handle.style.border = 'none';
                 handle.style.cursor = 'pointer';
                 handle.style.color = 'rgba(0,0,0,0.2)';
-                handle.style.fontSize = '14px';
-                handle.style.opacity = '0.35';
+                handle.style.fontSize = '10px';
+                handle.style.lineHeight = '14px'; // Centrar el punto verticalmente
+                handle.style.opacity = '0.5'; // Un poco más visible por defecto
                 handle.style.zIndex = '10';
                 
-                handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.8'; });
-                handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.35'; });
+                handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
+                handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.5'; });
 
                 handle.addEventListener('click', (ev) => {
                     ev.stopPropagation();
@@ -140,7 +140,7 @@ function initCoordinatorTable() {
         });
     });
 
-    // LISTENER DE GUARDADO adaptado a la nueva estructura
+    // LISTENER DE GUARDADO (sin cambios)
     tabla.addEventListener("input", (e) => {
         const textEditor = e.target;
         if (!textEditor.classList.contains('text-editor')) return;
@@ -162,7 +162,7 @@ function initCoordinatorTable() {
         fila.classList.add("seleccionada");
     });
     
-    // BOTÓN DE LIMPIAR adaptado a la nueva estructura
+    // BOTÓN DE LIMPIAR (sin cambios)
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
