@@ -39,73 +39,130 @@ function initThemeSwitcher() {
     const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
     applyTheme(savedTheme);
 }
+
 // =========================================================================
-// [NUEVO] GESTOR DE NAVEGACIÓN UNIFICADO
-// Este es el nuevo "director de orquesta" para los paneles principales.
+// [V.FINAL] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
+// Integra texto, colores, selección y limpieza en una única función limpia.
 // =========================================================================
-function initUnifiedNavigation() {
-    const appContainer = document.getElementById('app');
-    const btnCalendario = document.getElementById('btn-calendario');
-    const btnLicencias = document.getElementById('btn-licencias'); // Botón "Carga días"
-    const btnPeticiones = document.getElementById('btn-peticiones');
+function initCoordinatorTable() {
+    const tabla = document.getElementById("tabla-coordinador");
+    if (!tabla) return;
 
-    const calendarPanel = document.getElementById('calendar-panel');
-    const licenciasPanel = document.getElementById('licencias-container');
-    const peticionesPanel = document.getElementById('peticiones-section');
+    // Claves únicas para el almacenamiento de esta tabla
+    const TEXT_KEY = "tablaCoordinadorTextos";
+    const COLOR_KEY = "tablaCoordinadorColores";
 
-    const allNavButtons = [btnCalendario, btnLicencias, btnPeticiones].filter(Boolean);
-    const allPanels = [calendarPanel, licenciasPanel, peticionesPanel].filter(Boolean);
+    const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
+    const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
+    
+    // Identificar las columnas de turno (M, T, N) por su cabecera
+    const headers = Array.from(tabla.querySelectorAll("thead th"));
+    const turnosHeaders = ['M', 'T', 'N'];
+    const targetIndices = headers.map((th, index) => turnosHeaders.includes(th.textContent.trim()) ? index : -1);
 
-    // Hacemos la función 'switchView' global (accesible desde window) para que
-    // el código del splash screen pueda llamarla fácilmente más adelante.
-    window.switchView = (viewName) => {
-        // 1. Oculta todos los paneles y desactiva todos los botones
-        allPanels.forEach(panel => {
-            if (panel) {
-                panel.classList.add('oculto');
-                panel.style.display = 'none';
+    // Iterar sobre todas las celdas para aplicarles su ID y funcionalidades
+    tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
+        row.querySelectorAll("td").forEach((cell, cellIndex) => {
+            
+            // Usar un ID único por celda para un guardado robusto
+            const cellId = `r${rowIndex}-c${cellIndex}`;
+
+            // Restaurar texto guardado
+            if (cell.isContentEditable && savedTexts[cellId]) {
+                cell.innerText = savedTexts[cellId];
+            }
+
+            // Aplicar funcionalidad de color SOLO a las celdas de turno
+            if (targetIndices[cellIndex] !== -1) {
+                cell.style.position = 'relative'; // Necesario para posicionar el handle
+
+                // Restaurar color de fondo
+                if (savedColors[cellId]) {
+                    cell.style.backgroundColor = savedColors[cellId];
+                    cell.style.color = isColorLight(savedColors[cellId]) ? '#000' : '#fff';
+                }
+
+                // Crear y añadir el handle de color
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.title = 'Elegir color';
+                handle.innerHTML = '&#9679;';
+                
+                // Estilos para que el handle sea visible pero discreto
+                handle.style.position = 'absolute';
+                handle.style.top = '0';
+                handle.style.right = '0';
+                handle.style.bottom = '0';
+                handle.style.width = '20px';
+                handle.style.background = 'transparent';
+                handle.style.border = 'none';
+                handle.style.cursor = 'pointer';
+                handle.style.color = 'rgba(0,0,0,0.2)';
+                handle.style.fontSize = '14px';
+                handle.style.opacity = '0.35';
+                handle.style.zIndex = '5';
+                
+                handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.8'; });
+                handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.35'; });
+
+                handle.addEventListener('click', (ev) => {
+                    ev.stopPropagation(); // Evita que el clic edite la celda
+                    openColorPicker(handle, (color) => {
+                        cell.style.backgroundColor = color;
+                        cell.style.color = isColorLight(color) ? '#000' : '#fff';
+                        
+                        // Guardar el color en su propio 'cajón'
+                        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+                        currentColors[cellId] = color;
+                        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+                    });
+                });
+                cell.appendChild(handle);
             }
         });
-        allNavButtons.forEach(btn => { if (btn) btn.classList.remove('active'); });
+    });
 
-        // 2. Muestra la vista correcta y activa el botón correspondiente
-        switch (viewName) {
-            case 'calendario':
-                if (calendarPanel) { calendarPanel.style.display = 'block'; calendarPanel.classList.remove('oculto'); }
-                if (btnCalendario) btnCalendario.classList.add('active');
-                break;
-            case 'licencias':
-                if (licenciasPanel) { licenciasPanel.style.display = 'block'; licenciasPanel.classList.remove('oculto'); }
-                if (btnLicencias) btnLicencias.classList.add('active');
-                break;
-            case 'peticiones':
-                if (peticionesPanel) { peticionesPanel.style.display = 'block'; peticionesPanel.classList.remove('oculto'); }
-                if (btnPeticiones) btnPeticiones.classList.add('active');
-                break;
-        }
+    // LISTENER ÚNICO PARA GUARDAR TEXTO (más eficiente)
+    tabla.addEventListener("input", (e) => {
+        const cell = e.target.closest('td');
+        if (!cell || !cell.isContentEditable) return;
+
+        const rowIndex = cell.parentElement.rowIndex - 1;
+        const cellIndex = cell.cellIndex;
+        const cellId = `r${rowIndex}-c${cellIndex}`;
         
-        // 3. Asegura que la vista empiece desde arriba (corrige el problema de scroll)
-        if (appContainer) appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
+        const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
+        currentTexts[cellId] = cell.innerText;
+        localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
+    });
 
-    // --- 4. Asigna los eventos de click a los botones ---
-    if (btnCalendario) btnCalendario.addEventListener('click', (e) => { e.preventDefault(); window.switchView('calendario'); });
-
-    // Botón "Carga días"
-    if (btnLicencias) {
-        btnLicencias.addEventListener('click', (e) => {
-            e.preventDefault();
-            const isActive = btnLicencias.classList.contains('active');
-            window.switchView(isActive ? 'calendario' : 'licencias');
-        });
-    }
-
-    // Botón "Peticiones"
-    if (btnPeticiones) {
-        btnPeticiones.addEventListener('click', (e) => {
-            e.preventDefault();
-            const isActive = btnPeticiones.classList.contains('active');
-            window.switchView(isActive ? 'calendario' : 'peticiones');
+    // LISTENER ÚNICO PARA SELECCIONAR FILA
+    tabla.addEventListener("click", (e) => {
+        if (e.target.closest('.color-handle')) return; // No hacer nada si se pulsa el handle
+        const fila = e.target.closest("tr");
+        if (!fila || fila.parentElement.tagName !== "TBODY") return;
+        tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
+        fila.classList.add("seleccionada");
+    });
+    
+    // FUNCIONALIDAD MEJORADA DEL BOTÓN DE LIMPIAR
+    const btnLimpiar = document.getElementById("limpiar-tabla");
+    if (btnLimpiar) {
+        // Clonamos el botón para eliminar listeners viejos y evitar conflictos
+        const newBtn = btnLimpiar.cloneNode(true);
+        btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+        
+        newBtn.addEventListener("click", function () {
+            if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla?")) {
+                tabla.querySelectorAll("tbody td").forEach(cell => {
+                    if (cell.isContentEditable) cell.innerText = "";
+                    cell.style.backgroundColor = '';
+                    cell.style.color = '';
+                });
+                // Limpia ambos almacenamientos
+                localStorage.removeItem(TEXT_KEY);
+                localStorage.removeItem(COLOR_KEY);
+            }
         });
     }
 }
@@ -115,7 +172,6 @@ document.addEventListener('DOMContentLoaded', () => {
 initApp();
 
   initThemeSwitcher();
-  initUnifiedNavigation();
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
@@ -131,25 +187,10 @@ initApp();
 
   // inicializar módulo de peticiones (listeners + render)
   initPeticiones();
-  // AÑADIR ESTA LÍNEA:
-  addCoordinatorColorPickers();
-  // Resaltar fila seleccionada en tabla coordinador
-const tablaCoord = document.getElementById("tabla-coordinador");
 
-if (tablaCoord) {
-  tablaCoord.addEventListener("click", (e) => {
-    let fila = e.target.closest("tr");
-    if (!fila || fila.parentNode.tagName !== "TBODY") return;
-
-    // Quitar selección previa
-    tablaCoord.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
-
-    // Añadir selección a la fila pulsada
-    fila.classList.add("seleccionada");
+  // AÑADE ESTA LÍNEA:
+    initCoordinatorTable();
   });
-}
-
-});
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -839,169 +880,77 @@ function initPeticiones(){
 
   render();
 }
-// =========================================================================
-// [NUEVO] Inyector de Paleta de Colores para la Tabla del Coordinador
-// Inspirado directamente en el código funcional del calendario.
-// =========================================================================
-function initCoordinatorColorPickers() {
-    const tabla = document.getElementById("tabla-coordinador");
-    if (!tabla) return;
 
-    // Almacenamiento específico para los colores de esta tabla
-    const COLOR_KEY = "tablaCoordinadorColores"; 
-    const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
-
-    // Identificar las columnas de turno (M, T, N) por su texto en la cabecera
-    const headers = Array.from(tabla.querySelectorAll("thead th"));
-    const turnosHeaders = ['M', 'T', 'N'];
-    const targetIndices = headers
-        .map((th, index) => turnosHeaders.includes(th.textContent.trim()) ? index : -1)
-        .filter(index => index !== -1);
-
-    // Iterar sobre cada celda de cada fila del cuerpo de la tabla
-    tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
-        row.querySelectorAll("td").forEach((cell, cellIndex) => {
-            // Actuar SOLO si la celda está en una de las columnas de turno
-            if (targetIndices.includes(cellIndex)) {
-                // ID único para persistencia (fila 0, celda 2 -> "r0-c2")
-                const cellId = `r${rowIndex}-c${cellIndex}`;
-                
-                // --- Recreación del Handle del Calendario ---
-                cell.style.position = 'relative'; // El ancla para el botón
-                
-                const handle = document.createElement('button');
-                handle.type = 'button';
-                handle.className = 'color-handle'; // La clase que ya conoces
-                handle.title = 'Elegir color';
-                handle.innerText = '●';
-                
-                // Estilos aplicados directamente, igual que en el calendario
-                handle.style.height = '16px';
-                handle.style.width = '100%';
-                handle.style.position = 'absolute';
-                handle.style.top = '-2px';
-                handle.style.left = '0';
-                handle.style.fontSize = '12px';
-                handle.style.opacity = '0.28';
-                handle.style.background = 'transparent';
-                handle.style.border = 'none';
-                handle.style.cursor = 'pointer';
-                handle.style.color = '#777'; // Un color neutro que no moleste
-                handle.style.zIndex = '5'; // Por encima del texto
-
-                handle.addEventListener('mouseenter', () => handle.style.opacity = '0.7');
-                handle.addEventListener('mouseleave', () => handle.style.opacity = '0.28');
-
-                // --- Funcionalidad y Persistencia ---
-                handle.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    openColorPicker(handle, (color) => {
-                        cell.style.backgroundColor = color;
-                        cell.style.color = isColorLight(color) ? '#000' : '#fff';
-                        
-                        // Guardar el color
-                        const allColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
-                        allColors[cellId] = color;
-                        localStorage.setItem(COLOR_KEY, JSON.stringify(allColors));
-                    });
-                });
-                
-                cell.appendChild(handle);
-
-                // Restaurar color al cargar
-                if (savedColors[cellId]) {
-                    cell.style.backgroundColor = savedColors[cellId];
-                    cell.style.color = isColorLight(savedColors[cellId]) ? '#000' : '#fff';
-                }
-            }
-        });
-    });
-
-    // --- Extender el botón "Limpiar Tabla" para que borre colores ---
-    const btnLimpiar = document.getElementById("limpiar-tabla");
-    if (btnLimpiar) {
-        // Le quitamos el listener viejo para ponerle uno nuevo y mejorado
-        const newBtn = btnLimpiar.cloneNode(true);
-        btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-
-        newBtn.addEventListener("click", function () {
-            if (confirm("¿Borrar todo el contenido y colores de la tabla?")) {
-                tabla.querySelectorAll("tbody td").forEach(td => {
-                    if (td.isContentEditable) {
-                        td.textContent = "";
-                    }
-                    td.style.backgroundColor = '';
-                    td.style.color = ''; // Restaura el color de texto por defecto
-                });
-                // Borra AMBOS almacenamientos, el de texto original y el de colores
-                localStorage.removeItem("tablaCoordinador"); 
-                localStorage.removeItem(COLOR_KEY);
-            }
-        });
-    }
-}
-
-// === EXCEL DEL COORDINADOR ===
+// === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
 document.addEventListener("DOMContentLoaded", () => {
-  const tabla = document.getElementById("excel-coordinador");
-  if (!tabla) return;
+  const btnPeticiones = document.getElementById("btn-peticiones");
+  const peticionesSection = document.getElementById("peticiones-section");
 
-  // Cargar desde localStorage
-  const guardado = JSON.parse(localStorage.getItem("tablaCoordinador") || "[]");
-  const filas = tabla.querySelectorAll("tbody tr");
-  guardado.forEach((fila, i) => {
-    if (filas[i]) {
-      const celdas = filas[i].querySelectorAll("td");
-      fila.forEach((valor, j) => {
-        if (celdas[j]) celdas[j].textContent = valor;
-      });
+  if (!btnPeticiones || !peticionesSection) {
+    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
+    return;
+  }
+
+  // Estado inicial: el cajón de peticiones oculto
+  peticionesSection.classList.add("oculto");
+  peticionesSection.style.display = "none";
+
+  // Función central: alternar sólo el cajón de peticiones
+  const togglePeticiones = () => {
+    const visible = !peticionesSection.classList.contains("oculto") && 
+                    peticionesSection.style.display !== "none";
+
+    if (visible) {
+      // 🔹 Oculta el cajón de peticiones
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
+    } else {
+      // 🔹 Muestra el cajón de peticiones
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
+      peticionesSection.removeAttribute("hidden");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
-  });
+  };
 
-  // Guardado automático en cada cambio
-  tabla.addEventListener("input", () => {
-    const datos = [];
-    tabla.querySelectorAll("tbody tr").forEach(fila => {
-      const filaDatos = [];
-      fila.querySelectorAll("td").forEach(td => filaDatos.push(td.textContent.trim()));
-      datos.push(filaDatos);
-    });
-    localStorage.setItem("tablaCoordinador", JSON.stringify(datos));
+  btnPeticiones.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    togglePeticiones();
   });
 });
-// === Auto-Guardado del Excel del Coordinador ===
+// === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
 document.addEventListener("DOMContentLoaded", () => {
-  const tabla = document.getElementById("tabla-coordinador");
-  if (!tabla) return;
+  const btnPeticiones = document.getElementById("btn-peticiones");
+  const peticionesSection = document.getElementById("peticiones-section");
 
-  const cells = tabla.querySelectorAll("td[contenteditable], th.titulo-ciclo");
+  if (!btnPeticiones || !peticionesSection) {
+    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
+    return;
+  }
 
-  // Cargar estado guardado al abrir
-  const savedData = JSON.parse(localStorage.getItem("tablaCoordinador")) || [];
-  savedData.forEach((text, i) => {
-    if (cells[i]) cells[i].innerText = text;
-  });
+  // Estado inicial: peticiones ocultas
+  peticionesSection.classList.add("oculto");
+  peticionesSection.style.display = "none";
 
-  // Guardar en cada cambio
-  cells.forEach((cell, i) => {
-    cell.addEventListener("input", () => {
-      const data = Array.from(cells).map(c => c.innerText);
-      localStorage.setItem("tablaCoordinador", JSON.stringify(data));
-    });
+  btnPeticiones.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
+
+    if (visible) {
+      // 🔹 Oculta el cajón de peticiones
+      peticionesSection.classList.add("oculto");
+      peticionesSection.style.display = "none";
+    } else {
+      // 🔹 Muestra el cajón de peticiones
+      peticionesSection.classList.remove("oculto");
+      peticionesSection.style.display = "block";
+    }
   });
 });
 
-// === BOTÓN LIMPIAR TABLA COORDINADOR ===
-const btnLimpiar = document.getElementById("limpiar-tabla");
-if (btnLimpiar) {
-  btnLimpiar.addEventListener("click", function () {
-    const celdas = document.querySelectorAll("#tabla-coordinador tbody td[contenteditable]");
-    celdas.forEach(td => td.textContent = "");
-
-    // Borrar también del localStorage
-    localStorage.removeItem("tablaCoordinador");
-  });
-}
 
 document.addEventListener("DOMContentLoaded", () => {
   const splash = document.getElementById("splash");
