@@ -41,31 +41,36 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.FINAL] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
-// Integra texto, colores, selección y limpieza en una única función limpia.
+// [V.FINAL CORREGIDA] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
+// Corregida la detección de columnas de turno para que coincida con M¹, T¹, etc.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
 
-    // Claves únicas para el almacenamiento de esta tabla
     const TEXT_KEY = "tablaCoordinadorTextos";
     const COLOR_KEY = "tablaCoordinadorColores";
 
     const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
     const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
     
-    // Identificar las columnas de turno (M, T, N) por su cabecera
+    // --- LÓGICA CORREGIDA ---
+    // Encontrar las columnas de turno aunque tengan números (M¹, T¹, etc.)
     const headers = Array.from(tabla.querySelectorAll("thead th"));
-    const turnosHeaders = ['M', 'T', 'N'];
-    const targetIndices = headers.map((th, index) => turnosHeaders.includes(th.textContent.trim()) ? index : -1);
+    const turnoColumnIndices = [];
+    headers.forEach((th, index) => {
+        const text = th.textContent.trim();
+        if (text.startsWith('M') || text.startsWith('T') || text.startsWith('N')) {
+            turnoColumnIndices.push(index);
+        }
+    });
 
     // Iterar sobre todas las celdas para aplicarles su ID y funcionalidades
     tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
         row.querySelectorAll("td").forEach((cell, cellIndex) => {
             
-            // Usar un ID único por celda para un guardado robusto
             const cellId = `r${rowIndex}-c${cellIndex}`;
+            const isTurnoCell = turnoColumnIndices.includes(cellIndex);
 
             // Restaurar texto guardado
             if (cell.isContentEditable && savedTexts[cellId]) {
@@ -73,8 +78,8 @@ function initCoordinatorTable() {
             }
 
             // Aplicar funcionalidad de color SOLO a las celdas de turno
-            if (targetIndices[cellIndex] !== -1) {
-                cell.style.position = 'relative'; // Necesario para posicionar el handle
+            if (isTurnoCell) {
+                cell.style.position = 'relative';
 
                 // Restaurar color de fondo
                 if (savedColors[cellId]) {
@@ -88,7 +93,7 @@ function initCoordinatorTable() {
                 handle.title = 'Elegir color';
                 handle.innerHTML = '&#9679;';
                 
-                // Estilos para que el handle sea visible pero discreto
+                // Estilos para el handle
                 handle.style.position = 'absolute';
                 handle.style.top = '0';
                 handle.style.right = '0';
@@ -106,12 +111,11 @@ function initCoordinatorTable() {
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.35'; });
 
                 handle.addEventListener('click', (ev) => {
-                    ev.stopPropagation(); // Evita que el clic edite la celda
+                    ev.stopPropagation();
                     openColorPicker(handle, (color) => {
                         cell.style.backgroundColor = color;
                         cell.style.color = isColorLight(color) ? '#000' : '#fff';
                         
-                        // Guardar el color en su propio 'cajón'
                         const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
                         currentColors[cellId] = color;
                         localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
@@ -122,7 +126,7 @@ function initCoordinatorTable() {
         });
     });
 
-    // LISTENER ÚNICO PARA GUARDAR TEXTO (más eficiente)
+    // LISTENER ÚNICO PARA GUARDAR TEXTO
     tabla.addEventListener("input", (e) => {
         const cell = e.target.closest('td');
         if (!cell || !cell.isContentEditable) return;
@@ -138,7 +142,7 @@ function initCoordinatorTable() {
 
     // LISTENER ÚNICO PARA SELECCIONAR FILA
     tabla.addEventListener("click", (e) => {
-        if (e.target.closest('.color-handle')) return; // No hacer nada si se pulsa el handle
+        if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
         if (!fila || fila.parentElement.tagName !== "TBODY") return;
         tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
@@ -148,7 +152,6 @@ function initCoordinatorTable() {
     // FUNCIONALIDAD MEJORADA DEL BOTÓN DE LIMPIAR
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
-        // Clonamos el botón para eliminar listeners viejos y evitar conflictos
         const newBtn = btnLimpiar.cloneNode(true);
         btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
         
@@ -159,7 +162,6 @@ function initCoordinatorTable() {
                     cell.style.backgroundColor = '';
                     cell.style.color = '';
                 });
-                // Limpia ambos almacenamientos
                 localStorage.removeItem(TEXT_KEY);
                 localStorage.removeItem(COLOR_KEY);
             }
