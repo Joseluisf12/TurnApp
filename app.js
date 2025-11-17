@@ -41,8 +41,8 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.DEF] GESTOR UNIFICADO PARA LA TABLA DEL COORDINADOR
-// Corregidos los 3 errores reportados: colocación, color de texto y limpieza.
+// [V.ARQUITECTURA-FINAL] GESTOR DE TABLA DEL COORDINADOR
+// Reescritura estructural para separar el texto editable del handle.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -54,39 +54,49 @@ function initCoordinatorTable() {
     const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
     const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
     
-    // --- CORRECCIÓN 1: Colocación de Handles ---
-    // Usamos los índices de columna exactos (0-based) para M¹, T¹, M², T², N.
+    // Índices de columna exactos (0-based) para M¹, T¹, M², T², N.
     const turnoColumnIndices = [2, 3, 4, 5, 6];
 
-    // Iterar sobre todas las celdas
     tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
         row.querySelectorAll("td").forEach((cell, cellIndex) => {
-            
             const cellId = `r${rowIndex}-c${cellIndex}`;
             const isTurnoCell = turnoColumnIndices.includes(cellIndex);
 
-            // Restaurar texto guardado
-            if (cell.isContentEditable && savedTexts[cellId]) {
-                cell.innerText = savedTexts[cellId];
+            // --- NUEVA ARQUITECTURA ---
+            // 1. La celda <td> ya no es editable. Es un contenedor.
+            cell.style.position = 'relative'; 
+            cell.contentEditable = false; // ¡IMPORTANTE!
+
+            // 2. Creamos un editor de texto DENTRO de la celda.
+            const textEditor = document.createElement('div');
+            textEditor.className = 'text-editor';
+            textEditor.style.paddingRight = '20px'; // Dejar espacio para el handle
+            textEditor.style.width = '100%';
+            textEditor.style.height = '100%';
+            textEditor.style.color = '#000'; // Color de texto negro por defecto
+
+            // Solo el editor de texto es editable.
+            if (cell.classList.contains('editable')) { // Asumiendo que las celdas editables tienen una clase 'editable'
+                textEditor.contentEditable = true;
             }
 
+            // 3. Restauramos el texto DENTRO del nuevo editor.
+            if (savedTexts[cellId]) {
+                textEditor.innerText = savedTexts[cellId];
+            }
+            cell.appendChild(textEditor);
+            
+            // --- LÓGICA DEL HANDLE (AHORA SEPARADA DEL TEXTO) ---
             if (isTurnoCell) {
-                cell.style.position = 'relative';
-
-                // --- CORRECCIÓN 2: Color de Texto ---
-                // Se establece el negro como color de texto por defecto en estas celdas.
-                cell.style.color = '#000';
-
                 // Restaurar color de fondo y ajustar texto si es necesario
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
-                    // Solo si el fondo es oscuro, cambiamos el texto a blanco
                     if (!isColorLight(savedColors[cellId])) {
-                        cell.style.color = '#fff';
+                        textEditor.style.color = '#fff'; // El color se aplica al editor de texto.
                     }
                 }
 
-                // Crear y añadir el handle de color
+                // 4. El handle es hermano del editor, no está dentro.
                 const handle = document.createElement('button');
                 handle.type = 'button';
                 handle.title = 'Elegir color';
@@ -103,7 +113,7 @@ function initCoordinatorTable() {
                 handle.style.color = 'rgba(0,0,0,0.2)';
                 handle.style.fontSize = '14px';
                 handle.style.opacity = '0.35';
-                handle.style.zIndex = '5';
+                handle.style.zIndex = '10';
                 
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.8'; });
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.35'; });
@@ -112,7 +122,7 @@ function initCoordinatorTable() {
                     ev.stopPropagation();
                     openColorPicker(handle, (color) => {
                         cell.style.backgroundColor = color;
-                        cell.style.color = isColorLight(color) ? '#000' : '#fff';
+                        textEditor.style.color = isColorLight(color) ? '#000' : '#fff'; // Aplicar color al editor
                         
                         const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
                         currentColors[cellId] = color;
@@ -124,28 +134,31 @@ function initCoordinatorTable() {
         });
     });
 
-    // LISTENER ÚNICO PARA GUARDAR TEXTO (sin cambios)
+    // LISTENER DE GUARDADO ADAPTADO A LA NUEVA ESTRUCTURA
     tabla.addEventListener("input", (e) => {
-        const cell = e.target.closest('td');
-        if (!cell || !cell.isContentEditable) return;
+        const textEditor = e.target;
+        if (!textEditor.classList.contains('text-editor')) return;
+
+        const cell = textEditor.parentElement;
         const rowIndex = cell.parentElement.rowIndex - 1;
         const cellIndex = cell.cellIndex;
         const cellId = `r${rowIndex}-c${cellIndex}`;
+        
         const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
-        currentTexts[cellId] = cell.innerText;
+        currentTexts[cellId] = textEditor.innerText;
         localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
     });
 
-    // LISTENER ÚNICO PARA SELECCIONAR FILA (sin cambios)
+    // LISTENER DE SELECCIÓN (sin cambios)
     tabla.addEventListener("click", (e) => {
         if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
-        if (!fila || fila.parentElement.tagName !== "TBODY") return;
+        if (!fila || !fila.parentElement.tagName !== "TBODY") return;
         tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
         fila.classList.add("seleccionada");
     });
     
-    // FUNCIONALIDAD MEJORADA DEL BOTÓN DE LIMPIAR
+    // BOTÓN DE LIMPIAR ADAPTADO A LA NUEVA ESTRUCTURA
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
@@ -153,20 +166,13 @@ function initCoordinatorTable() {
         
         newBtn.addEventListener("click", function () {
             if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla?")) {
+                tabla.querySelectorAll("tbody td .text-editor").forEach(editor => {
+                    editor.innerText = ''; // Limpia solo el editor de texto
+                });
                 tabla.querySelectorAll("tbody td").forEach(cell => {
-                    // --- CORRECCIÓN 3: Limpieza Inteligente ---
-                    // Borra solo el texto, no los botones de handle.
-                    if (cell.isContentEditable) {
-                        const childNodes = Array.from(cell.childNodes);
-                        childNodes.forEach(node => {
-                            // Si es un nodo de texto, lo vaciamos.
-                            if (node.nodeType === Node.TEXT_NODE) {
-                                node.textContent = '';
-                            }
-                        });
-                    }
-                    cell.style.backgroundColor = '';
-                    cell.style.color = '';
+                    cell.style.backgroundColor = ''; // Limpia el color de fondo de la celda
+                    const editor = cell.querySelector('.text-editor');
+                    if (editor) editor.style.color = '#000'; // Restaura el color del texto a negro
                 });
                 localStorage.removeItem(TEXT_KEY);
                 localStorage.removeItem(COLOR_KEY);
