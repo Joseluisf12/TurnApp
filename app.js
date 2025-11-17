@@ -41,9 +41,9 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.CORONACIÓN] GESTOR DE TABLA DEL COORDINADOR
-// Implementada la solución de diseño propuesta por el usuario para una UX móvil superior.
-// Handle en la parte inferior, texto a ancho completo.
+// [V.FINAL-PULIDA] GESTOR DE TABLA DEL COORDINADOR
+// Eliminada toda la lógica de color de texto para que sea 100% controlada por CSS.
+// El texto ahora responde a los temas claro/oscuro.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -64,61 +64,48 @@ function initCoordinatorTable() {
             const isTurnoCell = turnoColumnIndices.includes(cellIndex);
             const wasCellEditable = cell.getAttribute('contenteditable') === 'true';
 
-            // La celda <td> actúa como contenedor relativo
             cell.style.position = 'relative'; 
             cell.contentEditable = false;
 
-            // El 'div' interno para el texto
             const textEditor = document.createElement('div');
             textEditor.className = 'text-editor';
-            textEditor.style.color = '#000';
-            textEditor.style.minHeight = '1.5em'; // Ligeramente más alto para mejor toque
-            textEditor.style.padding = '6px 5px'; // Padding vertical y horizontal
-            textEditor.style.width = '100%';    // ANCHO COMPLETO
-            textEditor.style.boxSizing = 'border-box'; // Asegura que el padding no afecte al ancho
+            textEditor.style.minHeight = '1.5em';
+            textEditor.style.padding = '6px 5px';
+            textEditor.style.width = '100%';
+            textEditor.style.boxSizing = 'border-box';
 
             if (wasCellEditable) {
                 textEditor.contentEditable = true;
             }
-
-            // --- SOLUCIÓN DE DISEÑO ---
-            // Si es una celda de turno, añadimos espacio ABAJO para el handle
             if (isTurnoCell) {
                 textEditor.style.paddingBottom = '16px'; 
             }
-
             if (savedTexts[cellId]) {
                 textEditor.innerText = savedTexts[cellId];
             }
             cell.appendChild(textEditor);
             
-            // Lógica para crear el handle
             if (isTurnoCell) {
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
-                    if (!isColorLight(savedColors[cellId])) {
-                        textEditor.style.color = '#fff';
-                    }
                 }
 
                 const handle = document.createElement('button');
                 handle.type = 'button';
                 handle.title = 'Elegir color';
                 handle.innerHTML = '&#9679;';
-                
-                // --- NUEVO ESTILO DEL HANDLE (BARRA INFERIOR) ---
                 handle.style.position = 'absolute';
                 handle.style.bottom = '0';
                 handle.style.left = '0';
                 handle.style.width = '100%';
-                handle.style.height = '14px'; // Una barra delgada
+                handle.style.height = '14px';
                 handle.style.background = 'transparent';
                 handle.style.border = 'none';
                 handle.style.cursor = 'pointer';
                 handle.style.color = 'rgba(0,0,0,0.2)';
                 handle.style.fontSize = '10px';
-                handle.style.lineHeight = '14px'; // Centrar el punto verticalmente
-                handle.style.opacity = '0.5'; // Un poco más visible por defecto
+                handle.style.lineHeight = '14px';
+                handle.style.opacity = '0.5';
                 handle.style.zIndex = '10';
                 
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
@@ -128,8 +115,6 @@ function initCoordinatorTable() {
                     ev.stopPropagation();
                     openColorPicker(handle, (color) => {
                         cell.style.backgroundColor = color;
-                        textEditor.style.color = isColorLight(color) ? '#000' : '#fff';
-                        
                         const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
                         currentColors[cellId] = color;
                         localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
@@ -140,7 +125,6 @@ function initCoordinatorTable() {
         });
     });
 
-    // LISTENER DE GUARDADO (sin cambios)
     tabla.addEventListener("input", (e) => {
         const textEditor = e.target;
         if (!textEditor.classList.contains('text-editor')) return;
@@ -153,16 +137,14 @@ function initCoordinatorTable() {
         localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
     });
 
-    // LISTENER DE SELECCIÓN (sin cambios)
     tabla.addEventListener("click", (e) => {
         if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
-        if (!fila || fila.parentElement.tagName !== "TBODY") return;
+        if (!fila || !fila.parentElement.tagName !== "TBODY") return;
         tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
         fila.classList.add("seleccionada");
     });
     
-    // BOTÓN DE LIMPIAR (sin cambios)
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
@@ -175,8 +157,6 @@ function initCoordinatorTable() {
                 });
                 tabla.querySelectorAll("tbody td").forEach(cell => {
                     cell.style.backgroundColor = '';
-                    const editor = cell.querySelector('.text-editor');
-                    if (editor) editor.style.color = '#000';
                 });
                 localStorage.removeItem(TEXT_KEY);
                 localStorage.removeItem(COLOR_KEY);
