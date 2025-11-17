@@ -132,7 +132,7 @@ initApp();
   // inicializar módulo de peticiones (listeners + render)
   initPeticiones();
   // AÑADIR ESTA LÍNEA:
-  initCoordinatorColorPickers();
+  addCoordinatorColorPickers();
   // Resaltar fila seleccionada en tabla coordinador
 const tablaCoord = document.getElementById("tabla-coordinador");
 
