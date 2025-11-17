@@ -958,7 +958,7 @@ body {
 /* 1. Reduce el tamaño de la fuente para que quepan más números */
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
-    font-size: 13.5px;
+    font-size: 8px;
     line-height: 1.4;
 }
 
