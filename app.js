@@ -39,12 +39,83 @@ function initThemeSwitcher() {
     const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
     applyTheme(savedTheme);
 }
+// =========================================================================
+// [NUEVO] GESTOR DE NAVEGACIÓN UNIFICADO
+// Este es el nuevo "director de orquesta" para los paneles principales.
+// =========================================================================
+function initUnifiedNavigation() {
+    const appContainer = document.getElementById('app');
+    const btnCalendario = document.getElementById('btn-calendario');
+    const btnLicencias = document.getElementById('btn-licencias'); // Botón "Carga días"
+    const btnPeticiones = document.getElementById('btn-peticiones');
+
+    const calendarPanel = document.getElementById('calendar-panel');
+    const licenciasPanel = document.getElementById('licencias-container');
+    const peticionesPanel = document.getElementById('peticiones-section');
+
+    const allNavButtons = [btnCalendario, btnLicencias, btnPeticiones].filter(Boolean);
+    const allPanels = [calendarPanel, licenciasPanel, peticionesPanel].filter(Boolean);
+
+    // Hacemos la función 'switchView' global (accesible desde window) para que
+    // el código del splash screen pueda llamarla fácilmente más adelante.
+    window.switchView = (viewName) => {
+        // 1. Oculta todos los paneles y desactiva todos los botones
+        allPanels.forEach(panel => {
+            if (panel) {
+                panel.classList.add('oculto');
+                panel.style.display = 'none';
+            }
+        });
+        allNavButtons.forEach(btn => { if (btn) btn.classList.remove('active'); });
+
+        // 2. Muestra la vista correcta y activa el botón correspondiente
+        switch (viewName) {
+            case 'calendario':
+                if (calendarPanel) { calendarPanel.style.display = 'block'; calendarPanel.classList.remove('oculto'); }
+                if (btnCalendario) btnCalendario.classList.add('active');
+                break;
+            case 'licencias':
+                if (licenciasPanel) { licenciasPanel.style.display = 'block'; licenciasPanel.classList.remove('oculto'); }
+                if (btnLicencias) btnLicencias.classList.add('active');
+                break;
+            case 'peticiones':
+                if (peticionesPanel) { peticionesPanel.style.display = 'block'; peticionesPanel.classList.remove('oculto'); }
+                if (btnPeticiones) btnPeticiones.classList.add('active');
+                break;
+        }
+        
+        // 3. Asegura que la vista empiece desde arriba (corrige el problema de scroll)
+        if (appContainer) appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    // --- 4. Asigna los eventos de click a los botones ---
+    if (btnCalendario) btnCalendario.addEventListener('click', (e) => { e.preventDefault(); window.switchView('calendario'); });
+
+    // Botón "Carga días"
+    if (btnLicencias) {
+        btnLicencias.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isActive = btnLicencias.classList.contains('active');
+            window.switchView(isActive ? 'calendario' : 'licencias');
+        });
+    }
+
+    // Botón "Peticiones"
+    if (btnPeticiones) {
+        btnPeticiones.addEventListener('click', (e) => {
+            e.preventDefault();
+            const isActive = btnPeticiones.classList.contains('active');
+            window.switchView(isActive ? 'calendario' : 'peticiones');
+        });
+    }
+}
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
 initApp();
 
   initThemeSwitcher();
+  initUnifiedNavigation();
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
@@ -60,7 +131,9 @@ initApp();
 
   // inicializar módulo de peticiones (listeners + render)
   initPeticiones();
-// Resaltar fila seleccionada en tabla coordinador
+  // AÑADIR ESTA LÍNEA:
+  initCoordinatorColorPickers();
+  // Resaltar fila seleccionada en tabla coordinador
 const tablaCoord = document.getElementById("tabla-coordinador");
 
 if (tablaCoord) {
@@ -766,76 +839,107 @@ function initPeticiones(){
 
   render();
 }
+// =========================================================================
+// [NUEVO] Inyector de Paleta de Colores para la Tabla del Coordinador
+// Inspirado directamente en el código funcional del calendario.
+// =========================================================================
+function initCoordinatorColorPickers() {
+    const tabla = document.getElementById("tabla-coordinador");
+    if (!tabla) return;
 
-// === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
-document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
+    // Almacenamiento específico para los colores de esta tabla
+    const COLOR_KEY = "tablaCoordinadorColores"; 
+    const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
 
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
+    // Identificar las columnas de turno (M, T, N) por su texto en la cabecera
+    const headers = Array.from(tabla.querySelectorAll("thead th"));
+    const turnosHeaders = ['M', 'T', 'N'];
+    const targetIndices = headers
+        .map((th, index) => turnosHeaders.includes(th.textContent.trim()) ? index : -1)
+        .filter(index => index !== -1);
 
-  // Estado inicial: el cajón de peticiones oculto
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
+    // Iterar sobre cada celda de cada fila del cuerpo de la tabla
+    tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
+        row.querySelectorAll("td").forEach((cell, cellIndex) => {
+            // Actuar SOLO si la celda está en una de las columnas de turno
+            if (targetIndices.includes(cellIndex)) {
+                // ID único para persistencia (fila 0, celda 2 -> "r0-c2")
+                const cellId = `r${rowIndex}-c${cellIndex}`;
+                
+                // --- Recreación del Handle del Calendario ---
+                cell.style.position = 'relative'; // El ancla para el botón
+                
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.className = 'color-handle'; // La clase que ya conoces
+                handle.title = 'Elegir color';
+                handle.innerText = '●';
+                
+                // Estilos aplicados directamente, igual que en el calendario
+                handle.style.height = '16px';
+                handle.style.width = '100%';
+                handle.style.position = 'absolute';
+                handle.style.top = '-2px';
+                handle.style.left = '0';
+                handle.style.fontSize = '12px';
+                handle.style.opacity = '0.28';
+                handle.style.background = 'transparent';
+                handle.style.border = 'none';
+                handle.style.cursor = 'pointer';
+                handle.style.color = '#777'; // Un color neutro que no moleste
+                handle.style.zIndex = '5'; // Por encima del texto
 
-  // Función central: alternar sólo el cajón de peticiones
-  const togglePeticiones = () => {
-    const visible = !peticionesSection.classList.contains("oculto") && 
-                    peticionesSection.style.display !== "none";
+                handle.addEventListener('mouseenter', () => handle.style.opacity = '0.7');
+                handle.addEventListener('mouseleave', () => handle.style.opacity = '0.28');
 
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-      peticionesSection.removeAttribute("hidden");
-      window.scrollTo({ top: 0, behavior: "smooth" });
+                // --- Funcionalidad y Persistencia ---
+                handle.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    openColorPicker(handle, (color) => {
+                        cell.style.backgroundColor = color;
+                        cell.style.color = isColorLight(color) ? '#000' : '#fff';
+                        
+                        // Guardar el color
+                        const allColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+                        allColors[cellId] = color;
+                        localStorage.setItem(COLOR_KEY, JSON.stringify(allColors));
+                    });
+                });
+                
+                cell.appendChild(handle);
+
+                // Restaurar color al cargar
+                if (savedColors[cellId]) {
+                    cell.style.backgroundColor = savedColors[cellId];
+                    cell.style.color = isColorLight(savedColors[cellId]) ? '#000' : '#fff';
+                }
+            }
+        });
+    });
+
+    // --- Extender el botón "Limpiar Tabla" para que borre colores ---
+    const btnLimpiar = document.getElementById("limpiar-tabla");
+    if (btnLimpiar) {
+        // Le quitamos el listener viejo para ponerle uno nuevo y mejorado
+        const newBtn = btnLimpiar.cloneNode(true);
+        btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+
+        newBtn.addEventListener("click", function () {
+            if (confirm("¿Borrar todo el contenido y colores de la tabla?")) {
+                tabla.querySelectorAll("tbody td").forEach(td => {
+                    if (td.isContentEditable) {
+                        td.textContent = "";
+                    }
+                    td.style.backgroundColor = '';
+                    td.style.color = ''; // Restaura el color de texto por defecto
+                });
+                // Borra AMBOS almacenamientos, el de texto original y el de colores
+                localStorage.removeItem("tablaCoordinador"); 
+                localStorage.removeItem(COLOR_KEY);
+            }
+        });
     }
-  };
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    togglePeticiones();
-  });
-});
-// === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
-document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
-
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
-
-  // Estado inicial: peticiones ocultas
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-    }
-  });
-});
+}
 
 // === EXCEL DEL COORDINADOR ===
 document.addEventListener("DOMContentLoaded", () => {
