@@ -966,7 +966,82 @@ body {
     color: var(--text-color);
 }
 
+/* =================================================== */
+/* ESTILOS DEL TABLÓN DE ANUNCIOS                      */
+/* =================================================== */
 
+/* 1. Arregla el panel para que tenga fondo y se vea sólido */
+#tablon-section {
+    padding: 15px;
+    background-color: var(--background-color);
+}
 
+/* 2. Estructura y alinea cada fila de la lista de archivos */
+.tablon-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--border-color);
+    gap: 15px; /* Espacio entre la info y los botones */
+}
 
+.tablon-item:last-child {
+    border-bottom: none;
+}
+
+.tablon-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    overflow: hidden; /* Evita que textos largos rompan el diseño */
+}
+
+.tablon-item-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis; /* Pone "..." si el nombre es muy largo */
+    color: var(--text-color);
+    font-weight: bold;
+}
+
+.tablon-item-meta {
+    font-size: 0.8em;
+    color: var(--text-color-light);
+}
+
+.tablon-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0; /* Impide que los botones se deformen */
+}
+
+/* 3. Corrige los colores de los botones según tus indicaciones */
+
+/* Botón principal "[+] Subir Archivo" pasa a ser azul */
+#btn-upload-file {
+    background-color: var(--primary-color);
+    color: white;
+}
+#btn-upload-file:hover {
+    background-color: var(--primary-color-dark);
+}
+
+/* Botón "Ver" pasa a ser verde */
+.tablon-item-actions .view-btn {
+    background-color: var(--green-color);
+    color: white;
+}
+.tablon-item-actions .view-btn:hover {
+    background-color: var(--green-color-dark);
+}
+
+/* El botón de descarga tendrá un color neutro */
+.tablon-item-actions .download-btn {
+    background-color: #6c757d; /* Un gris estándar */
+    color: white;
+}
+.tablon-item-actions .download-btn:hover {
+    background-color: #5a6268;
+}
 
