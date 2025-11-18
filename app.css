@@ -726,7 +726,7 @@ body {
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
 #tabla-coordinador colgroup col:nth-child(7) { width: 4.5%; } /* TURNOS (aumentado) */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES (reducido) */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 16%; } /* OBSERVACIONES (reducido) */
 
 /* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
