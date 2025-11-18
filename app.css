@@ -954,14 +954,20 @@ body {
 /* AJUSTES FINALES TABLA DEL COORDINADOR   */
 /* ======================================= */
 
-/* 1. Reduce el tamaño de la fuente para que quepan más números */
+/* 1. Ajusta el tamaño y PONE EN NEGRITA el texto */
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
     font-size: 9px;
-    line-height: 1;
+    line-height: 0.8;
+    font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
 }
 
 /* 2. Hace que el color del texto responda al tema (claro/oscuro) */
 #tabla-coordinador .text-editor {
-    color: var(--text-color); /* ¡Esta es la clave! */
+    color: var(--text-color);
+}
+
+/* 3. ANCHEA LA TABLA para que ocupe más espacio */
+#tabla-coordinador {
+    min-width: 580px; /* <-- 2. ANCHO MÍNIMO PARA LA TABLA */
 }
