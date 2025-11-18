@@ -216,17 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
         licenciasContainer.classList.add('oculto');
 
-                // Mostramos el panel principal correcto
+        // Mostramos el panel principal correcto
         if (targetSection === 'turnos') {
             mainContent.classList.remove('oculto');
+            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (targetSection === 'peticiones') {
             ajustesSection.classList.remove('oculto');
-        } else if (targetSection === 'tablon') {
+            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (targetSection === 'tablon') { // <-- AÑADIDO
             tablonSection.classList.remove('oculto');
+            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-
-        // Hacemos scroll SIEMPRE al contenedor principal para una vista limpia.
-        appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // Actualizamos el botón activo
         navButtons.forEach(btn => {
@@ -349,28 +349,24 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       deferredPrompt = null;
       console.log('PWA fue instalada');
+    });
 
     // --- 7. LÓGICA DE LA PANTALLA DE BIENVENIDA (SPLASH) ---
     const splash = document.getElementById('splash');
-    const app = document.getElementById('app');
+    // La variable 'app' ya está definida arriba como 'appContainer', la reutilizamos
+    if (splash && appContainer) {
+        // Ocultamos la app al principio para una transición suave
+        appContainer.style.opacity = '0';
 
-    // Asegurarnos de que el splash y la app existen
-    if (splash && app) {
-        // Ocultamos la app al principio
-        app.style.opacity = '0';
-
-        // Después de 1.2 segundos, empieza la magia
+        // Después de 1.2 segundos, empieza la animación
         setTimeout(() => {
-            // Hacemos el splash transparente
             splash.style.opacity = '0';
-            // Lo ocultamos para que no interfiera con los clics
             splash.style.visibility = 'hidden'; 
             
-            // Hacemos visible la aplicación principal
-            app.classList.remove('oculto');
-            app.style.opacity = '1'; 
+            appContainer.classList.remove('oculto');
+            appContainer.style.opacity = '1'; 
 
-            // Cuando la animación del splash termine, lo eliminamos del todo
+            // Cuando la animación del splash termine, lo eliminamos del HTML
             splash.addEventListener('transitionend', (event) => {
                 if (event.propertyName === 'opacity') {
                     splash.remove(); 
@@ -378,8 +374,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }, 1200);
     }
-
-    });
 });
 </script>
 
