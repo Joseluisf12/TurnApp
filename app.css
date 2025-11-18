@@ -45,6 +45,13 @@
   --day-cell-bg: #e8f0ff;
   --saturday-bg: rgba(163, 193, 255, 0.65);
   --sunday-holiday-bg: rgba(255, 179, 179, 0.45);
+
+        --primary-color: #0d6efd;          /* Azul corporativo */
+        --primary-color-dark: #0b5ed7;     /* Azul oscuro para hover */
+        --green-color: #198754;            /* Verde para acciones positivas */
+        --green-color-dark: #157347;       /* Verde oscuro para hover */
+        --red-color: #dc3545;              /* Rojo para acciones de peligro */
+        --red-color-dark: #bb2d3b;         /* Rojo oscuro para hover */
 }
 
 /* [TEMA OSCURO] - Se activa cuando body tiene el atributo data-theme="dark" */
@@ -84,6 +91,13 @@
   --day-cell-bg: #1c2a38;
   --saturday-bg: #2a3a50;
   --sunday-holiday-bg: #4d2a2a;
+
+  --primary-color: #3b82f6;     /* Azul corporativo (versión clara para modo oscuro) */
+  --primary-color-dark: #2563eb;     /* Azul más intenso para hover */
+  --green-color: #22c55e;            /* Verde (versión clara) */
+  --green-color-dark: #16a34a;       /* Verde más intenso para hover */
+  --red-color: #ef4444;              /* Rojo (versión clara) */
+  --red-color-dark: #dc2626;         /* Rojo más intenso para hover */
 }
 
 /* --- CONFIGURACIÓN GENERAL --- */
@@ -910,18 +924,24 @@ body {
 /* --- ESTILOS DE BOTÓN MODERNOS --- */
 
 /* Estilo base para los botones */
+/* Botones modernos (ahora usan variables) */
 .modern-btn {
-  display: inline-block;
-  font-family: "Roboto", sans-serif;
-  font-weight: 500;
-  font-size: 15px;
-  text-align: center;
-  border: 1px solid transparent;
-  padding: 10px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: all 0.2s ease-in-out;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 8px 14px;
+    border: none;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    font-size: 0.9em;
+    font-weight: 500;
+    transition: background-color 0.2s;
+    background-color: #6c757d; /* Color gris por defecto si no se especifica otro */
+}
+
+/* Colores específicos que sobreescriben el gris */
+.modern-btn.green { background-color: var(--green-color); }
+.modern-btn.green:hover { background-color: var(--green-color-dark); }
+.modern-btn.red { background-color: var(--red-color); }
+.modern-btn.red:hover { background-color: var(--red-color-dark); }
 }
 
 /* Color Verde (para acciones positivas) */
