@@ -120,16 +120,23 @@
     </div>
    </section>
 
-    <!-- ========= PANEL 3: TABLÓN DE ANUNCIOS ========= -->
+        <!-- ========= PANEL 3: TABLÓN DE ANUNCIOS ========= -->
     <section id="tablon-section" class="panel oculto">
-      <h2>Tablón de Anuncios</h2>
-      <div class="tablon-controles" style="text-align: center; margin-bottom: 20px;">
-        <button id="btn-upload-file" class="modern-btn green">[+] Subir Archivo</button>
-      </div>
-      <div id="tablon-lista">
-        <!-- Los archivos subidos aparecerán aquí -->
-      </div>
+        <h2>Tablón de Anuncios</h2>
+
+        <!-- Contenedor para la previsualización de la imagen -->
+        <div id="tablon-preview-container" class="tablon-preview-container oculto">
+            <h3>Último archivo subido:</h3>
+            <img id="tablon-preview-image" src="#" alt="Previsualización del archivo subido" />
+        </div>
+
+        <input type="file" id="file-input" style="display: none;">
+        <button id="btn-upload-file" class="modern-btn">
+            <span class="icon-upload">+</span> Subir Archivo
+        </button>
+        <div id="tablon-list"></div>
     </section>
+
 
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
