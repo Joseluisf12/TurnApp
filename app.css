@@ -130,14 +130,24 @@ body {
 }
 /* --- SPLASH --- */
 .splash {
+  /* Propiedades de posicionamiento para que flote */
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999; /* Para que siempre esté encima */
+
+  /* Propiedades que ya tenías, se mantienen */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  background-color: var(--splash-bg);
   height: 100vh;
-  text-align: center;
-  background-color: var(--splash-bg-color); /* VARIABLE APLICADA */
-  transition: background-color 0.3s;
+
+  /* Transición mejorada para que desaparezca completamente */
+  transition: opacity 0.5s ease-out, visibility 0s 0.5s;
+  visibility: visible;
 }
 
 .logo-wrap {

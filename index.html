@@ -349,6 +349,36 @@ document.addEventListener('DOMContentLoaded', () => {
       }
       deferredPrompt = null;
       console.log('PWA fue instalada');
+
+    // --- 7. LÓGICA DE LA PANTALLA DE BIENVENIDA (SPLASH) ---
+    const splash = document.getElementById('splash');
+    const app = document.getElementById('app');
+
+    // Asegurarnos de que el splash y la app existen
+    if (splash && app) {
+        // Ocultamos la app al principio
+        app.style.opacity = '0';
+
+        // Después de 1.2 segundos, empieza la magia
+        setTimeout(() => {
+            // Hacemos el splash transparente
+            splash.style.opacity = '0';
+            // Lo ocultamos para que no interfiera con los clics
+            splash.style.visibility = 'hidden'; 
+            
+            // Hacemos visible la aplicación principal
+            app.classList.remove('oculto');
+            app.style.opacity = '1'; 
+
+            // Cuando la animación del splash termine, lo eliminamos del todo
+            splash.addEventListener('transitionend', (event) => {
+                if (event.propertyName === 'opacity') {
+                    splash.remove(); 
+                }
+            });
+        }, 1200);
+    }
+
     });
 });
 </script>
