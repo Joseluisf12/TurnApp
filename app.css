@@ -130,15 +130,14 @@ body {
 }
 /* --- SPLASH --- */
 .splash {
-  .splash {
-  /* Propiedades para que flote por encima de todo */
+  /* Propiedades para que flote y se posicione por encima de todo */
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
   z-index: 9999;
 
-  /* Propiedades que ya tenías para centrar el contenido */
+  /* Propiedades que ya tenías para centrar el logo */
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -146,7 +145,7 @@ body {
   background-color: var(--splash-bg-color);
   height: 100vh;
   
-  /* Transición mejorada para que se oculte por completo antes de ser eliminada */
+  /* Transición mejorada para que se oculte por completo */
   transition: opacity 0.5s ease-out, visibility 0s 0.5s;
   visibility: visible;
 }

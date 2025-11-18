@@ -1150,7 +1150,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 logo.addEventListener("click", () => {
     // Oculta splash y muestra app
-    splash.classList.add("oculto");
+    splash.remove();
     app.classList.remove("oculto");
 
     // Mostrar solo el calendario
