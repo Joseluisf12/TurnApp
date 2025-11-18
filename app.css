@@ -719,8 +719,8 @@ body {
   overflow: hidden;
 }
 /* 2. RE-PROPORCIONADO DE COLUMNAS PARA MÁS ESPACIO EN TURNOS */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE (reducido) */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 7%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 11%; }  /* NOMBRE (reducido) */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
@@ -956,7 +956,7 @@ body {
 /* 1. Ajusta el tamaño y PONE EN NEGRITA el texto */
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
-    font-size: 9px;
+    font-size: 10px;
     line-height: 0.8;
     font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
 }
