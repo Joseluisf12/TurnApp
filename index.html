@@ -120,11 +120,23 @@
     </div>
    </section>
 
+    <!-- ========= PANEL 3: TABLÓN DE ANUNCIOS ========= -->
+    <section id="tablon-section" class="panel oculto">
+      <h2>Tablón de Anuncios</h2>
+      <div class="tablon-controles" style="text-align: center; margin-bottom: 20px;">
+        <button id="btn-upload-file" class="modern-btn green">[+] Subir Archivo</button>
+      </div>
+      <div id="tablon-lista">
+        <!-- Los archivos subidos aparecerán aquí -->
+      </div>
+    </section>
+
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Calendario</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
       <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Carga Días</button>
+      <button data-section="tablon" class="nav-btn">Tablón</button>
       <button id="btn-install-pwa" class="nav-btn" style="display: none;">⬇️ Instalar</button>
     </nav>
 </main>
@@ -180,23 +192,26 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ELEMENTOS Y PANELES (CORREGIDO Y AMPLIADO) ---
-    const appContainer = document.getElementById('app'); // Elemento principal de la app para el scroll
+    // --- 1. ELEMENTOS Y PANELES (AÑADIDO EL TABLÓN) ---
+    const appContainer = document.getElementById('app');
     const mainContent = document.getElementById('content');
-    const ajustesSection = document.getElementById('ajustes-section'); 
+    const ajustesSection = document.getElementById('ajustes-section');
+    const tablonSection = document.getElementById('tablon-section'); // <-- AÑADIDO
     const licenciasContainer = document.getElementById('licencias-container');
     const calendarPanel = document.getElementById('calendar-panel');
     
     const navButtons = document.querySelectorAll('.nav-btn');
     const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
     const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
-    const btnCargaDias = document.querySelector('.nav-btn[data-section="ajustes"]');
+    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]'); // <-- AÑADIDO
+    const btnCargaDias = document.getElementById('btn-carga-dias');
 
-    // --- 2. LÓGICA DE NAVEGACIÓN (CON SCROLL CORREGIDO) ---
+    // --- 2. LÓGICA DE NAVEGACIÓN (MODIFICADA PARA EL TABLÓN) ---
     function switchPanel(targetSection) {
-        // Ocultamos los dos paneles principales
+        // Ocultamos todos los paneles principales
         mainContent.classList.add('oculto');
         ajustesSection.classList.add('oculto');
+        tablonSection.classList.add('oculto'); // <-- AÑADIDO
         
         // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
         licenciasContainer.classList.add('oculto');
@@ -204,11 +219,13 @@ document.addEventListener('DOMContentLoaded', () => {
         // Mostramos el panel principal correcto
         if (targetSection === 'turnos') {
             mainContent.classList.remove('oculto');
-            // ¡LA SOLUCIÓN! Hacemos scroll al inicio del contenedor de la app
             appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (targetSection === 'peticiones') {
             ajustesSection.classList.remove('oculto');
             ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (targetSection === 'tablon') { // <-- AÑADIDO
+            tablonSection.classList.remove('oculto');
+            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Actualizamos el botón activo
@@ -222,17 +239,27 @@ document.addEventListener('DOMContentLoaded', () => {
         switchPanel('turnos');
     });
 
-    // Botón "Peticiones"
+    // Botón "Peticiones" (Mantiene su lógica original)
     btnPeticiones.addEventListener('click', () => {
         const isAjustesVisible = !ajustesSection.classList.contains('oculto');
         if (isAjustesVisible) {
-            switchPanel('turnos');
+            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
         } else {
             switchPanel('peticiones');
         }
     });
 
-    // Botón "Carga Días"
+    // Botón "Tablón" (NUEVO)
+    btnTablon.addEventListener('click', () => {
+        const isTablonVisible = !tablonSection.classList.contains('oculto');
+        if (isTablonVisible) {
+            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
+        } else {
+            switchPanel('tablon');
+        }
+    });
+
+    // Botón "Carga Días" (Mantiene su lógica original)
     btnCargaDias.addEventListener('click', () => {
         if (mainContent.classList.contains('oculto')) {
             switchPanel('turnos');
@@ -248,7 +275,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (SIN CAMBIOS) ---
+    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (INTACTA) ---
     const totalLicenciasField = document.getElementById('total-licencias');
     const cantidadInputs = Array.from(document.querySelectorAll('#licencias-container .cantidad-input'));
     if (totalLicenciasField && cantidadInputs.length > 0) {
@@ -261,7 +288,7 @@ document.addEventListener('DOMContentLoaded', () => {
       recalculateTotal();
     }
 
-    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (SIN CAMBIOS) ---
+    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (INTACTA) ---
     const textoPeticionInput = document.getElementById('peticion-texto');
     const enviarPeticionBtn = document.getElementById('enviar-peticion');
     const listaPeticionesUsuario = document.getElementById('lista-peticiones-usuario');
@@ -289,10 +316,10 @@ document.addEventListener('DOMContentLoaded', () => {
         saveAndRenderPeticiones();
     }
 
-    // --- 5. INICIALIZACIÓN DE LA VISTA (CORREGIDO) ---
+    // --- 5. INICIALIZACIÓN DE LA VISTA (INTACTA) ---
     switchPanel('turnos');
 
-    // --- 6. LÓGICA DE INSTALACIÓN PWA (SIN CAMBIOS) ---
+    // --- 6. LÓGICA DE INSTALACIÓN PWA (INTACTA) ---
     let deferredPrompt;
     const installButton = document.getElementById('btn-install-pwa');
 
@@ -324,7 +351,6 @@ document.addEventListener('DOMContentLoaded', () => {
       console.log('PWA fue instalada');
     });
 });
-
 </script>
 
 </body>
