@@ -130,22 +130,23 @@ body {
 }
 /* --- SPLASH --- */
 .splash {
-  /* Propiedades de posicionamiento para que flote */
+  .splash {
+  /* Propiedades para que flote por encima de todo */
   position: fixed;
   top: 0;
   left: 0;
   width: 100%;
-  z-index: 9999; /* Para que siempre esté encima */
+  z-index: 9999;
 
-  /* Propiedades que ya tenías, se mantienen */
+  /* Propiedades que ya tenías para centrar el contenido */
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: var(--splash-bg);
+  background-color: var(--splash-bg-color);
   height: 100vh;
-
-  /* Transición mejorada para que desaparezca completamente */
+  
+  /* Transición mejorada para que se oculte por completo antes de ser eliminada */
   transition: opacity 0.5s ease-out, visibility 0s 0.5s;
   visibility: visible;
 }
