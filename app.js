@@ -224,6 +224,129 @@ function initCoordinatorTable() {
     renderTable();
 }
 
+// =========================================================================
+// GESTOR DEL TABLÓN DE ANUNCIOS
+// Permite subir, visualizar/descargar y eliminar archivos.
+// =========================================================================
+function initTablon() {
+    const btnUpload = document.getElementById('btn-upload-file');
+    const fileListContainer = document.getElementById('tablon-lista');
+    if (!btnUpload || !fileListContainer) return;
+
+    const TABLON_KEY = 'turnapp.tablon.files';
+
+    // Función para "pintar" la lista de archivos
+    function renderFiles() {
+        // Obtenemos los archivos o un array vacío si no hay nada
+        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+        fileListContainer.innerHTML = ''; // Limpiamos la lista para evitar duplicados
+
+        if (files.length === 0) {
+            fileListContainer.innerHTML = '<p style="text-align:center; color: var(--text-color-light);">El tablón está vacío. ¡Sube el primer archivo!</p>';
+            return;
+        }
+        
+        const fragment = document.createDocumentFragment();
+
+        files.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'tablon-item';
+
+            const uploadDate = new Date(file.date).toLocaleString('es-ES', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            // Comprobamos si el archivo se puede ver directamente (imagen o PDF)
+            const isViewable = file.type.startsWith('image/') || file.type === 'application/pdf';
+
+            fileItem.innerHTML = `
+                <div class="tablon-item-info">
+                    <strong class="tablon-item-name">${file.name}</strong>
+                    <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
+                </div>
+                <div class="tablon-item-actions">
+                    ${isViewable
+                        ? `<button class="modern-btn view-btn" data-index="${index}">Ver</button>`
+                        : `<button class="modern-btn download-btn" data-index="${index}">Descargar</button>`
+                    }
+                    <button class="modern-btn red delete-btn" data-index="${index}">Eliminar</button>
+                </div>
+            `;
+            fragment.appendChild(fileItem);
+        });
+        
+        fileListContainer.appendChild(fragment);
+    }
+
+    // Event listener para el botón de subir
+    btnUpload.addEventListener('click', () => {
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt';
+        
+        fileInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileData = e.target.result; // Contenido del archivo en Base64
+                const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+
+                const newFile = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    date: new Date().toISOString(),
+                    data: fileData
+                };
+
+                files.unshift(newFile); // Añadimos el nuevo archivo al PRINCIPIO de la lista
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                renderFiles();
+            };
+            reader.readAsDataURL(file);
+        };
+        fileInput.click();
+    });
+
+    // Event listener para los botones de la lista (Ver, Descargar, Eliminar)
+    fileListContainer.addEventListener('click', (event) => {
+        const target = event.target;
+        const index = target.dataset.index;
+        if (index === undefined) return;
+
+        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+        // ¡Ojo! El índice en el DOM es el mismo que en el array porque lo pintamos en el mismo orden.
+        const file = files[index];
+
+        if (target.classList.contains('view-btn')) {
+            const win = window.open("", "_blank");
+            if(file.type.startsWith('image/')){
+                 win.document.write(`<body style="margin:0;"><img src="${file.data}" style="width:100%;"></body>`);
+            } else if (file.type === 'application/pdf') {
+                 win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+            }
+        } else if (target.classList.contains('download-btn')) {
+            const a = document.createElement('a');
+            a.href = file.data;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        } else if (target.classList.contains('delete-btn')) {
+            if (confirm(`¿Seguro que quieres eliminar el archivo "${file.name}"?`)) {
+                files.splice(index, 1);
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                renderFiles();
+            }
+        }
+    });
+
+    // Carga inicial
+    renderFiles();
+}
+
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -248,6 +371,7 @@ initApp();
 
   // AÑADE ESTA LÍNEA:
     initCoordinatorTable();
+    initTablon();
   });
 
 // ---------------- estado ----------------
