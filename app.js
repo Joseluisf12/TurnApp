@@ -231,10 +231,9 @@ function initCoordinatorTable() {
 function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
-    // --- PRECISIÓN MILIMÉTRICA: NUEVAS CONSTANTES AÑADIDAS AQUÍ ---
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
     const tablonPreviewImage = document.getElementById('tablon-preview-image');
-    const fileInput = document.getElementById('file-input'); // Usamos el input que ya está en el HTML
+    
 
     if (!btnUpload || !fileListContainer || !fileInput || !tablonPreviewContainer || !tablonPreviewImage) {
       console.error("Faltan elementos del DOM para inicializar el Tablón.");
