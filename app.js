@@ -269,7 +269,8 @@ const spanishHolidays = [
 
 // paleta color
 const colorPalette = [
- "#4d9ef7", // azul garantizado
+  "#d87d00", // naranja oscuro noche
+  "#4d9ef7", // azul garantizado
   "#f7a64d", // naranja probable
   "#6fd773", // verde descanso
   "#e65252", // rojo baja
