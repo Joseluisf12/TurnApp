@@ -41,31 +41,34 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.FINAL-PULIDA] GESTOR DE TABLA DEL COORDINADOR
-// Eliminada toda la lógica de color de texto para que sea 100% controlada por CSS.
-// El texto ahora responde a los temas claro/oscuro.
+// [V.3.0 - DINÁMICA] GESTOR DE TABLA DEL COORDINADOR
+// Permite añadir y eliminar filas de forma persistente.
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
+    const tbody = tabla.querySelector("tbody");
 
+    // 1. CLAVES DE ALMACENAMIENTO Y VALORES POR DEFECTO
     const TEXT_KEY = "tablaCoordinadorTextos";
     const COLOR_KEY = "tablaCoordinadorColores";
+    const ROW_COUNT_KEY = "tablaCoordinadorFilas";
+    const DEFAULT_ROWS = 18; // El número de filas si no hay nada guardado
+    const COL_COUNT = 8; // Número fijo de columnas
 
-    const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
-    const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
-    
-    // Índices de columna exactos para los handles
     const turnoColumnIndices = [2, 3, 4, 5, 6];
 
-    tabla.querySelectorAll("tbody tr").forEach((row, rowIndex) => {
-        row.querySelectorAll("td").forEach((cell, cellIndex) => {
+    // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA (AÑADIR EDITORES, HANDLES, ETC.)
+    function initializeRow(row, rowIndex) {
+        const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
+        const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
+
+        for (let cellIndex = 0; cellIndex < COL_COUNT; cellIndex++) {
+            const cell = document.createElement('td');
             const cellId = `r${rowIndex}-c${cellIndex}`;
             const isTurnoCell = turnoColumnIndices.includes(cellIndex);
-            const wasCellEditable = cell.getAttribute('contenteditable') === 'true';
-
-            cell.style.position = 'relative'; 
-            cell.contentEditable = false;
+            
+            cell.style.position = 'relative';
 
             const textEditor = document.createElement('div');
             textEditor.className = 'text-editor';
@@ -73,18 +76,18 @@ function initCoordinatorTable() {
             textEditor.style.padding = '6px 5px';
             textEditor.style.width = '100%';
             textEditor.style.boxSizing = 'border-box';
+            
+            textEditor.contentEditable = true;
 
-            if (wasCellEditable) {
-                textEditor.contentEditable = true;
-            }
             if (isTurnoCell) {
-                textEditor.style.paddingBottom = '16px'; 
+                textEditor.style.paddingBottom = '16px';
             }
+
             if (savedTexts[cellId]) {
                 textEditor.innerText = savedTexts[cellId];
             }
             cell.appendChild(textEditor);
-            
+
             if (isTurnoCell) {
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
@@ -107,7 +110,7 @@ function initCoordinatorTable() {
                 handle.style.lineHeight = '14px';
                 handle.style.opacity = '0.5';
                 handle.style.zIndex = '10';
-                
+
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.5'; });
 
@@ -122,15 +125,68 @@ function initCoordinatorTable() {
                 });
                 cell.appendChild(handle);
             }
-        });
-    });
+            row.appendChild(cell);
+        }
+    }
 
+    // 3. FUNCIÓN PARA CARGAR Y CONSTRUIR LA TABLA
+    function renderTable() {
+        tbody.innerHTML = ''; // Limpiamos la tabla antes de reconstruir
+        const rowCount = parseInt(localStorage.getItem(ROW_COUNT_KEY) || DEFAULT_ROWS, 10);
+        
+        for (let i = 0; i < rowCount; i++) {
+            const row = document.createElement('tr');
+            initializeRow(row, i);
+            tbody.appendChild(row);
+        }
+    }
+
+    // 4. LÓGICA DE LOS BOTONES DE CONTROL
+    const btnAddRow = document.getElementById('btn-add-row');
+    const btnRemoveRow = document.getElementById('btn-remove-row');
+
+    if (btnAddRow) {
+        btnAddRow.addEventListener('click', () => {
+            const newRowIndex = tbody.rows.length;
+            const newRow = document.createElement('tr');
+            initializeRow(newRow, newRowIndex);
+            tbody.appendChild(newRow);
+
+            localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
+        });
+    }
+
+    if (btnRemoveRow) {
+        btnRemoveRow.addEventListener('click', () => {
+            if (tbody.rows.length > 0) {
+                const lastRowIndex = tbody.rows.length - 1;
+                
+                const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
+                const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+                for (let i = 0; i < COL_COUNT; i++) {
+                    delete currentTexts[`r${lastRowIndex}-c${i}`];
+                    delete currentColors[`r${lastRowIndex}-c${i}`];
+                }
+                localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
+                localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+
+                tbody.deleteRow(-1);
+                localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
+            }
+        });
+    }
+
+    // 5. EVENT LISTENERS GENERALES DE LA TABLA
     tabla.addEventListener("input", (e) => {
         const textEditor = e.target;
         if (!textEditor.classList.contains('text-editor')) return;
+        
         const cell = textEditor.parentElement;
-        const rowIndex = cell.parentElement.rowIndex - 1;
+        const row = cell.parentElement;
+
+        const rowIndex = Array.from(row.parentElement.children).indexOf(row);
         const cellIndex = cell.cellIndex;
+
         const cellId = `r${rowIndex}-c${cellIndex}`;
         const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
         currentTexts[cellId] = textEditor.innerText;
@@ -140,18 +196,18 @@ function initCoordinatorTable() {
     tabla.addEventListener("click", (e) => {
         if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
-        if (!fila || !fila.parentElement.tagName !== "TBODY") return;
+        if (!fila || fila.parentElement.tagName !== "TBODY") return;
         tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
         fila.classList.add("seleccionada");
     });
-    
+
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
         btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
         
         newBtn.addEventListener("click", function () {
-            if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla?")) {
+            if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? Esto NO eliminará las filas añadidas.")) {
                 tabla.querySelectorAll("tbody td .text-editor").forEach(editor => {
                     editor.innerText = '';
                 });
@@ -163,7 +219,11 @@ function initCoordinatorTable() {
             }
         });
     }
+
+    // ¡LLAMADA INICIAL PARA CONSTRUIR LA TABLA!
+    renderTable();
 }
+
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
