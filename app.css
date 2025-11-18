@@ -679,7 +679,6 @@ body {
 }
 
 /* === Subcajones (usuario y administrador) === */
-/* === Subcajones (usuario y administrador) === */
 #ajustes-section .peticiones-zona {
   background-color: var(--user-zone-bg); /* <-- VARIABLE APLICADA */
   border-radius: 10px;
@@ -727,8 +726,8 @@ body {
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 3.75%; }
-#tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 4.25%; }
+#tabla-coordinador colgroup col:nth-child(8)  { width: 17%; } /* OBSERVACIONES */
 
 /* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
@@ -958,8 +957,8 @@ body {
 /* 1. Reduce el tamaño de la fuente para que quepan más números */
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
-    font-size: 8px;
-    line-height: 1.4;
+    font-size: 9px;
+    line-height: 1;
 }
 
 /* 2. Hace que el color del texto responda al tema (claro/oscuro) */
