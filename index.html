@@ -216,17 +216,17 @@ document.addEventListener('DOMContentLoaded', () => {
         // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
         licenciasContainer.classList.add('oculto');
 
-        // Mostramos el panel principal correcto
+                // Mostramos el panel principal correcto
         if (targetSection === 'turnos') {
             mainContent.classList.remove('oculto');
-            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
         } else if (targetSection === 'peticiones') {
             ajustesSection.classList.remove('oculto');
-            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'tablon') { // <-- AÑADIDO
+        } else if (targetSection === 'tablon') {
             tablonSection.classList.remove('oculto');
-            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
+
+        // Hacemos scroll SIEMPRE al contenedor principal para una vista limpia.
+        appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
         // Actualizamos el botón activo
         navButtons.forEach(btn => {
