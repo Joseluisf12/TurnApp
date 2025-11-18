@@ -231,116 +231,84 @@ function initCoordinatorTable() {
 function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
-    const tablonPreviewContainer = document.getElementById('tablon-preview-container');
-    const tablonPreviewImage = document.getElementById('tablon-preview-image');
-    
-
-    if (!btnUpload || !fileListContainer || !fileInput || !tablonPreviewContainer || !tablonPreviewImage) {
-      console.error("Faltan elementos del DOM para inicializar el Tablón.");
-      return;
-    }
+    if (!btnUpload || !fileListContainer) return;
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
-    // La función renderFiles se mantiene exactamente como está, por lo que no la repito aquí...
+    // Función para "pintar" la lista de archivos
     function renderFiles() {
+        // Obtenemos los archivos o un array vacío si no hay nada
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        fileListContainer.innerHTML = ''; 
+        fileListContainer.innerHTML = ''; // Limpiamos la lista para evitar duplicados
 
         if (files.length === 0) {
             fileListContainer.innerHTML = '<p style="text-align:center; color: var(--text-color-light);">El tablón está vacío. ¡Sube el primer archivo!</p>';
             return;
         }
+        
+        const fragment = document.createDocumentFragment();
 
-        const list = document.createElement('ul');
-        list.className = 'file-list';
         files.forEach((file, index) => {
-            const item = document.createElement('li');
-            item.className = 'file-item';
-            
-            // Contenido principal del item
-            const mainContent = document.createElement('div');
-            mainContent.className = 'file-item-main';
-            mainContent.innerHTML = `
-                <span class="file-name">${file.name}</span>
-                <span class="file-size">${(file.size / 1024).toFixed(1)} KB</span>
+            const fileItem = document.createElement('div');
+            fileItem.className = 'tablon-item';
+
+            const uploadDate = new Date(file.date).toLocaleString('es-ES', {
+                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+            });
+
+            // Comprobamos si el archivo se puede ver directamente (imagen o PDF)
+            const isViewable = file.type.startsWith('image/') || file.type === 'application/pdf';
+
+            fileItem.innerHTML = `
+                <div class="tablon-item-info">
+                    <strong class="tablon-item-name">${file.name}</strong>
+                    <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
+                </div>
+                <div class="tablon-item-actions">
+                    ${isViewable
+                        ? `<button class="modern-btn view-btn" data-index="${index}">Ver</button>`
+                        : `<button class="modern-btn download-btn" data-index="${index}">Descargar</button>`
+                    }
+                    <button class="modern-btn red delete-btn" data-index="${index}">Eliminar</button>
+                </div>
             `;
-
-            // Botones de acción
-            const actions = document.createElement('div');
-            actions.className = 'file-item-actions';
-
-            const viewBtn = document.createElement('button');
-            viewBtn.textContent = 'Ver';
-            viewBtn.className = 'modern-btn small-btn';
-            viewBtn.onclick = () => {
-                const blob = base64ToBlob(file.content, file.type);
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-                URL.revokeObjectURL(url);
-            };
-
-            const deleteBtn = document.createElement('button');
-            deleteBtn.textContent = 'Borrar';
-            deleteBtn.className = 'modern-btn small-btn red';
-            deleteBtn.onclick = () => {
-                if(confirm(`¿Seguro que quieres borrar el archivo "${file.name}"?`)){
-                    files.splice(index, 1);
-                    localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-                    renderFiles();
-                }
-            };
-            
-            actions.appendChild(viewBtn);
-            actions.appendChild(deleteBtn);
-            item.appendChild(mainContent);
-            item.appendChild(actions);
-            list.appendChild(item);
+            fragment.appendChild(fileItem);
         });
-        fileListContainer.appendChild(list);
+        
+        fileListContainer.appendChild(fragment);
     }
-    
-    // --- PRECISIÓN MILIMÉTRICA: LÓGICA DE SUBIDA ACTUALIZADA ---
+
+    // Event listener para el botón de subir
     btnUpload.addEventListener('click', () => {
-        fileInput.click(); // Disparamos el input oculto que ya existe
-    });
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt';
+        
+        fileInput.onchange = (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
 
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const fileData = e.target.result; // Contenido del archivo en Base64
+                const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const fileContent = event.target.result; // Contenido en Base64
+                const newFile = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    date: new Date().toISOString(),
+                    data: fileData
+                };
 
-            // --- Lógica de Previsualización ---
-            if (file.type.startsWith('image/')) {
-                // Si es una imagen, usamos su contenido Base64 para la preview
-                tablonPreviewImage.src = fileContent;
-                tablonPreviewContainer.classList.remove('oculto');
-            } else {
-                // Si no, ocultamos el contenedor de preview
-                tablonPreviewContainer.classList.add('oculto');
-            }
-
-            // --- Lógica de Guardado (la que ya tenías) ---
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            const fileData = {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                date: new Date().toISOString(),
-                content: fileContent // Guardamos Base64
+                files.unshift(newFile); // Añadimos el nuevo archivo al PRINCIPIO de la lista
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                renderFiles();
             };
-            files.unshift(fileData);
-            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            renderFiles(); // Actualizamos la lista de archivos
+            reader.readAsDataURL(file);
         };
-        reader.readAsDataURL(file); // Leemos el archivo como Data URL (Base64)
+        fileInput.click();
     });
-
-    renderFiles(); // Carga inicial de la lista de archivos
-}
 
     // Event listener para los botones de la lista (Ver, Descargar, Eliminar)
     fileListContainer.addEventListener('click', (event) => {
@@ -1174,7 +1142,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const calendarioSection = document.getElementById("calendar-panel");
   const licenciasSection = document.getElementById("licencias-container");
-
 
   // Estado inicial: solo splash visible
   app.classList.add("oculto");
