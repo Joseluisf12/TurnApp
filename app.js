@@ -1176,9 +1176,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const calendarioSection = document.getElementById("calendar-panel");
   const licenciasSection = document.getElementById("licencias-container");
 
-  const tablonPreviewContainer = document.getElementById('tablon-preview-container');
-  const tablonPreviewImage = document.getElementById('tablon-preview-image');
-
 
   // Estado inicial: solo splash visible
   app.classList.add("oculto");
