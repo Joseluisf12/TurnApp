@@ -48,6 +48,14 @@
         <div id="calendar"></div>
       </section>
 
+     <div class="main-actions">
+        <button id="btn-carga-dias" class="modern-btn">Carga días</button>
+        <button id="btn-copy-grid" class="modern-btn green">Copiar tabla</button>
+      </div>
+      
+      <div id="toast-notification" class="toast">¡Tabla copiada al portapapeles!</div>
+    </section>
+
     <!-- ========= PANEL 2: PETICIONES (Cajón y Tabla) ========= -->
     <section id="ajustes-section" class="panel oculto">
       <h2>Gestión de Peticiones</h2>
@@ -116,7 +124,7 @@
 
 <!-- ===== PANEL 4: CARGA DE DÍAS Y LICENCIAS (NUEVO PANEL INDEPENDIENTE) ===== -->
 <section id="carga-dias-section" class="panel oculto">
-<div id="licencias-container" class="licencias oculto" aria-hidden="true" style="margin-top:20px;">
+<div id="licencias-container" class="licencias" aria-hidden="true" style="margin-top:20px;">
         <h3>Gestión de Permisos y Licencias</h3>
         <div class="licencia-item" data-tipo="vacaciones"><label class="licencia-nombre">Vacaciones: V</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
         <div class="licencia-item" data-tipo="compfest"><label class="licencia-nombre">Compensación de Festivos: CF</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
