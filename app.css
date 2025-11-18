@@ -668,24 +668,24 @@ body {
   opacity: 1;
 }
 
-/* === Estilo unificado para paneles de contenido === */
+/* === ESTILO UNIFICADO PARA PANELES DE CONTENIDO (AJUSTADO) === */
 #peticiones-section,
 #ajustes-section {
-  background-color: #FAD7A0; /* <-- CAMBIO A NARANJA INTERMEDIO */
+  background-color: #FAD7A0;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
-  padding: 20px;
+  padding: 20px 8px; /* <-- 1. ANCHAMOS EL CONTENEDOR REDUCIENDO PADDING LATERAL */
   margin: 20px auto;
 }
 
 /* === Subcajones (usuario y administrador) === */
 #ajustes-section .peticiones-zona {
-  background-color: var(--user-zone-bg); /* <-- VARIABLE APLICADA */
+  background-color: var(--user-zone-bg);
   border-radius: 10px;
   padding: 15px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  margin: 0 2px 20px 2px;
-  transition: background-color 0.3s; /* Transición suave */
+  margin: 0 6px 20px 6px;
+  transition: background-color 0.3s;
 }
 
 /* --- Estilo del título principal del cajón de peticiones --- */
@@ -693,17 +693,17 @@ body {
   text-align: center;
   font-weight: 600;
   margin-bottom: 25px;
-  color: #212529 !important; /* <-- CAMBIO: ¡Forzamos el Color negro fijo para máximo contraste */
+  color: #212529 !important;
 }
 
 /* --- Estilo de los subtítulos de las zonas --- */
 #ajustes-section .peticiones-zona h3 {
-  color: var(--text-color); /* Variable aplicada */
+  color: var(--text-color);
   font-weight: 500;
-  margin-bottom: 15px; /* Más espacio inferior */
-  padding-bottom: 0;   /* Quitamos el padding inferior */
-  border-bottom: none; /* Quitamos la línea para un look más limpio al centrar */
-  text-align: center;  /* <-- CENTRAMOS EL TEXTO */
+  margin-bottom: 15px;
+  padding-bottom: 0;
+  border-bottom: none;
+  text-align: center;
 }
 
 /* === TABLA COORDINADOR === */
@@ -715,25 +715,24 @@ body {
   border-collapse: collapse;
   width: 100%;
   table-layout: fixed;
-  font-size: 0.7rem;
   border-radius: 8px;
   overflow: hidden;
 }
-/* Proporciones de las columnas */
+/* 2. RE-PROPORCIONADO DE COLUMNAS PARA MÁS ESPACIO EN TURNOS */
 #tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 12%; }  /* NOMBRE (reducido) */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
-#tabla-coordinador colgroup col:nth-child(7) { width: 4.25%; }
-#tabla-coordinador colgroup col:nth-child(8)  { width: 17%; } /* OBSERVACIONES */
+#tabla-coordinador colgroup col:nth-child(7) { width: 4.5%; } /* TURNOS (aumentado) */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 16%; } /* OBSERVACIONES (reducido) */
 
 /* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid var(--panel-border);
-  padding: 6px 4px;
+  padding: 6px 2px; /* Reducimos padding lateral en celdas para ganar espacio */
   text-align: center;
   vertical-align: middle;
   transition: background-color 0.3s, border-color 0.3s, color 0.3s;
@@ -742,7 +741,7 @@ body {
 
 /* Cabecera de la tabla */
 #tabla-coordinador thead th {
-  background-color: #0b5ed7; /* <-- CAMBIO A AZUL CORPORATIVO */
+  background-color: #0b5ed7;
   font-weight: 600;
   color: #ffffff;             /* <-- TEXTO BLANCO PARA CONTRASTE */
 }
