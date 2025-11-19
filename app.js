@@ -243,6 +243,18 @@ const fileInput = document.getElementById('file-input');
     function renderFiles() {
         // Obtenemos los archivos o un array vacío si no hay nada
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+
+// --- Lógica de previsualización persistente ---
+// Comprueba si hay archivos y si el más reciente es una imagen.
+if (files.length > 0 && files[0].type.startsWith('image/')) {
+    // Si lo es, muestra la imagen en el panel de previsualización.
+    tablonPreviewImage.src = files[0].content;
+    tablonPreviewContainer.classList.remove('oculto');
+} else {
+    // Si no, o si no hay archivos, se asegura de que el panel esté oculto.
+    tablonPreviewContainer.classList.add('oculto');
+}
+
         fileListContainer.innerHTML = ''; // Limpiamos la lista para evitar duplicados
 
         if (files.length === 0) {
