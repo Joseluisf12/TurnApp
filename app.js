@@ -231,7 +231,11 @@ function initCoordinatorTable() {
 function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
-    if (!btnUpload || !fileListContainer) return;
+const tablonPreviewContainer = document.getElementById('tablon-preview-container');
+const tablonPreviewImage = document.getElementById('tablon-preview-image');
+const fileInput = document.getElementById('file-input');
+
+    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput) return;
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
@@ -279,36 +283,49 @@ function initTablon() {
     }
 
     // Event listener para el botón de subir
-    btnUpload.addEventListener('click', () => {
-        const fileInput = document.createElement('input');
-        fileInput.type = 'file';
-        fileInput.accept = 'image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt';
-        
-        fileInput.onchange = (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
+    // Al pulsar el botón "Subir Archivo", se activa el input oculto que ya existe en el HTML
+btnUpload.addEventListener('click', () => {
+    fileInput.value = null; // Resetea el input para permitir subir el mismo archivo de nuevo
+    fileInput.click();
+});
 
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const fileData = e.target.result; // Contenido del archivo en Base64
-                const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+// Cuando el usuario selecciona un archivo en el input
+fileInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
 
-                const newFile = {
-                    name: file.name,
-                    type: file.type,
-                    size: file.size,
-                    date: new Date().toISOString(),
-                    data: fileData
-                };
+    const reader = new FileReader();
+    reader.onload = (event) => {
+        const fileContentBase64 = event.target.result;
 
-                files.unshift(newFile); // Añadimos el nuevo archivo al PRINCIPIO de la lista
-                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-                renderFiles();
-            };
-            reader.readAsDataURL(file);
+        // --- Lógica de previsualización ---
+        if (file.type.startsWith('image/')) {
+            // Si es una imagen, la muestra en el panel de previsualización
+            tablonPreviewImage.src = fileContentBase64;
+            tablonPreviewContainer.classList.remove('oculto');
+        } else {
+            // Si NO es una imagen, se asegura de que el panel esté oculto
+            tablonPreviewContainer.classList.add('oculto');
+        }
+
+        // --- Lógica de guardado en localStorage (existente) ---
+        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+        const fileData = {
+            name: file.name,
+            type: file.type,
+            size: file.size,
+            date: new Date().toISOString(),
+            content: fileContentBase64
         };
-        fileInput.click();
-    });
+        files.unshift(fileData);
+
+        localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+        renderFiles(); // Actualiza la lista de archivos
+    };
+    
+    // Inicia la lectura del archivo. Cuando termine, se ejecutará el 'onload' de arriba.
+    reader.readAsDataURL(file);
+});
 
     // Event listener para los botones de la lista (Ver, Descargar, Eliminar)
     fileListContainer.addEventListener('click', (event) => {

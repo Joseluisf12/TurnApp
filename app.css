@@ -1075,3 +1075,33 @@ body {
     background-color: #5a6268;
 }
 
+/* =================================================== */
+/* ESTILOS DE LA PREVISUALIZACIÓN DEL TABLÓN           */
+/* =================================================== */
+
+.tablon-preview-container {
+  margin-bottom: 20px;
+  text-align: center;
+  border: 2px dashed var(--panel-border);
+  border-radius: 8px;
+  padding: 15px;
+  background-color: var(--bg-color);
+}
+
+.tablon-preview-container.oculto {
+  display: none;
+}
+
+.tablon-preview-container h3 {
+  font-size: 1.1em;
+  margin-top: 0;
+  margin-bottom: 15px;
+  color: var(--text-color-light);
+}
+
+#tablon-preview-image {
+  max-width: 100%;
+  max-height: 400px; /* Evita que imágenes muy altas ocupen toda la pantalla */
+  border-radius: 6px;
+  object-fit: contain; /* Mantiene la proporción de la imagen sin deformarla */
+}
