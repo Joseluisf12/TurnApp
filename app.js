@@ -421,7 +421,6 @@ window.addEventListener('keydown', (e) => {
         imageModal.classList.add('oculto');
     }
 });
-    };
     
     // Inicia la lectura del archivo. Cuando termine, se ejecutará el 'onload' de arriba.
     reader.readAsDataURL(file);
