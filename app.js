@@ -234,8 +234,12 @@ function initTablon() {
 const tablonPreviewContainer = document.getElementById('tablon-preview-container');
 const tablonPreviewImage = document.getElementById('tablon-preview-image');
 const fileInput = document.getElementById('file-input');
+const imageModal = document.getElementById('image-modal');
+const modalImageContent = document.getElementById('modal-image-content');
+const modalCloseBtn = document.querySelector('.image-modal-close');
 
-    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput) return;
+    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) return;
+
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
@@ -264,32 +268,87 @@ if (files.length > 0 && files[0].type.startsWith('image/')) {
         
         const fragment = document.createDocumentFragment();
 
-        files.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'tablon-item';
+        // CÓDIGO DE REEMPLAZO
+files.forEach((file, index) => {
+    const fileItem = document.createElement('div');
+    fileItem.className = 'tablon-item';
 
-            const uploadDate = new Date(file.date).toLocaleString('es-ES', {
-                day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-            });
+    const uploadDate = new Date(file.date).toLocaleString('es-ES', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
 
-            // Comprobamos si el archivo se puede ver directamente (imagen o PDF)
-            const isViewable = file.type.startsWith('image/') || file.type === 'application/pdf';
+    // *****************************************************************
+    // PASO 1: CREAR EL HTML INTERNO (hemos quitado la lógica del botón "Ver" de aquí)
+    // *****************************************************************
+    fileItem.innerHTML = `
+        <div class="tablon-item-info">
+            <strong class="tablon-item-name">${file.name}</strong>
+            <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
+        </div>
+        <div class="tablon-item-actions">
+            <!-- Los botones se añadirán dinámicamente ahora -->
+        </div>
+    `;
 
-            fileItem.innerHTML = `
-                <div class="tablon-item-info">
-                    <strong class="tablon-item-name">${file.name}</strong>
-                    <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
-                </div>
-                <div class="tablon-item-actions">
-                    ${isViewable
-                        ? `<button class="modern-btn view-btn" data-index="${index}">Ver</button>`
-                        : `<button class="modern-btn download-btn" data-index="${index}">Descargar</button>`
-                    }
-                    <button class="modern-btn red delete-btn" data-index="${index}">Eliminar</button>
-                </div>
-            `;
-            fragment.appendChild(fileItem);
-        });
+    // *****************************************************************
+    // PASO 2: BUSCAR EL CONTENEDOR DE BOTONES Y AÑADIRLOS CON LÓGICA
+    // *****************************************************************
+    const actionsContainer = fileItem.querySelector('.tablon-item-actions');
+    if (!actionsContainer) return; // Salvaguarda
+
+    // Lógica para el botón "Ver" / Abrir Modal
+    if (file.type.startsWith('image/')) {
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'view-btn modern-btn';
+        viewBtn.textContent = 'Ver';
+        viewBtn.onclick = () => {
+            modalImageContent.src = file.content;
+            imageModal.classList.remove('oculto');
+        };
+        actionsContainer.appendChild(viewBtn);
+    } else if (file.type === 'application/pdf') {
+        const viewBtn = document.createElement('button');
+        viewBtn.className = 'view-btn modern-btn';
+        viewBtn.textContent = 'Ver';
+        viewBtn.onclick = () => {
+             try {
+                const blob = base64ToBlob(file.content, file.type);
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (e) { console.error("Error al abrir PDF", e); }
+        };
+        actionsContainer.appendChild(viewBtn);
+    }
+
+    // Lógica para el botón de Descargar (la que ya tenías)
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'download-btn modern-btn';
+    downloadBtn.textContent = 'Descargar';
+    downloadBtn.onclick = () => {
+        const link = document.createElement('a');
+        link.href = file.content;
+        link.download = file.name;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    actionsContainer.appendChild(downloadBtn);
+
+    // Lógica para el botón de Eliminar (la que ya tenías)
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'delete-btn modern-btn red';
+    deleteBtn.textContent = 'Eliminar';
+    deleteBtn.onclick = () => {
+        if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
+            files.splice(index, 1);
+            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+            renderFiles();
+        }
+    };
+    actionsContainer.appendChild(deleteBtn);
+
+    fragment.appendChild(fileItem);
+});
         
         fileListContainer.appendChild(fragment);
     }
@@ -332,7 +391,36 @@ fileInput.addEventListener('change', (e) => {
         files.unshift(fileData);
 
         localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-        renderFiles(); // Actualiza la lista de archivos
+       renderFiles(); // Actualiza la lista de archivos
+// --- Lógica para abrir y cerrar el Modal de Imagen ---
+
+// 1. Abrir al hacer clic en la previsualización grande del tablón
+tablonPreviewImage.addEventListener('click', () => {
+    // Solo abre el modal si la imagen tiene una fuente válida
+    if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
+        modalImageContent.src = tablonPreviewImage.src;
+        imageModal.classList.remove('oculto');
+    }
+});
+
+// 2. Cerrar al hacer clic en el botón '×'
+modalCloseBtn.addEventListener('click', () => {
+    imageModal.classList.add('oculto');
+});
+
+// 3. Cerrar también si se hace clic fuera de la imagen (en el fondo oscuro)
+imageModal.addEventListener('click', (e) => {
+    if (e.target === imageModal) {
+        imageModal.classList.add('oculto');
+    }
+});
+
+// 4. Cerrar con la tecla 'Escape'
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) {
+        imageModal.classList.add('oculto');
+    }
+});
     };
     
     // Inicia la lectura del archivo. Cuando termine, se ejecutará el 'onload' de arriba.
