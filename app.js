@@ -224,234 +224,116 @@ function initCoordinatorTable() {
     renderTable();
 }
 
-// =========================================================================
-// GESTOR DEL TABLÓN DE ANUNCIOS
-// Permite subir, visualizar/descargar y eliminar archivos.
-// =========================================================================
+// ============================================================
+// BLOQUE COMPLETO REEMPLAZANDO LA FUNCIÓN initTablon EXISTENTE
+// ============================================================
 function initTablon() {
+    // --- 1. CAPTURA DE ELEMENTOS ---
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
-const tablonPreviewContainer = document.getElementById('tablon-preview-container');
-const tablonPreviewImage = document.getElementById('tablon-preview-image');
-const fileInput = document.getElementById('file-input');
-const imageModal = document.getElementById('image-modal');
-const modalImageContent = document.getElementById('modal-image-content');
-const modalCloseBtn = document.querySelector('.image-modal-close');
+    const tablonPreviewContainer = document.getElementById('tablon-preview-container');
+    const tablonPreviewImage = document.getElementById('tablon-preview-image');
+    const fileInput = document.getElementById('file-input');
+    const imageModal = document.getElementById('image-modal');
+    const modalImageContent = document.getElementById('modal-image-content');
+    const modalCloseBtn = document.querySelector('.image-modal-close');
 
-    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) return;
-
+    // Validación de que todos los elementos necesarios existen
+    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
+        console.error("TurnApp Error: Faltan elementos del DOM para la funcionalidad del Tablón.");
+        return;
+    }
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
-    // Función para "pintar" la lista de archivos
+    // --- 2. FUNCIÓN PARA PINTAR LA LISTA DE ARCHIVOS ---
     function renderFiles() {
-        // Obtenemos los archivos o un array vacío si no hay nada
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-
-// --- Lógica de previsualización persistente ---
-// Comprueba si hay archivos y si el más reciente es una imagen.
-if (files.length > 0 && files[0].type.startsWith('image/')) {
-    // Si lo es, muestra la imagen en el panel de previsualización.
-    tablonPreviewImage.src = files[0].content;
-    tablonPreviewContainer.classList.remove('oculto');
-} else {
-    // Si no, o si no hay archivos, se asegura de que el panel esté oculto.
-    tablonPreviewContainer.classList.add('oculto');
-}
-
-        fileListContainer.innerHTML = ''; // Limpiamos la lista para evitar duplicados
-
-        if (files.length === 0) {
-            fileListContainer.innerHTML = '<p style="text-align:center; color: var(--text-color-light);">El tablón está vacío. ¡Sube el primer archivo!</p>';
-            return;
-        }
-        
+        fileListContainer.innerHTML = ''; // Limpiar la lista actual
         const fragment = document.createDocumentFragment();
 
-        // CÓDIGO DE REEMPLAZO
-files.forEach((file, index) => {
-    const fileItem = document.createElement('div');
-    fileItem.className = 'tablon-item';
-
-    const uploadDate = new Date(file.date).toLocaleString('es-ES', {
-        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-
-    // *****************************************************************
-    // PASO 1: CREAR EL HTML INTERNO (hemos quitado la lógica del botón "Ver" de aquí)
-    // *****************************************************************
-    fileItem.innerHTML = `
-        <div class="tablon-item-info">
-            <strong class="tablon-item-name">${file.name}</strong>
-            <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
-        </div>
-        <div class="tablon-item-actions">
-            <!-- Los botones se añadirán dinámicamente ahora -->
-        </div>
-    `;
-
-    // *****************************************************************
-    // PASO 2: BUSCAR EL CONTENEDOR DE BOTONES Y AÑADIRLOS CON LÓGICA
-    // *****************************************************************
-    const actionsContainer = fileItem.querySelector('.tablon-item-actions');
-    if (!actionsContainer) return; // Salvaguarda
-
-    // Lógica para el botón "Ver" / Abrir Modal
-    if (file.type.startsWith('image/')) {
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'view-btn modern-btn';
-        viewBtn.textContent = 'Ver';
-        viewBtn.onclick = () => {
-            modalImageContent.src = file.content;
-            imageModal.classList.remove('oculto');
-        };
-        actionsContainer.appendChild(viewBtn);
-    } else if (file.type === 'application/pdf') {
-        const viewBtn = document.createElement('button');
-        viewBtn.className = 'view-btn modern-btn';
-        viewBtn.textContent = 'Ver';
-        viewBtn.onclick = () => {
-             try {
-                const blob = base64ToBlob(file.content, file.type);
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-            } catch (e) { console.error("Error al abrir PDF", e); }
-        };
-        actionsContainer.appendChild(viewBtn);
-    }
-
-    // Lógica para el botón de Descargar (la que ya tenías)
-    const downloadBtn = document.createElement('button');
-    downloadBtn.className = 'download-btn modern-btn';
-    downloadBtn.textContent = 'Descargar';
-    downloadBtn.onclick = () => {
-        const link = document.createElement('a');
-        link.href = file.content;
-        link.download = file.name;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
-    actionsContainer.appendChild(downloadBtn);
-
-    // Lógica para el botón de Eliminar (la que ya tenías)
-    const deleteBtn = document.createElement('button');
-    deleteBtn.className = 'delete-btn modern-btn red';
-    deleteBtn.textContent = 'Eliminar';
-    deleteBtn.onclick = () => {
-        if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
-            files.splice(index, 1);
-            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            renderFiles();
-        }
-    };
-    actionsContainer.appendChild(deleteBtn);
-
-    fragment.appendChild(fileItem);
-});
-        
-        fileListContainer.appendChild(fragment);
-    }
-
-    // Event listener para el botón de subir
-    // Al pulsar el botón "Subir Archivo", se activa el input oculto que ya existe en el HTML
-btnUpload.addEventListener('click', () => {
-    fileInput.value = null; // Resetea el input para permitir subir el mismo archivo de nuevo
-    fileInput.click();
-});
-
-// Cuando el usuario selecciona un archivo en el input
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-        const fileContentBase64 = event.target.result;
-
-        // --- Lógica de previsualización ---
-        if (file.type.startsWith('image/')) {
-            // Si es una imagen, la muestra en el panel de previsualización
-            tablonPreviewImage.src = fileContentBase64;
+        // Lógica para mostrar la última imagen en la previsualización al cargar
+        if (files.length > 0 && files[0].type.startsWith('image/')) {
+            tablonPreviewImage.src = files[0].data;
             tablonPreviewContainer.classList.remove('oculto');
         } else {
-            // Si NO es una imagen, se asegura de que el panel esté oculto
             tablonPreviewContainer.classList.add('oculto');
         }
 
-        // --- Lógica de guardado en localStorage (existente) ---
-        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        const fileData = {
-            name: file.name,
-            type: file.type,
-            size: file.size,
-            date: new Date().toISOString(),
-            content: fileContentBase64
+        files.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'tablon-item';
+            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+            // Se crean los botones con el atributo 'data-index' que tu código ya utiliza
+            fileItem.innerHTML = `
+                <div class="tablon-item-info">
+                    <strong class="tablon-item-name">${file.name}</strong>
+                    <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
+                </div>
+                <div class="tablon-item-actions">
+                    <button class="view-btn modern-btn" data-index="${index}">Ver</button>
+                    <button class="download-btn modern-btn" data-index="${index}">Descargar</button>
+                    <button class="delete-btn modern-btn red" data-index="${index}">Eliminar</button>
+                </div>
+            `;
+            fragment.appendChild(fileItem);
+        });
+        fileListContainer.appendChild(fragment);
+    }
+
+    // --- 3. LÓGICA DE SUBIDA DE ARCHIVOS ---
+    btnUpload.addEventListener('click', () => {
+        fileInput.value = null; // Permite subir el mismo archivo otra vez
+        fileInput.click();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            // Usamos 'data' como clave para ser consistentes con tu código
+            const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            files.unshift(fileData); // Añadir al principio
+            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+            renderFiles(); // Volver a pintar todo
         };
-        files.unshift(fileData);
+        reader.readAsDataURL(file);
+    });
 
-        localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-       renderFiles(); // Actualiza la lista de archivos
-// --- Lógica para abrir y cerrar el Modal de Imagen ---
-
-// 1. Abrir al hacer clic en la previsualización grande del tablón
-tablonPreviewImage.addEventListener('click', () => {
-    // Solo abre el modal si la imagen tiene una fuente válida
-    if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
-        modalImageContent.src = tablonPreviewImage.src;
-        imageModal.classList.remove('oculto');
-    }
-});
-
-// 2. Cerrar al hacer clic en el botón '×'
-modalCloseBtn.addEventListener('click', () => {
-    imageModal.classList.add('oculto');
-});
-
-// 3. Cerrar también si se hace clic fuera de la imagen (en el fondo oscuro)
-imageModal.addEventListener('click', (e) => {
-    if (e.target === imageModal) {
-        imageModal.classList.add('oculto');
-    }
-});
-
-// 4. Cerrar con la tecla 'Escape'
-window.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) {
-        imageModal.classList.add('oculto');
-    }
-});
-    
-    // Inicia la lectura del archivo. Cuando termine, se ejecutará el 'onload' de arriba.
-    reader.readAsDataURL(file);
-});
-
-    // Event listener para los botones de la lista (Ver, Descargar, Eliminar)
+    // --- 4. LÓGICA DE LOS BOTONES DE LA LISTA (MÉTODO DE EVENT DELEGATION) ---
     fileListContainer.addEventListener('click', (event) => {
         const target = event.target;
         const index = target.dataset.index;
-        if (index === undefined) return;
+        if (index === undefined) return; // Si el clic no fue en un botón con data-index, no hacer nada
 
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        // ¡Ojo! El índice en el DOM es el mismo que en el array porque lo pintamos en el mismo orden.
         const file = files[index];
 
         if (target.classList.contains('view-btn')) {
-            const win = window.open("", "_blank");
-            if(file.type.startsWith('image/')){
-                 win.document.write(`<body style="margin:0;"><img src="${file.data}" style="width:100%;"></body>`);
-            } else if (file.type === 'application/pdf') {
-                 win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+            // SI ES IMAGEN: Abrimos el MODAL
+            if (file.type.startsWith('image/')) {
+                modalImageContent.src = file.data;
+                imageModal.classList.remove('oculto');
+            } else {
+            // SI NO ES IMAGEN (PDF, etc.): Abrimos en nueva pestaña (tu lógica original)
+                const win = window.open("", "_blank");
+                 if (file.type === 'application/pdf') {
+                     win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
+                } else {
+                    // Fallback para otros tipos de archivo
+                     win.document.write(`<p>Contenido no visualizable directamente. Puede intentar descargarlo.</p>`);
+                }
             }
         } else if (target.classList.contains('download-btn')) {
             const a = document.createElement('a');
             a.href = file.data;
             a.download = file.name;
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
         } else if (target.classList.contains('delete-btn')) {
-            if (confirm(`¿Seguro que quieres eliminar el archivo "${file.name}"?`)) {
+            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
                 files.splice(index, 1);
                 localStorage.setItem(TABLON_KEY, JSON.stringify(files));
                 renderFiles();
@@ -459,7 +341,18 @@ window.addEventListener('keydown', (e) => {
         }
     });
 
-    // Carga inicial
+    // --- 5. LÓGICA PARA ABRIR Y CERRAR EL MODAL ---
+    tablonPreviewImage.addEventListener('click', () => {
+        if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
+            modalImageContent.src = tablonPreviewImage.src;
+            imageModal.classList.remove('oculto');
+        }
+    });
+    modalCloseBtn.addEventListener('click', () => { imageModal.classList.add('oculto'); });
+    imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
+
+    // --- 6. LLAMADA INICIAL PARA PINTAR LOS ARCHIVOS ---
     renderFiles();
 }
 
