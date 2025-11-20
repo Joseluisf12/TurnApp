@@ -747,8 +747,8 @@ body {
   overflow: hidden;
 }
 /* 2. RE-PROPORCIONADO DE COLUMNAS PARA MÁS ESPACIO EN TURNOS */
-#tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 9%; }  /* NOMBRE (reducido) */
+#tabla-coordinador colgroup col:nth-child(1)  { width: 5%;  }  /* Nº */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 10%; }  /* NOMBRE (reducido) */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
@@ -760,7 +760,7 @@ body {
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid var(--panel-border);
-  padding: 6px 2px; /* Reducimos padding lateral en celdas para ganar espacio */
+  padding: 5px 2px; /* Reducimos padding lateral en celdas para ganar espacio */
   text-align: center;
   vertical-align: middle;
   transition: background-color 0.3s, border-color 0.3s, color 0.3s;
