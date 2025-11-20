@@ -30,7 +30,9 @@
   --button-primary-text: #ffffff;    /* Texto de botones primarios */
   --button-danger-bg: #dc3545;       /* Fondo de botones de peligro */
   --button-danger-text: #ffffff;     /* Texto de botones de peligro */
-  
+  --button-bg-color: #f0f0f0;         /* Fondo para botones de utilidad */
+  --button-hover-bg-color: #e0e0e0;  /* Hover para esos botones */
+
   --nav-bg: #ffffff;                 /* Fondo de la barra de navegación */
   --nav-text: #495057;               /* Texto de los botones de navegación */
   --nav-active-bg: #dee2e6;          /* Fondo del botón de navegación activo */
@@ -76,6 +78,8 @@
 
   --button-primary-bg: #0d6efd;
   --button-danger-bg: #e53935;
+  --button-bg-color: #555;            /* Fondo para botones de utilidad */
+  --button-hover-bg-color: #666;      /* Hover para esos botones */
   
   --nav-bg: #1f1f1f;
   --nav-text: #adb5bd;
@@ -744,13 +748,13 @@ body {
 }
 /* 2. RE-PROPORCIONADO DE COLUMNAS PARA MÁS ESPACIO EN TURNOS */
 #tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 10%; }  /* NOMBRE (reducido) */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 11%; }  /* NOMBRE (reducido) */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
 #tabla-coordinador colgroup col:nth-child(7) { width: 4.5%; } /* TURNOS (aumentado) */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES (reducido) */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 17%; } /* OBSERVACIONES (reducido) */
 
 /* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
@@ -804,6 +808,54 @@ body {
 #tabla-coordinador td:nth-child(2),
 #tabla-coordinador td:nth-child(8) {
   text-align: left;
+}
+
+/* ==========================================================================
+   ESTILOS DE LA PALETA DE COLORES
+   ========================================================================== */
+
+/* NUEVO: Contenedor de la paleta (el que ya tienes, pero ahora lo referenciamos) */
+#color-palette {
+  display: flex;
+  gap: 8px;
+  padding: 10px;
+  background-color: var(--panel-bg);
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  position: absolute; /* Posicionamiento absoluto para flotar */
+  z-index: 100;
+}
+
+/* NUEVO: Clase específica para CADA muestra de color */
+.palette-swatch {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid var(--bg-color); /* Borde que contraste con el fondo */
+  transition: transform 0.15s ease-out, box-shadow 0.15s ease-out;
+}
+
+.palette-swatch:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+}
+
+/* NUEVO: Estilo para el botón de restaurar */
+.palette-swatch.reset-btn {
+  background-color: var(--button-bg-color, #f0f0f0);
+  border: 1px dashed var(--text-color-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  color: var(--text-color);
+}
+
+.palette-swatch.reset-btn:hover {
+  background-color: var(--button-hover-bg-color, #e0e0e0);
+  transform: scale(1.1);
+  box-shadow: none;
 }
 
 /* Estilo del botón para limpiar tabla (ahora usa la clase genérica) */

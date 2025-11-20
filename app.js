@@ -114,20 +114,25 @@ function initCoordinatorTable() {
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.5'; });
 
-                handle.addEventListener('click', (ev) => {
-                    ev.stopPropagation();
-                    openColorPicker(handle, (color) => {
-                        cell.style.backgroundColor = color;
-                        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
-                        currentColors[cellId] = color;
-                        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
-                    });
-                });
-                cell.appendChild(handle);
-            }
-            row.appendChild(cell);
+               // REEMPLAZA EL BLOQUE handle.addEventListener (Líneas 125-134) POR ESTE:
+handle.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    openColorPicker(handle, (color) => {
+        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+
+        if (color === 'initial') {
+            // Si la señal es 'initial', restauramos el color
+            cell.style.backgroundColor = '';
+            delete currentColors[cellId]; // Eliminamos la clave del objeto
+        } else {
+            // Si es un color normal, lo aplicamos
+            cell.style.backgroundColor = color;
+            currentColors[cellId] = color; // Guardamos el color
         }
-    }
+
+        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+    });
+});
 
     // 3. FUNCIÓN PARA CARGAR Y CONSTRUIR LA TABLA
     function renderTable() {
@@ -682,31 +687,30 @@ function bindLicenciaHandles(){
   }));
 }
 
+// FUNCIÓN openColorPicker:
 function openColorPicker(anchorEl, onSelect, palette = colorPalette){
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
 
   const popup = document.createElement('div');
   popup.id = 'color-picker-popup';
+  // ... (estilos del popup, se mantienen igual)
   popup.style.position = 'absolute';
   popup.style.display = 'flex';
   popup.style.flexWrap = 'wrap';
-  popup.style.background = '#fff';
-  popup.style.border = '1px solid #ccc';
+  popup.style.background = 'var(--panel-bg)'; // Usar variable CSS
+  popup.style.border = '1px solid var(--border-color)'; // Usar variable CSS
   popup.style.padding = '6px';
   popup.style.borderRadius = '6px';
   popup.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
   popup.style.zIndex = 10000;
+  popup.style.width = '150px'; // Un ancho fijo para que quepan los botones
 
+  // 1. Añadir las muestras de color
   palette.forEach(color => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.style.width = '22px';
-    b.style.height = '22px';
-    b.style.margin = '4px';
-    b.style.border = '1px solid rgba(0,0,0,0.06)';
-    b.style.borderRadius = '4px';
-    b.style.cursor = 'pointer';
+    b.className = 'palette-swatch'; // Usamos la clase que creamos en el CSS
     b.style.backgroundColor = color;
     b.addEventListener('click', (e)=> {
       e.stopPropagation();
@@ -715,6 +719,20 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
     });
     popup.appendChild(b);
   });
+
+  // 2. AÑADIR EL BOTÓN DE RESTAURAR
+  const resetButton = document.createElement('button');
+  resetButton.type = 'button';
+  resetButton.className = 'palette-swatch reset-btn'; // Usamos las clases del CSS
+  resetButton.innerHTML = '🔄';
+  resetButton.title = 'Restaurar color original';
+  resetButton.addEventListener('click', (e) => {
+      e.stopPropagation();
+      onSelect('initial'); // Enviamos una señal especial: 'initial'
+      popup.remove();
+  });
+  popup.appendChild(resetButton);
+
 
   document.body.appendChild(popup);
 
