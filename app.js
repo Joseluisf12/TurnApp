@@ -48,44 +48,93 @@ function initCoordinatorTable() {
     if (!tabla) return;
     const tbody = tabla.querySelector("tbody");
 
-    // 1. CLAVES DE ALMACENAMIENTO Y VALORES POR DEFECTO
-    const TEXT_KEY = "tablaCoordinadorTextos";
-    const COLOR_KEY = "tablaCoordinadorColores";
-    const ROW_COUNT_KEY = "tablaCoordinadorFilas";
-    const DEFAULT_ROWS = 18;
-    const COL_COUNT = 8;
-    const turnoColumnIndices = [2, 3, 4, 5, 6];
+    // =================================================================
+// PASO 1: DEFINICIÓN DE ESTADO Y CLAVES DE ALMACENAMIENTO
+// =================================================================
 
-// [NUEVO] CLAVES PARA PERSISTENCIA DE CABECERAS
-const HEADER_TEXT_KEY = "tablaCoordinadorHeaders";
-const DEFAULT_HEADERS = {
-    "th-ciclo": "CICLO", "th-m1": "M¹", "th-t1": "T¹", "th-m2": "M²",
-    "th-t2": "T²", "th-n": "N", "th-cocina": "COCINA"
+// Se definen todas las claves que se usarán en localStorage para esta tabla.
+const KEYS = {
+    TEXT: "tablaCoordinadorTextos",
+    COLORS: "tablaCoordinadorColores",
+    ROWS: "tablaCoordinadorFilas",
+    COLS: "tablaCoordinadorColumnas", // ¡NUEVA CLAVE PARA LAS COLUMNAS!
+    HEADERS: "tablaCoordinadorHeaders"
 };
 
-// [NUEVO] FUNCIÓN PARA CARGAR Y GUARDAR CABECERAS EDITABLES
-function loadAndBindHeaders() {
-    const savedHeaders = JSON.parse(localStorage.getItem(HEADER_TEXT_KEY) || "{}");
-    const headers = { ...DEFAULT_HEADERS, ...savedHeaders };
+// Estructura por defecto de las columnas de turno.
+// Cada columna tiene un ID único y persistente.
+const DEFAULT_TURN_COLUMNS = [
+    { id: 'm1', header: 'M¹' },
+    { id: 't1', header: 'T¹' },
+    { id: 'm2', header: 'M²' },
+    { id: 't2', header: 'T²' },
+    { id: 'n', header: 'N' }
+];
 
-    Object.keys(headers).forEach(id => {
+// Se mantiene un estado global para la tabla dentro de esta función.
+let tableState = {};
+
+// =================================================================
+// PASO 2: CARGA Y SINCRONIZACIÓN DEL ESTADO DESDE LOCALSTORAGE
+// =================================================================
+
+function syncStateFromStorage() {
+    // Cargar el número de filas (o usar 18 por defecto).
+    const rowCount = parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10);
+
+    // Cargar la estructura de columnas (o usar la de por defecto).
+    const turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
+
+    // Cargar textos, colores y cabeceras.
+    const texts = JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}');
+    const colors = JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}');
+    const headers = JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}');
+
+    // Construir la lista de IDs de las columnas de turno para referencia rápida.
+    const turnColumnIds = turnColumns.map(c => c.id);
+    
+    // Actualizar el estado global.
+    tableState = {
+        rowCount,
+        turnColumns,
+        turnColumnIds,
+        texts,
+        colors,
+        headers
+    };
+}
+
+// Se llama una vez para cargar el estado inicial.
+syncStateFromStorage();
+
+// [MODIFICADO] FUNCIÓN PARA CARGAR Y GUARDAR CABECERAS EDITABLES
+function loadAndBindHeaders() {
+    const DEFAULT_HEADERS = { "th-ciclo": "CICLO", "th-cocina": "COCINA" };
+    const headersToRender = { ...DEFAULT_HEADERS, ...tableState.headers };
+
+    // Asocia los textos a las cabeceras que ya existen en el HTML
+    Object.keys(headersToRender).forEach(id => {
         const th = document.getElementById(id);
         if (th) {
-            th.innerText = headers[id];
-            th.addEventListener('blur', () => {
-                const headersToSave = {};
-                tabla.querySelectorAll('thead th[contenteditable="true"]').forEach(headerEl => {
-                    if (headerEl.id) {
-                        headersToSave[headerEl.id] = headerEl.innerText;
-                    }
-                });
-                localStorage.setItem(HEADER_TEXT_KEY, JSON.stringify(headersToSave));
-            });
+            th.innerText = headersToRender[id];
         }
     });
+    
+    // Listener único en el `thead` para guardar cualquier cambio en cabeceras editables
+    tabla.querySelector('thead').addEventListener('blur', (e) => {
+        const target = e.target;
+        // Solo actuar si el "blur" ocurre en un TH editable
+        if (target.tagName === 'TH' && target.isContentEditable) {
+            const id = target.id;
+            if (id) {
+                tableState.headers[id] = target.innerText;
+                localStorage.setItem(KEYS.HEADERS, JSON.stringify(tableState.headers));
+            }
+        }
+    }, true); // Usar "capturing" para garantizar que el evento se coge aquí.
 }
-loadAndBindHeaders(); // Llamamos a la función para que se ejecute
 
+loadAndBindHeaders(); // Se sigue llamando para inicializar.
 
     // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA
     function initializeRow(row, rowIndex) {
