@@ -1006,31 +1006,34 @@ body {
 .modern-btn.red:hover { background-color: var(--red-color-dark); }
 }
 
-/* Color Verde (para acciones positivas) */
-.modern-btn.green {
-  background-color: #198754; /* Verde oscuro */
+/* Color Verde (para acciones positivas como añadir filas/columnas) */
+#btn-add-row,
+#btn-add-col {
+  background-color: var(--green-color);
   color: white;
-  border-color: #198754;
 }
 
-.modern-btn.green:hover {
-  background-color: #157347; /* Verde más oscuro al pasar el ratón */
+#btn-add-row:hover,
+#btn-add-col:hover {
+  background-color: var(--green-color-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
-/* Color Rojo (para acciones de limpieza o peligro) */
-.modern-btn.red {
-  background-color: #dc3545; /* Rojo */
+/* Color Rojo (para acciones de peligro como eliminar filas/columnas) */
+#btn-remove-row,
+#btn-remove-col {
+  background-color: var(--red-color);
   color: white;
-  border-color: #dc3545;
 }
 
-.modern-btn.red:hover {
-  background-color: #bb2d3b; /* Rojo más oscuro al pasar el ratón */
+#btn-remove-row:hover,
+#btn-remove-col:hover {
+  background-color: var(--red-color-dark);
   transform: translateY(-1px);
   box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
+
 /* ======================================= */
 /* AJUSTES FINALES TABLA DEL COORDINADOR   */
 /* ======================================= */
