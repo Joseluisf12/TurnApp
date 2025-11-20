@@ -97,7 +97,7 @@ function initCoordinatorTable() {
 
         // Definimos los anchos fijos para las columnas externas
         const firstColWidth = 9;  // Ancho para la columna "Nº"
-        const secondColWidth = 15; // Ancho para la columna "NOMBRE"
+        const secondColWidth = 18; // Ancho para la columna "NOMBRE"
         const lastColWidth = 35;   // Ancho para la columna "OBSERVACIONES"
 
         // Calculamos el espacio restante para las columnas de turno
