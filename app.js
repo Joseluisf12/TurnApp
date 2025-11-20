@@ -78,73 +78,84 @@ let tableState = {};
 // PASO 2: CARGA Y SINCRONIZACIÓN DEL ESTADO DESDE LOCALSTORAGE
 // =================================================================
 
-function syncStateFromStorage() {
-    // Cargar el número de filas (o usar 18 por defecto).
-    const rowCount = parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10);
+function initCoordinatorTable() {
+    const tabla = document.getElementById("tabla-coordinador");
+    if (!tabla) return;
+    const tbody = tabla.querySelector("tbody");
 
-    // Cargar la estructura de columnas (o usar la de por defecto).
-    const turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
-
-    // Cargar textos, colores y cabeceras.
-    const texts = JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}');
-    const colors = JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}');
-    const headers = JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}');
-
-    // Construir la lista de IDs de las columnas de turno para referencia rápida.
-    const turnColumnIds = turnColumns.map(c => c.id);
-    
-    // Actualizar el estado global.
-    tableState = {
-        rowCount,
-        turnColumns,
-        turnColumnIds,
-        texts,
-        colors,
-        headers
+    // =================================================================
+    // 1. ESTADO Y CLAVES DE ALMACENAMIENTO (Refactorizado)
+    // =================================================================
+    const KEYS = {
+        TEXT: "tablaCoordinadorTextos",
+        COLORS: "tablaCoordinadorColores",
+        ROWS: "tablaCoordinadorFilas",
+        COLS: "tablaCoordinadorColumnas",
+        HEADERS: "tablaCoordinadorHeaders"
     };
-}
 
-// Se llama una vez para cargar el estado inicial.
-syncStateFromStorage();
-
-// [MODIFICADO] FUNCIÓN PARA CARGAR Y GUARDAR CABECERAS EDITABLES
-function loadAndBindHeaders() {
-    const DEFAULT_HEADERS = { "th-ciclo": "CICLO", "th-cocina": "COCINA" };
-    const headersToRender = { ...DEFAULT_HEADERS, ...tableState.headers };
-
-    // Asocia los textos a las cabeceras que ya existen en el HTML
-    Object.keys(headersToRender).forEach(id => {
-        const th = document.getElementById(id);
-        if (th) {
-            th.innerText = headersToRender[id];
-        }
-    });
+    const DEFAULT_TURN_COLUMNS = [
+        { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
+        { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
+        { id: 'th-n', header: 'N' }
+    ];
     
-    // Listener único en el `thead` para guardar cualquier cambio en cabeceras editables
-    tabla.querySelector('thead').addEventListener('blur', (e) => {
-        const target = e.target;
-        // Solo actuar si el "blur" ocurre en un TH editable
-        if (target.tagName === 'TH' && target.isContentEditable) {
-            const id = target.id;
-            if (id) {
-                tableState.headers[id] = target.innerText;
+    let tableState = {};
+
+    function syncStateFromStorage() {
+        const turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
+        
+        // El número total de columnas es 2 fijas al inicio, las de turno, y 1 fija al final.
+        const columnCount = 2 + turnColumns.length + 1;
+        
+        // Los índices de las columnas de turno ahora son dinámicos.
+        const turnColumnIndices = Array.from({ length: turnColumns.length }, (_, i) => i + 2);
+
+        tableState = {
+            rowCount: parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10),
+            turnColumns: turnColumns,
+            columnCount: columnCount,
+            turnColumnIndices: turnColumnIndices,
+            texts: JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}'),
+            colors: JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}'),
+            headers: JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}')
+        };
+    }
+    syncStateFromStorage();
+
+    // =================================================================
+    // 2. GESTIÓN DE CABECERAS (Refactorizado)
+    // =================================================================
+    function loadAndBindHeaders() {
+        // Parte de la refactorización para columnas dinámicas
+        const dynamicHeaders = {};
+        tableState.turnColumns.forEach(c => { dynamicHeaders[c.id] = c.header; });
+
+        const allHeaders = { "th-ciclo": "CICLO", "th-cocina": "COCINA", ...dynamicHeaders };
+        const headersToRender = { ...allHeaders, ...tableState.headers };
+
+        Object.keys(headersToRender).forEach(id => {
+            const th = document.getElementById(id);
+            if (th) th.innerText = headersToRender[id];
+        });
+
+        tabla.querySelector('thead').addEventListener('blur', (e) => {
+            const target = e.target;
+            if (target.tagName === 'TH' && target.isContentEditable && target.id) {
+                tableState.headers[target.id] = target.innerText;
                 localStorage.setItem(KEYS.HEADERS, JSON.stringify(tableState.headers));
             }
-        }
-    }, true); // Usar "capturing" para garantizar que el evento se coge aquí.
-}
+        }, true);
+    }
 
-loadAndBindHeaders(); // Se sigue llamando para inicializar.
-
-    // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA
+    // =================================================================
+    // 3. RENDERIZADO DE LA TABLA (Adaptado al estado dinámico)
+    // =================================================================
     function initializeRow(row, rowIndex) {
-        const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
-        const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
-
-        for (let cellIndex = 0; cellIndex < COL_COUNT; cellIndex++) {
+        for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
             const cell = document.createElement('td');
             const cellId = `r${rowIndex}-c${cellIndex}`;
-            const isTurnoCell = turnoColumnIndices.includes(cellIndex);
+            const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
             
             cell.style.position = 'relative';
 
@@ -160,15 +171,14 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
                 textEditor.style.paddingBottom = '16px';
             }
 
-            if (savedTexts[cellId]) {
-                textEditor.innerText = savedTexts[cellId];
+            if (tableState.texts[cellId]) {
+                textEditor.innerText = tableState.texts[cellId];
             }
             cell.appendChild(textEditor);
 
             if (isTurnoCell) {
-                // Aplicar color guardado si existe, de lo contrario es transparente
-                if (savedColors[cellId]) {
-                    cell.style.backgroundColor = savedColors[cellId];
+                if (tableState.colors[cellId]) {
+                    cell.style.backgroundColor = tableState.colors[cellId];
                 }
 
                 const handle = document.createElement('button');
@@ -192,19 +202,19 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.5'; });
 
-                // LÓGICA DE COLOR CORREGIDA Y ACTUALIZADA
                 handle.addEventListener('click', (ev) => {
                     ev.stopPropagation();
                     openColorPicker(handle, (color) => {
-                        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+                        const currentColors = JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}');
                         if (color === 'initial') {
-                            cell.style.backgroundColor = ''; // Restaura el color
-                            delete currentColors[cellId];     // Elimina el dato guardado
+                            cell.style.backgroundColor = '';
+                            delete currentColors[cellId];
                         } else {
-                            cell.style.backgroundColor = color; // Aplica el color
-                            currentColors[cellId] = color;      // Guarda el color
+                            cell.style.backgroundColor = color;
+                            currentColors[cellId] = color;
                         }
-                        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+                        localStorage.setItem(KEYS.COLORS, JSON.stringify(currentColors));
+                        tableState.colors = currentColors; // Update state
                     });
                 });
                 cell.appendChild(handle);
@@ -213,18 +223,19 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
         }
     }
 
-    // 3. FUNCIÓN PARA CARGAR Y CONSTRUIR LA TABLA
     function renderTable() {
-        tbody.innerHTML = '';
-        const rowCount = parseInt(localStorage.getItem(ROW_COUNT_KEY) || DEFAULT_ROWS, 10);
-        for (let i = 0; i < rowCount; i++) {
+        loadAndBindHeaders(); // Cargar cabeceras primero.
+        tbody.innerHTML = ''; // Limpiar cuerpo de la tabla.
+        for (let i = 0; i < tableState.rowCount; i++) {
             const row = document.createElement('tr');
             initializeRow(row, i);
             tbody.appendChild(row);
         }
     }
 
-    // 4. LÓGICA DE LOS BOTONES DE CONTROL
+    // =================================================================
+    // 4. LÓGICA DE BOTONES Y EVENTOS (Adaptada)
+    // =================================================================
     const btnAddRow = document.getElementById('btn-add-row');
     const btnRemoveRow = document.getElementById('btn-remove-row');
 
@@ -234,7 +245,8 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
             const newRow = document.createElement('tr');
             initializeRow(newRow, newRowIndex);
             tbody.appendChild(newRow);
-            localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
+            tableState.rowCount = tbody.rows.length;
+            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
         });
     }
 
@@ -242,34 +254,45 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
         btnRemoveRow.addEventListener('click', () => {
             if (tbody.rows.length > 0) {
                 const lastRowIndex = tbody.rows.length - 1;
-                const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
-                const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
-                for (let i = 0; i < COL_COUNT; i++) {
+                const currentTexts = JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}');
+                const currentColors = JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}');
+                
+                // Limpiar datos de la fila eliminada usando el recuento de columnas del estado
+                for (let i = 0; i < tableState.columnCount; i++) {
                     delete currentTexts[`r${lastRowIndex}-c${i}`];
                     delete currentColors[`r${lastRowIndex}-c${i}`];
                 }
-                localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
-                localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+
+                localStorage.setItem(KEYS.TEXT, JSON.stringify(currentTexts));
+                localStorage.setItem(KEYS.COLORS, JSON.stringify(currentColors));
+                tableState.texts = currentTexts;
+                tableState.colors = currentColors;
+
                 tbody.deleteRow(-1);
-                localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
+                tableState.rowCount = tbody.rows.length;
+                localStorage.setItem(KEYS.ROWS, tableState.rowCount);
             }
         });
     }
 
-    // 5. EVENT LISTENERS GENERALES DE LA TABLA
+    // Listener general para guardar el texto de las celdas
     tabla.addEventListener("input", (e) => {
-        const textEditor = e.target;
-        if (!textEditor.classList.contains('text-editor')) return;
-        const cell = textEditor.parentElement;
+        const target = e.target;
+        if (!target.classList.contains('text-editor')) return;
+        
+        const cell = target.parentElement;
         const row = cell.parentElement;
-        const rowIndex = Array.from(row.parentElement.children).indexOf(row);
+        if (row.tagName !== 'TR' || row.parentElement.tagName !== 'TBODY') return;
+
+        const rowIndex = row.rowIndex - 1; // rowIndex es 1-based, lo necesitamos 0-based
         const cellIndex = cell.cellIndex;
         const cellId = `r${rowIndex}-c${cellIndex}`;
-        const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
-        currentTexts[cellId] = textEditor.innerText;
-        localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
+
+        tableState.texts[cellId] = target.innerText;
+        localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
     });
 
+    // Listener para la selección de fila
     tabla.addEventListener("click", (e) => {
         if (e.target.closest('.color-handle')) return;
         const fila = e.target.closest("tr");
@@ -278,25 +301,28 @@ loadAndBindHeaders(); // Se sigue llamando para inicializar.
         fila.classList.add("seleccionada");
     });
 
+    // Listener del botón de limpiar tabla
     const btnLimpiar = document.getElementById("limpiar-tabla");
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
         btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+        
         newBtn.addEventListener("click", function () {
             if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? Esto NO eliminará las filas añadidas.")) {
-                tabla.querySelectorAll("tbody td .text-editor").forEach(editor => {
-                    editor.innerText = '';
-                });
-                tabla.querySelectorAll("tbody td").forEach(cell => {
-                    cell.style.backgroundColor = '';
-                });
-                localStorage.removeItem(TEXT_KEY);
-                localStorage.removeItem(COLOR_KEY);
+                tabla.querySelectorAll("tbody td .text-editor").forEach(editor => editor.innerText = '');
+                tabla.querySelectorAll("tbody td").forEach(cell => cell.style.backgroundColor = '');
+                
+                localStorage.removeItem(KEYS.TEXT);
+                localStorage.removeItem(KEYS.COLORS);
+                tableState.texts = {};
+                tableState.colors = {};
             }
         });
     }
 
-    // ¡LLAMADA INICIAL PARA CONSTRUIR LA TABLA!
+    // =================================================================
+    // 5. ¡LLAMADA INICIAL PARA CONSTRUIR LA TABLA!
+    // =================================================================
     renderTable();
 }
 
