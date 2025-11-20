@@ -49,7 +49,7 @@ function initCoordinatorTable() {
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
 
-    // 1. ESTADO Y CLAVES (Refactorizado)
+    // 1. ESTADO Y CLAVES
     const KEYS = {
         TEXT: "tablaCoordinadorTextos",
         COLORS: "tablaCoordinadorColores",
@@ -57,25 +57,29 @@ function initCoordinatorTable() {
         COLS: "tablaCoordinadorColumnas",
         HEADERS: "tablaCoordinadorHeaders"
     };
-
     const DEFAULT_TURN_COLUMNS = [
         { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
         { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
         { id: 'th-n', header: 'N' }
     ];
-    
     let tableState = {};
 
     function syncStateFromStorage() {
-        const turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
-        const columnCount = 2 + turnColumns.length + 1; // Nº, Nombre + turnos + Cocina/Obs
-        const turnColumnIndices = Array.from({ length: turnColumns.length }, (_, i) => i + 2);
+        let turnColumns;
+        try {
+            turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
+            if (!Array.isArray(turnColumns)) throw new Error("La estructura de columnas está corrupta.");
+        } catch (e) {
+            console.error("Error al leer las columnas desde localStorage, se resetea a valores por defecto.", e);
+            turnColumns = [...DEFAULT_TURN_COLUMNS];
+            localStorage.setItem(KEYS.COLS, JSON.stringify(turnColumns));
+        }
 
         tableState = {
             rowCount: parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10),
             turnColumns: turnColumns,
-            columnCount: columnCount,
-            turnColumnIndices: turnColumnIndices,
+            columnCount: 2 + turnColumns.length + 1,
+            turnColumnIndices: Array.from({ length: turnColumns.length }, (_, i) => i + 2),
             texts: JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}'),
             colors: JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}'),
             headers: JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}')
@@ -83,59 +87,48 @@ function initCoordinatorTable() {
     }
 
     // 2. FUNCIONES DE RENDERIZADO DEL DOM
-   function renderHeaders() {
-    if (!thead) return;
-    
-    // Limpiar TODO el thead para evitar duplicados.
-    thead.innerHTML = '';
+    function renderHeaders() {
+        if (!thead) return;
+        thead.innerHTML = '';
+        const row1 = thead.insertRow();
+        const row2 = thead.insertRow();
 
-    // Crear las filas desde cero de forma segura.
-    const row1 = thead.insertRow();
-    const row2 = thead.insertRow();
+        row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
+        const thCiclo = document.createElement('th');
+        thCiclo.id = "th-ciclo";
+        thCiclo.colSpan = tableState.turnColumns.length > 0 ? tableState.turnColumns.length : 1;
+        thCiclo.contentEditable = true;
+        thCiclo.className = "titulo-ciclo";
+        thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
+        row1.appendChild(thCiclo);
+        const thObservaciones = document.createElement('th');
+        thObservaciones.colSpan = 1;
+        thObservaciones.innerText = 'OBSERVACIONES';
+        row1.appendChild(thObservaciones);
 
-    // --- Construcción de la Fila 1 (Títulos superiores) ---
-    row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
-    
-    const thCiclo = document.createElement('th');
-    thCiclo.id = "th-ciclo";
-    thCiclo.colSpan = tableState.turnColumns.length;
-    thCiclo.contentEditable = true;
-    thCiclo.className = "titulo-ciclo";
-    thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
-    row1.appendChild(thCiclo);
-    
-    const thObservaciones = document.createElement('th');
-    thObservaciones.colSpan = 1;
-    thObservaciones.innerText = 'OBSERVACIONES';
-    row1.appendChild(thObservaciones);
-
-    // --- Construcción de la Fila 2 (Cabeceras de columna) ---
-    row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
-    
-    tableState.turnColumns.forEach(col => {
-        const th = document.createElement('th');
-        th.id = col.id;
-        th.contentEditable = true;
-        th.innerText = tableState.headers[col.id] || col.header;
-        row2.appendChild(th);
-    });
-    
-    const thCocina = document.createElement('th');
-    thCocina.id = 'th-cocina';
-    thCocina.contentEditable = true;
-    thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
-    row2.appendChild(thCocina);
-}
+        row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
+        tableState.turnColumns.forEach(col => {
+            const th = document.createElement('th');
+            th.id = col.id;
+            th.contentEditable = true;
+            th.innerText = tableState.headers[col.id] || col.header;
+            row2.appendChild(th);
+        });
+        const thCocina = document.createElement('th');
+        thCocina.id = 'th-cocina';
+        thCocina.contentEditable = true;
+        thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
+        row2.appendChild(thCocina);
+    }
     
     function initializeRow(row, rowIndex) {
-        row.innerHTML = ''; // Limpiar la fila antes de llenarla
+        row.innerHTML = '';
         for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
             const cell = document.createElement('td');
             const cellId = `r${rowIndex}-c${cellIndex}`;
             const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
             
             cell.style.position = 'relative';
-
             const textEditor = document.createElement('div');
             textEditor.className = 'text-editor';
             textEditor.contentEditable = true;
@@ -147,15 +140,14 @@ function initCoordinatorTable() {
                 if (tableState.colors[cellId]) {
                     cell.style.backgroundColor = tableState.colors[cellId];
                 }
-
                 const handle = document.createElement('button');
                 handle.type = 'button';
                 handle.title = 'Elegir color';
                 handle.innerHTML = '&#9679;';
                 handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.5; z-index:10;';
-                handle.addEventListener('mouseenter', () => handle.style.opacity = '0.9');
-                handle.addEventListener('mouseleave', () => handle.style.opacity = '0.5');
-                handle.addEventListener('click', (ev) => {
+                handle.onmouseenter = () => handle.style.opacity = '0.9';
+                handle.onmouseleave = () => handle.style.opacity = '0.5';
+                handle.onclick = (ev) => {
                     ev.stopPropagation();
                     openColorPicker(handle, (color) => {
                         if (color === 'initial') {
@@ -167,7 +159,7 @@ function initCoordinatorTable() {
                         }
                         localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
                     });
-                });
+                };
                 cell.appendChild(handle);
             }
             row.appendChild(cell);
@@ -175,17 +167,22 @@ function initCoordinatorTable() {
     }
 
     function renderBody() {
+        if (!tbody) return;
         tbody.innerHTML = '';
         for (let i = 0; i < tableState.rowCount; i++) {
-            const row = document.createElement('tr');
+            const row = tbody.insertRow();
             initializeRow(row, i);
-            tbody.appendChild(row);
         }
     }
+    
+    function fullTableRedraw() {
+        syncStateFromStorage();
+        renderHeaders();
+        renderBody();
+    }
 
-    // 3. VINCULACIÓN DE EVENTOS
+    // 3. VINCULACIÓN DE EVENTOS (Se llama una sola vez)
     function bindEvents() {
-        // Cabeceras
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
@@ -194,15 +191,14 @@ function initCoordinatorTable() {
             }
         }, true);
 
-        // Celdas del cuerpo (texto)
         tbody.addEventListener("input", (e) => {
             const textEditor = e.target;
             if (!textEditor.classList.contains('text-editor')) return;
-            const cell = textEditor.parentElement;
-            const row = cell.parentElement;
-            if (!row || row.parentElement !== tbody) return;
-
-            const rowIndex = Array.from(tbody.children).indexOf(row);
+            const cell = textEditor.closest('td');
+            const row = cell.closest('tr');
+            if (!row || !cell) return;
+            
+            const rowIndex = row.rowIndex - thead.rows.length;
             const cellIndex = cell.cellIndex;
             const cellId = `r${rowIndex}-c${cellIndex}`;
 
@@ -210,102 +206,86 @@ function initCoordinatorTable() {
             localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
         });
         
-        // Selección de fila
         tbody.addEventListener("click", (e) => {
             if (e.target.closest('.color-handle')) return;
             const fila = e.target.closest("tr");
             if (fila && fila.parentElement === tbody) {
-                tabla.querySelectorAll("tbody tr").forEach(tr => tr.classList.remove("seleccionada"));
+                Array.from(tbody.children).forEach(tr => tr.classList.remove("seleccionada"));
                 fila.classList.add("seleccionada");
             }
         });
 
-// Botones de control
-const btnAddRow = document.getElementById('btn-add-row');
-const btnRemoveRow = document.getElementById('btn-remove-row');
-const btnAddCol = document.getElementById('btn-add-col');
-const btnRemoveCol = document.getElementById('btn-remove-col');
-const btnLimpiar = document.getElementById("limpiar-tabla");
-
-// --- LÓGICA DE FILAS ---
-if (btnAddRow) btnAddRow.onclick = () => {
-    const newRowIndex = tableState.rowCount;
-    tableState.rowCount++;
-    const newRow = document.createElement('tr');
-    initializeRow(newRow, newRowIndex);
-    tbody.appendChild(newRow);
-    localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-};
-
-if (btnRemoveRow) btnRemoveRow.onclick = () => {
-    if (tableState.rowCount > 0) {
-        const lastRowIndex = tableState.rowCount - 1;
-        for (let i = 0; i < tableState.columnCount; i++) {
-            delete tableState.texts[`r${lastRowIndex}-c${i}`];
-            delete tableState.colors[`r${lastRowIndex}-c${i}`];
-        }
-        localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
-        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+        const btnAddRow = document.getElementById('btn-add-row');
+        const btnRemoveRow = document.getElementById('btn-remove-row');
+        const btnAddCol = document.getElementById('btn-add-col');
+        const btnRemoveCol = document.getElementById('btn-remove-col');
+        const btnLimpiar = document.getElementById("limpiar-tabla");
         
-        tbody.deleteRow(-1);
-        tableState.rowCount--;
-        localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-    }
-};
+        if (btnAddRow) btnAddRow.onclick = () => {
+            tableState.rowCount++;
+            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
+            const newRow = tbody.insertRow();
+            initializeRow(newRow, tableState.rowCount - 1);
+        };
 
-// --- LÓGICA DE COLUMNAS (¡NUEVO!) ---
-if (btnAddCol) {
-    btnAddCol.onclick = () => {
-        const newTurnName = prompt("Introduce el nombre para la nueva columna de turno (ej: T3):", `T${tableState.turnColumns.length + 1}`);
-        if (!newTurnName || newTurnName.trim() === '') return;
+        if (btnRemoveRow) btnRemoveRow.onclick = () => {
+            if (tableState.rowCount > 0 && tbody.rows.length > 0) {
+                const lastRowIndex = tableState.rowCount - 1;
+                for (let i = 0; i < tableState.columnCount; i++) {
+                    delete tableState.texts[`r${lastRowIndex}-c${i}`];
+                    delete tableState.colors[`r${lastRowIndex}-c${i}`];
+                }
+                localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
+                localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+                
+                tbody.deleteRow(-1);
+                tableState.rowCount--;
+                localStorage.setItem(KEYS.ROWS, tableState.rowCount);
+            }
+        };
 
-        const newColId = `th-custom-${Date.now()}`;
-        tableState.turnColumns.push({ id: newColId, header: newTurnName.trim() });
-        localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-        
-        fullRender(); // Forzar un renderizado completo de la tabla
-    };
-}
-
-if (btnRemoveCol) {
-    btnRemoveCol.onclick = () => {
-        if (tableState.turnColumns.length > 0) {
-            if (!confirm("¿Seguro que quieres eliminar la última columna de turno? Esta acción no se puede deshacer.")) return;
+        if (btnAddCol) btnAddCol.onclick = () => {
+            const newTurnName = prompt("Introduce el nombre para la nueva columna:", `T${tableState.turnColumns.length + 1}`);
+            if (!newTurnName || newTurnName.trim() === '') return;
             
-            tableState.turnColumns.pop();
+            const newColId = `th-custom-${Date.now()}`;
+            tableState.turnColumns.push({ id: newColId, header: newTurnName.trim() });
             localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
+            
+            fullTableRedraw();
+        };
 
-            fullRender(); // Forzar un renderizado completo de la tabla
-        } else {
-            alert("No hay columnas de turno para eliminar.");
+        if (btnRemoveCol) btnRemoveCol.onclick = () => {
+            if (tableState.turnColumns.length > 0) {
+                if (!confirm("¿Seguro que quieres eliminar la última columna de turno?")) return;
+                
+                tableState.turnColumns.pop();
+                localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
+
+                fullTableRedraw();
+            } else {
+                alert("No hay columnas de turno que eliminar.");
+            }
+        };
+        
+        if (btnLimpiar) {
+            const newBtn = btnLimpiar.cloneNode(true);
+            btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+            newBtn.addEventListener("click", () => {
+                if (confirm("¿Seguro que quieres borrar todos los textos y colores de la tabla?")) {
+                    tableState.texts = {};
+                    tableState.colors = {};
+                    localStorage.removeItem(KEYS.TEXT);
+                    localStorage.removeItem(KEYS.COLORS);
+                    renderBody();
+                }
+            });
         }
-    };
-}
-
-// --- LÓGICA DE LIMPIEZA ---
-if (btnLimpiar) {
-    const newBtn = btnLimpiar.cloneNode(true);
-    btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-    newBtn.addEventListener("click", () => {
-        if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? No se eliminarán filas/columnas.")) {
-            tableState.texts = {};
-            tableState.colors = {};
-            localStorage.removeItem(KEYS.TEXT);
-            localStorage.removeItem(KEYS.COLORS);
-            renderBody();
-        }
-    });
-}
-
-    // 4. LLAMADA INICIAL
-    function fullRender() {
-        syncStateFromStorage();
-        renderHeaders();
-        renderBody();
-        bindEvents();
     }
-    
-    fullRender();
+
+    // 4. INICIALIZACIÓN
+    fullTableRedraw();
+    bindEvents();      
 }
 
 // ============================================================
