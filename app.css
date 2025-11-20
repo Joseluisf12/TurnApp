@@ -748,13 +748,13 @@ body {
 }
 /* 2. RE-PROPORCIONADO DE COLUMNAS PARA MÁS ESPACIO EN TURNOS */
 #tabla-coordinador colgroup col:nth-child(1)  { width: 6%;  }  /* Nº */
-#tabla-coordinador colgroup col:nth-child(2)  { width: 11%; }  /* NOMBRE (reducido) */
+#tabla-coordinador colgroup col:nth-child(2)  { width: 10%; }  /* NOMBRE (reducido) */
 #tabla-coordinador colgroup col:nth-child(3),
 #tabla-coordinador colgroup col:nth-child(4),
 #tabla-coordinador colgroup col:nth-child(5),
 #tabla-coordinador colgroup col:nth-child(6),
 #tabla-coordinador colgroup col:nth-child(7) { width: 4.5%; } /* TURNOS (aumentado) */
-#tabla-coordinador colgroup col:nth-child(8)  { width: 17%; } /* OBSERVACIONES (reducido) */
+#tabla-coordinador colgroup col:nth-child(8)  { width: 18%; } /* OBSERVACIONES (reducido) */
 
 /* Estilo general para celdas y cabeceras */
 #tabla-coordinador th,
@@ -1038,8 +1038,8 @@ body {
 /* 1. Ajusta el tamaño y PONE EN NEGRITA el texto */
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
-    font-size: 10px;
-    line-height: 1.4;
+    font-size: 10.5px;
+    line-height: 1.5;
     font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
 }
 
