@@ -41,8 +41,7 @@ function initThemeSwitcher() {
 }
 
 // =========================================================================
-// [V.3.0 - DINÁMICA] GESTOR DE TABLA DEL COORDINADOR
-// Permite añadir y eliminar filas de forma persistente.
+// PEGADO COMPLETO PARA REEMPLAZAR initCoordinatorTable (LÍNEAS 48-225)
 // =========================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -53,12 +52,11 @@ function initCoordinatorTable() {
     const TEXT_KEY = "tablaCoordinadorTextos";
     const COLOR_KEY = "tablaCoordinadorColores";
     const ROW_COUNT_KEY = "tablaCoordinadorFilas";
-    const DEFAULT_ROWS = 18; // El número de filas si no hay nada guardado
-    const COL_COUNT = 8; // Número fijo de columnas
-
+    const DEFAULT_ROWS = 18;
+    const COL_COUNT = 8;
     const turnoColumnIndices = [2, 3, 4, 5, 6];
 
-    // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA (AÑADIR EDITORES, HANDLES, ETC.)
+    // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA
     function initializeRow(row, rowIndex) {
         const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");
         const savedColors = JSON.parse(localStorage.getItem(COLOR_KEY) || "{}");
@@ -76,7 +74,6 @@ function initCoordinatorTable() {
             textEditor.style.padding = '6px 5px';
             textEditor.style.width = '100%';
             textEditor.style.boxSizing = 'border-box';
-            
             textEditor.contentEditable = true;
 
             if (isTurnoCell) {
@@ -89,6 +86,7 @@ function initCoordinatorTable() {
             cell.appendChild(textEditor);
 
             if (isTurnoCell) {
+                // Aplicar color guardado si existe, de lo contrario es transparente
                 if (savedColors[cellId]) {
                     cell.style.backgroundColor = savedColors[cellId];
                 }
@@ -114,31 +112,31 @@ function initCoordinatorTable() {
                 handle.addEventListener('mouseenter', () => { handle.style.opacity = '0.9'; });
                 handle.addEventListener('mouseleave', () => { handle.style.opacity = '0.5'; });
 
-               // REEMPLAZA EL BLOQUE handle.addEventListener (Líneas 125-134) POR ESTE:
-handle.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    openColorPicker(handle, (color) => {
-        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
-
-        if (color === 'initial') {
-            // Si la señal es 'initial', restauramos el color
-            cell.style.backgroundColor = '';
-            delete currentColors[cellId]; // Eliminamos la clave del objeto
-        } else {
-            // Si es un color normal, lo aplicamos
-            cell.style.backgroundColor = color;
-            currentColors[cellId] = color; // Guardamos el color
+                // LÓGICA DE COLOR CORREGIDA Y ACTUALIZADA
+                handle.addEventListener('click', (ev) => {
+                    ev.stopPropagation();
+                    openColorPicker(handle, (color) => {
+                        const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
+                        if (color === 'initial') {
+                            cell.style.backgroundColor = ''; // Restaura el color
+                            delete currentColors[cellId];     // Elimina el dato guardado
+                        } else {
+                            cell.style.backgroundColor = color; // Aplica el color
+                            currentColors[cellId] = color;      // Guarda el color
+                        }
+                        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
+                    });
+                });
+                cell.appendChild(handle);
+            }
+            row.appendChild(cell);
         }
-
-        localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
-    });
-});
+    }
 
     // 3. FUNCIÓN PARA CARGAR Y CONSTRUIR LA TABLA
     function renderTable() {
-        tbody.innerHTML = ''; // Limpiamos la tabla antes de reconstruir
+        tbody.innerHTML = '';
         const rowCount = parseInt(localStorage.getItem(ROW_COUNT_KEY) || DEFAULT_ROWS, 10);
-        
         for (let i = 0; i < rowCount; i++) {
             const row = document.createElement('tr');
             initializeRow(row, i);
@@ -156,7 +154,6 @@ handle.addEventListener('click', (ev) => {
             const newRow = document.createElement('tr');
             initializeRow(newRow, newRowIndex);
             tbody.appendChild(newRow);
-
             localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
         });
     }
@@ -165,7 +162,6 @@ handle.addEventListener('click', (ev) => {
         btnRemoveRow.addEventListener('click', () => {
             if (tbody.rows.length > 0) {
                 const lastRowIndex = tbody.rows.length - 1;
-                
                 const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
                 const currentColors = JSON.parse(localStorage.getItem(COLOR_KEY) || '{}');
                 for (let i = 0; i < COL_COUNT; i++) {
@@ -174,7 +170,6 @@ handle.addEventListener('click', (ev) => {
                 }
                 localStorage.setItem(TEXT_KEY, JSON.stringify(currentTexts));
                 localStorage.setItem(COLOR_KEY, JSON.stringify(currentColors));
-
                 tbody.deleteRow(-1);
                 localStorage.setItem(ROW_COUNT_KEY, tbody.rows.length);
             }
@@ -185,13 +180,10 @@ handle.addEventListener('click', (ev) => {
     tabla.addEventListener("input", (e) => {
         const textEditor = e.target;
         if (!textEditor.classList.contains('text-editor')) return;
-        
         const cell = textEditor.parentElement;
         const row = cell.parentElement;
-
         const rowIndex = Array.from(row.parentElement.children).indexOf(row);
         const cellIndex = cell.cellIndex;
-
         const cellId = `r${rowIndex}-c${cellIndex}`;
         const currentTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || '{}');
         currentTexts[cellId] = textEditor.innerText;
@@ -210,7 +202,6 @@ handle.addEventListener('click', (ev) => {
     if (btnLimpiar) {
         const newBtn = btnLimpiar.cloneNode(true);
         btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-        
         newBtn.addEventListener("click", function () {
             if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? Esto NO eliminará las filas añadidas.")) {
                 tabla.querySelectorAll("tbody td .text-editor").forEach(editor => {
@@ -687,30 +678,31 @@ function bindLicenciaHandles(){
   }));
 }
 
-// FUNCIÓN openColorPicker:
+// =========================================================================
+// PEGADO COMPLETO PARA REEMPLAZAR openColorPicker (LÍNEAS 683-725)
+// =========================================================================
 function openColorPicker(anchorEl, onSelect, palette = colorPalette){
   const existing = document.getElementById('color-picker-popup');
   if(existing) existing.remove();
 
   const popup = document.createElement('div');
   popup.id = 'color-picker-popup';
-  // ... (estilos del popup, se mantienen igual)
   popup.style.position = 'absolute';
   popup.style.display = 'flex';
   popup.style.flexWrap = 'wrap';
-  popup.style.background = 'var(--panel-bg)'; // Usar variable CSS
-  popup.style.border = '1px solid var(--border-color)'; // Usar variable CSS
+  popup.style.background = 'var(--panel-bg)'; // Adaptado a tema
+  popup.style.border = '1px solid var(--border-color)'; // Adaptado a tema
   popup.style.padding = '6px';
   popup.style.borderRadius = '6px';
   popup.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
   popup.style.zIndex = 10000;
-  popup.style.width = '150px'; // Un ancho fijo para que quepan los botones
+  popup.style.width = '150px'; // Ancho fijo para que quepan bien
 
-  // 1. Añadir las muestras de color
+  // Añade las muestras de color
   palette.forEach(color => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'palette-swatch'; // Usamos la clase que creamos en el CSS
+    b.className = 'palette-swatch'; // Clase creada en CSS
     b.style.backgroundColor = color;
     b.addEventListener('click', (e)=> {
       e.stopPropagation();
@@ -719,20 +711,19 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
     });
     popup.appendChild(b);
   });
-
-  // 2. AÑADIR EL BOTÓN DE RESTAURAR
+  
+  // Añade el botón de restaurar
   const resetButton = document.createElement('button');
   resetButton.type = 'button';
-  resetButton.className = 'palette-swatch reset-btn'; // Usamos las clases del CSS
+  resetButton.className = 'palette-swatch reset-btn'; // Clase creada en CSS
   resetButton.innerHTML = '🔄';
   resetButton.title = 'Restaurar color original';
   resetButton.addEventListener('click', (e) => {
       e.stopPropagation();
-      onSelect('initial'); // Enviamos una señal especial: 'initial'
+      onSelect('initial'); // Envía la señal 'initial'
       popup.remove();
   });
   popup.appendChild(resetButton);
-
 
   document.body.appendChild(popup);
 
