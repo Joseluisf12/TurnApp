@@ -420,7 +420,7 @@ body {
   background: transparent;
   border: none;
   border-radius: 50%;
-  opacity: 0.35;
+  opacity: 0.15;
   cursor: pointer;
   z-index: 10;             /* por encima de la celda*/
   padding: 0;
