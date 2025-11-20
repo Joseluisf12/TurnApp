@@ -40,9 +40,9 @@ function initThemeSwitcher() {
     applyTheme(savedTheme);
 }
 
-// =========================================================================
-// PEGADO COMPLETO PARA REEMPLAZAR initCoordinatorTable (LÍNEAS 48-225)
-// =========================================================================
+// ====================================================
+// PEGADO COMPLETO PARA REEMPLAZAR initCoordinatorTable
+// ====================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
@@ -220,50 +220,82 @@ function initCoordinatorTable() {
             }
         });
 
-        // Botones de control
-        const btnAddRow = document.getElementById('btn-add-row');
-        const btnRemoveRow = document.getElementById('btn-remove-row');
-        const btnLimpiar = document.getElementById("limpiar-tabla");
-        
-        if (btnAddRow) btnAddRow.onclick = () => {
-            const newRowIndex = tableState.rowCount;
-            tableState.rowCount++;
-            const newRow = document.createElement('tr');
-            initializeRow(newRow, newRowIndex);
-            tbody.appendChild(newRow);
-            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-        };
+// Botones de control
+const btnAddRow = document.getElementById('btn-add-row');
+const btnRemoveRow = document.getElementById('btn-remove-row');
+const btnAddCol = document.getElementById('btn-add-col');
+const btnRemoveCol = document.getElementById('btn-remove-col');
+const btnLimpiar = document.getElementById("limpiar-tabla");
 
-        if (btnRemoveRow) btnRemoveRow.onclick = () => {
-            if (tableState.rowCount > 0) {
-                const lastRowIndex = tableState.rowCount - 1;
-                for (let i = 0; i < tableState.columnCount; i++) {
-                    delete tableState.texts[`r${lastRowIndex}-c${i}`];
-                    delete tableState.colors[`r${lastRowIndex}-c${i}`];
-                }
-                localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
-                localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                
-                tbody.deleteRow(-1);
-                tableState.rowCount--;
-                localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-            }
-        };
+// --- LÓGICA DE FILAS ---
+if (btnAddRow) btnAddRow.onclick = () => {
+    const newRowIndex = tableState.rowCount;
+    tableState.rowCount++;
+    const newRow = document.createElement('tr');
+    initializeRow(newRow, newRowIndex);
+    tbody.appendChild(newRow);
+    localStorage.setItem(KEYS.ROWS, tableState.rowCount);
+};
 
-        if (btnLimpiar) {
-            const newBtn = btnLimpiar.cloneNode(true);
-            btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-            newBtn.addEventListener("click", () => {
-                if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? No se eliminarán filas/columnas.")) {
-                    tableState.texts = {};
-                    tableState.colors = {};
-                    localStorage.removeItem(KEYS.TEXT);
-localStorage.removeItem(KEYS.COLORS);
-                    renderBody();
-                }
-            });
+if (btnRemoveRow) btnRemoveRow.onclick = () => {
+    if (tableState.rowCount > 0) {
+        const lastRowIndex = tableState.rowCount - 1;
+        for (let i = 0; i < tableState.columnCount; i++) {
+            delete tableState.texts[`r${lastRowIndex}-c${i}`];
+            delete tableState.colors[`r${lastRowIndex}-c${i}`];
         }
+        localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
+        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+        
+        tbody.deleteRow(-1);
+        tableState.rowCount--;
+        localStorage.setItem(KEYS.ROWS, tableState.rowCount);
     }
+};
+
+// --- LÓGICA DE COLUMNAS (¡NUEVO!) ---
+if (btnAddCol) {
+    btnAddCol.onclick = () => {
+        const newTurnName = prompt("Introduce el nombre para la nueva columna de turno (ej: T3):", `T${tableState.turnColumns.length + 1}`);
+        if (!newTurnName || newTurnName.trim() === '') return;
+
+        const newColId = `th-custom-${Date.now()}`;
+        tableState.turnColumns.push({ id: newColId, header: newTurnName.trim() });
+        localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
+        
+        fullRender(); // Forzar un renderizado completo de la tabla
+    };
+}
+
+if (btnRemoveCol) {
+    btnRemoveCol.onclick = () => {
+        if (tableState.turnColumns.length > 0) {
+            if (!confirm("¿Seguro que quieres eliminar la última columna de turno? Esta acción no se puede deshacer.")) return;
+            
+            tableState.turnColumns.pop();
+            localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
+
+            fullRender(); // Forzar un renderizado completo de la tabla
+        } else {
+            alert("No hay columnas de turno para eliminar.");
+        }
+    };
+}
+
+// --- LÓGICA DE LIMPIEZA ---
+if (btnLimpiar) {
+    const newBtn = btnLimpiar.cloneNode(true);
+    btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+    newBtn.addEventListener("click", () => {
+        if (confirm("¿Seguro que quieres borrar todos los datos y colores de la tabla? No se eliminarán filas/columnas.")) {
+            tableState.texts = {};
+            tableState.colors = {};
+            localStorage.removeItem(KEYS.TEXT);
+            localStorage.removeItem(KEYS.COLORS);
+            renderBody();
+        }
+    });
+}
 
     // 4. LLAMADA INICIAL
     function fullRender() {
