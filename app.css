@@ -985,8 +985,7 @@ body {
 
 /* --- ESTILOS DE BOTÓN MODERNOS --- */
 
-/* Estilo base para los botones */
-/* Botones modernos (ahora usan variables) */
+/* Estilo base para los botones de la tabla del coordinador y otros */
 .modern-btn {
     padding: 8px 14px;
     border: none;
@@ -995,39 +994,33 @@ body {
     cursor: pointer;
     font-size: 0.9em;
     font-weight: 500;
-    transition: background-color 0.2s;
-    background-color: #6c757d; /* Color gris por defecto si no se especifica otro */
+    transition: background-color 0.2s, transform 0.1s;
+    background-color: #6c757d; /* Gris por defecto */
 }
 
-/* Colores específicos que sobreescriben el gris */
-.modern-btn.green { background-color: var(--green-color); }
-.modern-btn.green:hover { background-color: var(--green-color-dark); }
-.modern-btn.red { background-color: var(--red-color); }
-.modern-btn.red:hover { background-color: var(--red-color-dark); }
+.modern-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /* Color Verde (para acciones positivas como añadir filas/columnas) */
-#btn-add-row.modern-btn,
-#btn-add-col.modern-btn {
-  background-color: var(--green-color);
-  color: white;
+#btn-add-row,
+#btn-add-col {
+    background-color: var(--green-color);
 }
-
-#btn-add-row.modern-btn:hover,
-#btn-add-col.modern-btn:hover {
-  background-color: var(--green-color-dark);
+#btn-add-row:hover,
+#btn-add-col:hover {
+    background-color: var(--green-color-dark);
 }
 
 /* Color Rojo (para acciones de peligro como eliminar filas/columnas) */
-#btn-remove-row.modern-btn,
-#btn-remove-col.modern-btn {
-  background-color: var(--red-color);
-  color: white;
+#btn-remove-row,
+#btn-remove-col {
+    background-color: var(--red-color);
 }
-
-#btn-remove-row.modern-btn:hover,
-#btn-remove-col.modern-btn:hover {
-  background-color: var(--red-color-dark);
+#btn-remove-row:hover,
+#btn-remove-col:hover {
+    background-color: var(--red-color-dark);
 }
 
 /* ======================================= */
