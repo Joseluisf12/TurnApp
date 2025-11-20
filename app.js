@@ -87,6 +87,36 @@ function initCoordinatorTable() {
     }
 
     // 2. FUNCIONES DE RENDERIZADO DEL DOM
+    function renderColgroup() {
+        let colgroup = tabla.querySelector('colgroup');
+        if (!colgroup) {
+            colgroup = document.createElement('colgroup');
+            tabla.insertBefore(colgroup, thead);
+        }
+        colgroup.innerHTML = '';
+
+        // Definimos los anchos fijos para las columnas externas
+        const firstColWidth = 5;  // Ancho para la columna "Nº"
+        const secondColWidth = 15; // Ancho para la columna "NOMBRE"
+        const lastColWidth = 30;   // Ancho para la columna "OBSERVACIONES"
+
+        // Calculamos el espacio restante para las columnas de turno
+        const totalTurnWidth = 100 - firstColWidth - secondColWidth - lastColWidth; // (50% en este caso)
+        const numTurnCols = tableState.turnColumns.length;
+        const individualTurnWidth = numTurnCols > 0 ? totalTurnWidth / numTurnCols : 0;
+
+        // Generamos las etiquetas <col> con los anchos calculados
+        let colgroupHTML = `<col style="width: ${firstColWidth}%;">`;
+        colgroupHTML += `<col style="width: ${secondColWidth}%;">`;
+
+        for (let i = 0; i < numTurnCols; i++) {
+            colgroupHTML += `<col style="width: ${individualTurnWidth}%;">`;
+        }
+
+        colgroupHTML += `<col style="width: ${lastColWidth}%;">`;
+        colgroup.innerHTML = colgroupHTML;
+    }
+
     function renderHeaders() {
         if (!thead) return;
         thead.innerHTML = '';
@@ -177,6 +207,7 @@ function initCoordinatorTable() {
     
     function fullTableRedraw() {
         syncStateFromStorage();
+        renderColgroup(); // ¡NUEVA LLAMADA!
         renderHeaders();
         renderBody();
     }
