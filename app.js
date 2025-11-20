@@ -83,43 +83,49 @@ function initCoordinatorTable() {
     }
 
     // 2. FUNCIONES DE RENDERIZADO DEL DOM
-    function renderHeaders() {
-        if (!thead) return;
-        
-        const row1 = thead.rows[0];
-        const row2 = thead.rows[1];
-        if(!row1 || !row2) return;
+   function renderHeaders() {
+    if (!thead) return;
+    
+    // Limpiar TODO el thead para evitar duplicados.
+    thead.innerHTML = '';
 
-        // Limpiar cabeceras existentes para reconstruirlas
-        row1.innerHTML = '';
-        row2.innerHTML = '';
+    // Crear las filas desde cero de forma segura.
+    const row1 = thead.insertRow();
+    const row2 = thead.insertRow();
 
-        // Fila 1: Títulos superiores
-        row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
-        const thCiclo = document.createElement('th');
-        thCiclo.id = "th-ciclo";
-        thCiclo.colSpan = tableState.turnColumns.length;
-        thCiclo.contentEditable = true;
-        thCiclo.className = "titulo-ciclo";
-        thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
-        row1.appendChild(thCiclo);
-        row1.innerHTML += '<th colspan="1">OBSERVACIONES</th>';
+    // --- Construcción de la Fila 1 (Títulos superiores) ---
+    row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
+    
+    const thCiclo = document.createElement('th');
+    thCiclo.id = "th-ciclo";
+    thCiclo.colSpan = tableState.turnColumns.length;
+    thCiclo.contentEditable = true;
+    thCiclo.className = "titulo-ciclo";
+    thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
+    row1.appendChild(thCiclo);
+    
+    const thObservaciones = document.createElement('th');
+    thObservaciones.colSpan = 1;
+    thObservaciones.innerText = 'OBSERVACIONES';
+    row1.appendChild(thObservaciones);
 
-        // Fila 2: Títulos de columna individuales
-        row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
-        tableState.turnColumns.forEach(col => {
-            const th = document.createElement('th');
-            th.id = col.id;
-            th.contentEditable = true;
-            th.innerText = tableState.headers[col.id] || col.header;
-            row2.appendChild(th);
-        });
-        const thCocina = document.createElement('th');
-        thCocina.id = 'th-cocina';
-        thCocina.contentEditable = true;
-        thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
-        row2.appendChild(thCocina);
-    }
+    // --- Construcción de la Fila 2 (Cabeceras de columna) ---
+    row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
+    
+    tableState.turnColumns.forEach(col => {
+        const th = document.createElement('th');
+        th.id = col.id;
+        th.contentEditable = true;
+        th.innerText = tableState.headers[col.id] || col.header;
+        row2.appendChild(th);
+    });
+    
+    const thCocina = document.createElement('th');
+    thCocina.id = 'th-cocina';
+    thCocina.contentEditable = true;
+    thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
+    row2.appendChild(thCocina);
+}
     
     function initializeRow(row, rowIndex) {
         row.innerHTML = ''; // Limpiar la fila antes de llenarla

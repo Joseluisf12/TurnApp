@@ -1039,7 +1039,7 @@ body {
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
     font-size: 10px;
-    line-height: 0.8;
+    line-height: 1.4;
     font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
 }
 
