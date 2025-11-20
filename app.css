@@ -407,10 +407,10 @@ body {
 /* REEMPLAZA únicamente la regla .color-handle por esto */
 .color-handle {
   position: absolute;
-  top: -8px;               /* <-- mover hacia arriba (antes bottom: 2px) */
+  top: -8px;
   left: 50%;
-  transform: translate(-50%); /* centrar horizontal y desplazar ligeramente arriba */
-  height: 16px;           /* punto más fácil de tocar (aumentado un poco) */
+  transform: translate(-50%);
+  height: 16px;
   width: 16px;
   font-size: 12px;
   line-height: 16px;
@@ -420,10 +420,11 @@ body {
   background: transparent;
   border: none;
   border-radius: 50%;
-  opacity: 0.15;
+  opacity: 0.2; /* <-- CAMBIO: Handle más translúcido */
   cursor: pointer;
-  z-index: 10;             /* por encima de la celda*/
+  z-index: 10;
   padding: 0;
+  transition: opacity 0.2s; /* Pequeña transición para el hover */
 }
 
 /* hover: hacerlo más visible sin cambiar el resto */
@@ -1023,7 +1024,7 @@ body {
 #tabla-coordinador .text-editor {
     font-size: 10.5px;
     line-height: 1.4;
-    font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
+    font-weight: bold; /* <-- 1. TEXTO EN NEGRITA */
 }
 
 /* 2. Hace que el color del texto responda al tema (claro/oscuro) */
