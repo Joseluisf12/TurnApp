@@ -751,7 +751,7 @@ body {
 #tabla-coordinador th,
 #tabla-coordinador td {
   border: 1px solid var(--panel-border);
-  padding: 5px 2px; /* Reducimos padding lateral en celdas para ganar espacio */
+  padding: 2px 3px; /* Reducimos padding lateral en celdas para ganar espacio */
   text-align: center;
   vertical-align: middle;
   transition: background-color 0.3s, border-color 0.3s, color 0.3s;
@@ -1022,7 +1022,7 @@ body {
 #tabla-coordinador th, 
 #tabla-coordinador .text-editor {
     font-size: 10.5px;
-    line-height: 1.6;
+    line-height: 1.4;
     font-weight: 500; /* <-- 1. TEXTO EN SEMI-NEGRITA */
 }
 

@@ -152,49 +152,55 @@ function initCoordinatorTable() {
     }
     
     function initializeRow(row, rowIndex) {
-        row.innerHTML = '';
-        for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
-            const cell = document.createElement('td');
-            const cellId = `r${rowIndex}-c${cellIndex}`;
-            const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
-            
-            cell.style.position = 'relative';
-            const textEditor = document.createElement('div');
-            textEditor.className = 'text-editor';
-            textEditor.contentEditable = true;
-            textEditor.innerText = tableState.texts[cellId] || '';
-            cell.appendChild(textEditor);
+    row.innerHTML = '';
+    for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
+        const cell = document.createElement('td');
+        const cellId = `r${rowIndex}-c${cellIndex}`;
+        const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
+        
+        cell.style.position = 'relative';
+        const textEditor = document.createElement('div');
+        textEditor.className = 'text-editor';
+        textEditor.contentEditable = true;
+        textEditor.innerText = tableState.texts[cellId] || '';
+        cell.appendChild(textEditor);
 
-            if (isTurnoCell) {
-                textEditor.style.paddingBottom = '16px';
-                if (tableState.colors[cellId]) {
-                    cell.style.backgroundColor = tableState.colors[cellId];
-                }
-                const handle = document.createElement('button');
-                handle.type = 'button';
-                handle.title = 'Elegir color';
-                handle.innerHTML = '&#9679;';
-                handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.5; z-index:10;';
-                handle.onmouseenter = () => handle.style.opacity = '0.9';
-                handle.onmouseleave = () => handle.style.opacity = '0.5';
-                handle.onclick = (ev) => {
-                    ev.stopPropagation();
-                    openColorPicker(handle, (color) => {
-                        if (color === 'initial') {
-                            cell.style.backgroundColor = '';
-                            delete tableState.colors[cellId];
-                        } else {
-                            cell.style.backgroundColor = color;
-                            tableState.colors[cellId] = color;
-                        }
-                        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                    });
-                };
-                cell.appendChild(handle);
+        if (isTurnoCell) {
+            textEditor.style.paddingBottom = '16px';
+            if (tableState.colors[cellId]) {
+                cell.style.backgroundColor = tableState.colors[cellId];
             }
-            row.appendChild(cell);
+            const handle = document.createElement('button');
+            handle.type = 'button';
+            handle.title = 'Elegir color';
+            handle.innerHTML = '&#9679;';
+            
+            // --- CAMBIOS CLAVE AQUÍ ---
+            // Opacidad base reducida de 0.5 a 0.1 para que sea casi imperceptible.
+            handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
+            // Al pasar el ratón, se hace más visible (pero no tanto como antes).
+            handle.onmouseenter = () => handle.style.opacity = '0.6';
+            // Al quitar el ratón, vuelve a ser casi imperceptible.
+            handle.onmouseleave = () => handle.style.opacity = '0.1';
+
+            handle.onclick = (ev) => {
+                ev.stopPropagation();
+                openColorPicker(handle, (color) => {
+                    if (color === 'initial') {
+                        cell.style.backgroundColor = '';
+                        delete tableState.colors[cellId];
+                    } else {
+                        cell.style.backgroundColor = color;
+                        tableState.colors[cellId] = color;
+                    }
+                    localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+                });
+            };
+            cell.appendChild(handle);
         }
+        row.appendChild(cell);
     }
+}
 
     function renderBody() {
         if (!tbody) return;
