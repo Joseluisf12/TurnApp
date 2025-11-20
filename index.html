@@ -83,11 +83,11 @@
         <thead>
           <tr>
             <th colspan="2">FUNCIONARIO/A</th>
-            <th colspan="5" contenteditable="true" class="titulo-ciclo">CICLO</th>
+            <th colspan="5" contenteditable="true" class="titulo-ciclo" id="th-ciclo">CICLO</th>
             <th colspan="true">OBSERVACIONES</th>
           </tr>
           <tr>
-            <th>Nº</th><th>NOMBRE</th><th>M¹</th><th>T¹</th><th>M²</th><th>T²</th><th>N</th><th contenteditable="true">COCINA</th>
+            <tr><th>Nº</th><th>NOMBRE</th><th id="th-m1" contenteditable="true">M¹</th><th id="th-t1" contenteditable="true">T¹</th><th id="th-m2" contenteditable="true">M²</th><th id="th-t2" contenteditable="true">T²</th><th id="th-n" contenteditable="true">N</th><th id="th-cocina" contenteditable="true">COCINA</th></tr>
           </tr>
         </thead>
         <tbody>
@@ -115,9 +115,12 @@
 
       <!-- CONTROLES PARA AÑADIR/QUITAR FILAS -->
       <div id="tabla-coordinador-controles" style="text-align: right; margin-top: 10px; margin-bottom: 15px;">
-        <button id="btn-add-row" class="modern-btn green">(+) Fila</button>
-        <button id="btn-remove-row" class="modern-btn red">(-) Fila</button>
-    </div>
+  <button id="btn-add-row" class="modern-btn green">(+) Fila</button>
+  <button id="btn-remove-row" class="modern-btn red">(-) Fila</button>
+  <span style="margin-left: 15px;"></span> <!-- Separador visual -->
+  <button id="btn-add-col" class="modern-btn" title="Añadir columna de turno">(+) Col</button>
+  <button id="btn-remove-col" class="modern-btn red" title="Eliminar última columna de turno">(-) Col</button>
+</div>
    </section>
 
 <!-- ========= PANEL 3: TABLÓN DE ANUNCIOS ========= -->

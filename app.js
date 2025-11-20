@@ -56,6 +56,37 @@ function initCoordinatorTable() {
     const COL_COUNT = 8;
     const turnoColumnIndices = [2, 3, 4, 5, 6];
 
+// [NUEVO] CLAVES PARA PERSISTENCIA DE CABECERAS
+const HEADER_TEXT_KEY = "tablaCoordinadorHeaders";
+const DEFAULT_HEADERS = {
+    "th-ciclo": "CICLO", "th-m1": "M¹", "th-t1": "T¹", "th-m2": "M²",
+    "th-t2": "T²", "th-n": "N", "th-cocina": "COCINA"
+};
+
+// [NUEVO] FUNCIÓN PARA CARGAR Y GUARDAR CABECERAS EDITABLES
+function loadAndBindHeaders() {
+    const savedHeaders = JSON.parse(localStorage.getItem(HEADER_TEXT_KEY) || "{}");
+    const headers = { ...DEFAULT_HEADERS, ...savedHeaders };
+
+    Object.keys(headers).forEach(id => {
+        const th = document.getElementById(id);
+        if (th) {
+            th.innerText = headers[id];
+            th.addEventListener('blur', () => {
+                const headersToSave = {};
+                tabla.querySelectorAll('thead th[contenteditable="true"]').forEach(headerEl => {
+                    if (headerEl.id) {
+                        headersToSave[headerEl.id] = headerEl.innerText;
+                    }
+                });
+                localStorage.setItem(HEADER_TEXT_KEY, JSON.stringify(headersToSave));
+            });
+        }
+    });
+}
+loadAndBindHeaders(); // Llamamos a la función para que se ejecute
+
+
     // 2. FUNCIÓN PARA "ACTIVAR" UNA FILA
     function initializeRow(row, rowIndex) {
         const savedTexts = JSON.parse(localStorage.getItem(TEXT_KEY) || "{}");

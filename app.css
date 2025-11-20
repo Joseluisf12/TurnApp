@@ -798,7 +798,7 @@ body {
   color: var(--text-color);
 }
 
-#tabla-coordinador td[contenteditable="true"]:focus {
+#tabla-coordinador td[contenteditable="true"]:focus, #tabla-coordinador th[contenteditable="true"]:focus {
   background-color: var(--table-focus-bg) !important;
   outline: 2px solid var(--button-primary-bg);
   color: var(--text-color);
