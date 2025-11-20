@@ -1007,31 +1007,27 @@ body {
 }
 
 /* Color Verde (para acciones positivas como añadir filas/columnas) */
-#btn-add-row,
-#btn-add-col {
+#btn-add-row.modern-btn,
+#btn-add-col.modern-btn {
   background-color: var(--green-color);
   color: white;
 }
 
-#btn-add-row:hover,
-#btn-add-col:hover {
+#btn-add-row.modern-btn:hover,
+#btn-add-col.modern-btn:hover {
   background-color: var(--green-color-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /* Color Rojo (para acciones de peligro como eliminar filas/columnas) */
-#btn-remove-row,
-#btn-remove-col {
+#btn-remove-row.modern-btn,
+#btn-remove-col.modern-btn {
   background-color: var(--red-color);
   color: white;
 }
 
-#btn-remove-row:hover,
-#btn-remove-col:hover {
+#btn-remove-row.modern-btn:hover,
+#btn-remove-col.modern-btn:hover {
   background-color: var(--red-color-dark);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
 }
 
 /* ======================================= */
