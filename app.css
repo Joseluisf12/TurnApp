@@ -1362,3 +1362,22 @@ body[data-theme='dark'] #total-restan {
         font-size: 0.9em;
     }
 }
+/* ============================================= */
+/*       ESTILO BOTÓN ELIMINAR EN TABLÓN         */
+/* ============================================= */
+
+/*
+ * Pone el botón "Eliminar" del panel Tablón en color rojo
+ * para que sea más intuitivo y visible.
+ */
+.tablon-item .delete-btn {
+    background-color: #d9534f; /* Un rojo estándar y visible */
+    border-color: #d43f3a;
+    color: #fff; /* Texto en blanco para un buen contraste */
+}
+
+/* Oscurece ligeramente el botón al pasar el ratón por encima */
+.tablon-item .delete-btn:hover {
+    background-color: #c9302c;
+    border-color: #ac2925;
+}
