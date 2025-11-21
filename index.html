@@ -48,21 +48,130 @@
         <div id="calendar"></div>
       </section>
 
-      <div id="licencias-container" class="licencias oculto" aria-hidden="true" style="margin-top:20px;">
-        <h3>Gestión de Permisos y Licencias</h3>
-        <div class="licencia-item" data-tipo="vacaciones"><label class="licencia-nombre">Vacaciones: V</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="compfest"><label class="licencia-nombre">Compensación de Festivos: CF</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="asuntos"><label class="licencia-nombre">Asuntos Propios: AP</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="delegacion"><label class="licencia-nombre">Delegación de Gobierno: DG</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="adicionales"><label class="licencia-nombre">Días Adicionales: DA</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="acumuladas"><label class="licencia-nombre">Jornadas Acumuladas: JA</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="otros"><label class="licencia-nombre">Otros: O</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="baja_medica"><label class="licencia-nombre">Baja Médica: BM</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="articulo_48"><label class="licencia-nombre">Artículo 48: AR</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <div class="licencia-item" data-tipo="deber_inexcusable"><label class="licencia-nombre">Deber Inexcusable: DI</label><input type="number" min="0" class="cantidad-input licencia-cantidad" value="0"><button type="button" class="licencia-color-handle licencia-color" title="Elegir color">●</button></div>
-        <hr>
-        <div class="licencia-total"><label class="licencia-nombre"><strong>Total:</strong></label><input type="text" id="total-licencias" readonly class="licencia-cantidad" value="0"></div>
-      </div>
+       
+<!-- ========================================================================= -->
+<!-- SECCIÓN DE CARGA DE DÍAS (LICENCIAS) - REEMPLAZAR POR COMPLETO ESTE BLOQUE -->
+<!-- ========================================================================= -->
+<div id="licencias-container" class="licencias oculto" aria-hidden="true" style="margin-top:20px;">
+    <h3>Gestión de Permisos y Licencias</h3>
+
+    <!-- CABECERA PARA LAS COLUMNAS DE DÍAS -->
+    <div class="licencia-header">
+        <div class="licencia-nombre-header">Tipo de Permiso</div>
+        <div class="licencia-valores-header">
+            <span>Carga</span>
+            <span>Consumidos</span>
+            <span>Restan</span>
+        </div>
+        <div class="licencia-color-header">Color</div>
+    </div>
+
+    <!-- LISTA DE ITEMS DE LICENCIA (MODIFICADOS) -->
+    <div class="licencia-item" data-tipo="vacaciones">
+        <div class="licencia-nombre">Vacaciones: V</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="compfest">
+        <div class="licencia-nombre">Compensación Festivos: CF</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="asuntos">
+        <div class="licencia-nombre">Asuntos Propios: AP</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="delegacion">
+        <div class="licencia-nombre">Delegación de Gobierno: DG</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="adicionales">
+        <div class="licencia-nombre">Días Adicionales: DA</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="acumuladas">
+        <div class="licencia-nombre">Jornadas Acumuladas: JA</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="otros">
+        <div class="licencia-nombre">Otros: O</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="baja_medica">
+        <div class="licencia-nombre">Baja Médica: BM</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="articulo_48">
+        <div class="licencia-nombre">Artículo 48: AR</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="deber_inexcusable">
+        <div class="licencia-nombre">Deber Inexcusable: DI</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    
+    <hr>
+
+    <!-- TOTALIZADOR CON 3 COLUMNAS -->
+    <div class="licencia-total">
+        <div class="licencia-nombre"><strong>Total:</strong></div>
+        <div class="licencia-valores">
+            <input type="number" id="total-carga" class="licencia-input" readonly>
+            <input type="number" id="total-consumidos" class="licencia-input" readonly>
+            <input type="number" id="total-restan" class="licencia-input" readonly>
+        </div>
+        <div class="licencia-color-placeholder"></div> <!-- Espacio para alinear -->
+    </div>
+</div>
+
     </section>
 
     <!-- ========= PANEL 2: PETICIONES (Cajón y Tabla) ========= -->

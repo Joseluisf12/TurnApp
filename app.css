@@ -420,7 +420,7 @@ body {
   background: transparent;
   border: none;
   border-radius: 50%;
-  opacity: 0.2; /* <-- CAMBIO: Handle más translúcido */
+  opacity: 0.1; /* <-- CAMBIO: Handle más translúcido */
   cursor: pointer;
   z-index: 10;
   padding: 0;
@@ -1200,3 +1200,114 @@ body {
 .image-modal-close:hover {
   color: #bbb;
 }
+
+/* ============================================= */
+/* REVISIÓN PANEL CARGA DÍAS (3 COLUMNAS)      */
+/* ============================================= */
+
+/* --- 1. Cabecera con Títulos --- */
+.licencia-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 10px 5px 10px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid var(--panel-border);
+    font-weight: bold;
+    font-size: 0.8em;
+    color: var(--text-color-light);
+}
+
+.licencia-nombre-header {
+    flex-basis: 45%;
+    text-align: left;
+}
+
+.licencia-valores-header {
+    flex-basis: 40%;
+    display: flex;
+    justify-content: space-around;
+}
+
+.licencia-color-header {
+    flex-basis: 15%;
+    text-align: center;
+}
+
+/* --- 2. Filas de Permisos (Items y Total) --- */
+.licencia-item,
+.licencia-total {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.licencia-item .licencia-nombre,
+.licencia-total .licencia-nombre {
+    flex: 1;
+    text-align: left;
+}
+
+/* Contenedor para los 3 inputs */
+.licencia-valores {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* Estilo para cada input de número */
+.licencia-input {
+    width: 40px; /* Ancho para 2 dígitos */
+    text-align: center;
+    border-radius: 6px;
+    border: 1px solid var(--panel-border);
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 0.9em;
+    padding: 4px 2px;
+}
+
+/* Estilo para los inputs de "Restan" y los totales */
+.licencia-input[readonly] {
+    background-color: var(--table-zebra-bg);
+    font-weight: bold;
+    color: var(--text-color-light);
+    pointer-events: none;
+}
+
+/* --- 3. Botón de Color y Placeholder --- */
+/* Handle de color casi imperceptible (como en la tabla del coordinador) */
+.licencia-color-handle {
+    opacity: 0.1;
+    transition: opacity 0.2s;
+    border-radius: 6px;
+    width: 26px;
+    height: 26px;
+    cursor: pointer;
+    border: 1px solid var(--panel-border);
+}
+
+.licencia-color-handle:hover {
+    opacity: 1;
+}
+
+/* Placeholder para alinear la fila de TOTAL */
+.licencia-color-placeholder {
+    width: 26px; /* Mismo ancho que el botón de color */
+    height: 26px;
+    margin-left: 10px;
+}
+
+/* --- 4. Limpieza de Estilos Antiguos --- */
+/* Quitamos márgenes que ya no son necesarios */
+.licencia-cantidad {
+    margin: 0;
+}
+
+/* Quitamos el elemento <label> que ya no usamos */
+.licencia-item > label.licencia-nombre {
+    display: none;
+}
+

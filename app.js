@@ -470,7 +470,7 @@ initApp();
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
 
     // conectar handles de licencia a la paleta unificada
-  bindLicenciaHandles();
+ initLicenciasPanel();
 
   // restaurar persistencia de manualEdits y cadenceSpec
   restoreManualEdits();
@@ -514,7 +514,11 @@ function isColorLight(hex){
 }
 function defaultTextFor(shiftKey){ return shiftKey; }
 
-// ---------------- persistencia manualEdits ----------------
+// =========================================================================
+// INICIO DEL NUEVO BLOQUE DE LÓGICA
+// =========================================================================
+
+// 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
 function restoreManualEdits(){
   try {
     const raw = localStorage.getItem('turnapp.manualEdits');
@@ -522,37 +526,115 @@ function restoreManualEdits(){
   } catch(e){
     manualEdits = {};
   }
-  // restaurar licencias values/colors UI
-  const licenciaItems = document.querySelectorAll('.licencia-item');
-  licenciaItems.forEach(item=>{
-    const tipo = item.dataset.tipo;
-    const input = item.querySelector('.cantidad-input');
-    const colorBtn = item.querySelector('.licencia-color');
-    if(!input || !colorBtn) return;
-    try {
-      const saved = JSON.parse(localStorage.getItem('turnapp.licencia.'+tipo));
-      if(saved){
-        if(typeof saved.value !== 'undefined') input.value = saved.value;
-        if(saved.color) colorBtn.style.backgroundColor = saved.color;
-      }
-    } catch(e){}
-  });
-  recalcLicenciasTotal();
 }
+
 function saveManualEdits(){
   try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
 }
-function saveLicenciaValue(tipo, value, color){
-  try { localStorage.setItem('turnapp.licencia.'+tipo, JSON.stringify({ value: value, color: color })); } catch(e){}
+
+// 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
+function initLicenciasPanel() {
+    const licenciasContainer = document.getElementById('licencias-container');
+    if (!licenciasContainer) {
+        console.error("Error: Contenedor de licencias no encontrado.");
+        return;
+    }
+
+    const items = licenciasContainer.querySelectorAll('.licencia-item');
+    const totalCargaEl = document.getElementById('total-carga');
+    const totalConsumidosEl = document.getElementById('total-consumidos');
+    const totalRestanEl = document.getElementById('total-restan');
+    const LICENCIAS_KEY = 'turnapp.licenciasData.v3'; // Clave actualizada
+
+    // Calcula y actualiza todos los valores derivados (restan, totales)
+    function updateCalculations() {
+        let totalCarga = 0;
+        let totalConsumidos = 0;
+
+        items.forEach(item => {
+            const cargaInput = item.querySelector('.carga');
+            const consumidosInput = item.querySelector('.consumidos');
+            const restanInput = item.querySelector('.restan');
+
+            const carga = parseInt(cargaInput.value, 10) || 0;
+            const consumidos = parseInt(consumidosInput.value, 10) || 0;
+            
+            if (restanInput) restanInput.value = carga - consumidos;
+            totalCarga += carga;
+            totalConsumidos += consumidos;
+        });
+
+        if (totalCargaEl) totalCargaEl.value = totalCarga;
+        if (totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
+        if (totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
+    }
+
+    // Guarda el estado actual en localStorage
+    function saveState() {
+        const state = {};
+        items.forEach(item => {
+            const tipo = item.dataset.tipo;
+            if (tipo) {
+                const carga = item.querySelector('.carga').value;
+                const consumidos = item.querySelector('.consumidos').value;
+                const color = item.querySelector('.licencia-color-handle').style.backgroundColor;
+                state[tipo] = { carga, consumidos, color };
+            }
+        });
+        localStorage.setItem(LICENCIAS_KEY, JSON.stringify(state));
+    }
+
+    // Carga el estado desde localStorage
+    function loadState() {
+        const savedState = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
+        items.forEach(item => {
+            const tipo = item.dataset.tipo;
+            if (tipo && savedState[tipo]) {
+                item.querySelector('.carga').value = savedState[tipo].carga || 0;
+                item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
+                const colorBtn = item.querySelector('.licencia-color-handle');
+                if (colorBtn && savedState[tipo].color) {
+                   colorBtn.style.backgroundColor = savedState[tipo].color;
+                }
+            }
+        });
+    }
+
+    // Vincula los eventos a los inputs y botones
+    items.forEach(item => {
+        const inputs = item.querySelectorAll('.carga, .consumidos');
+        inputs.forEach(input => {
+            input.addEventListener('input', () => {
+                updateCalculations();
+                saveState();
+            });
+        });
+
+        const colorHandle = item.querySelector('.licencia-color-handle');
+        if (colorHandle) {
+            // Prevenimos múltiples listeners
+            const newHandle = colorHandle.cloneNode(true);
+            colorHandle.parentNode.replaceChild(newHandle, colorHandle);
+
+            newHandle.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                openColorPicker(newHandle, (color) => {
+                    if (color !== 'initial') {
+                        newHandle.style.backgroundColor = color;
+                        saveState();
+                    }
+                }, colorPalette);
+            });
+        }
+    });
+
+    // Carga inicial
+    loadState();
+    updateCalculations();
 }
-function recalcLicenciasTotal(){
-  const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
-  const totalField = document.getElementById('total-licencias');
-  if(!totalField) return;
-  let total = 0;
-  inputs.forEach(i => total += Number(i.value)||0);
-  totalField.value = total;
-}
+// =========================================================================
+// FIN DEL NUEVO BLOQUE DE LÓGICA
+// =========================================================================
 
 // festivos nacionales (mes 0-11)
 const spanishHolidays = [
@@ -588,19 +670,6 @@ function initApp(){
     currentMonth++; if(currentMonth > 11){ currentMonth = 0; currentYear++; }
     renderCalendar(currentMonth, currentYear);
   });
-
-  // licencia inputs binding
-  const licenciaInputs = document.querySelectorAll('.cantidad-input');
-  licenciaInputs.forEach(input => {
-    input.addEventListener('input', (ev)=>{
-      const item = input.closest('.licencia-item');
-      const tipo = item && item.dataset && item.dataset.tipo;
-      const colorBtn = item.querySelector('.licencia-color');
-      saveLicenciaValue(tipo, input.value, colorBtn && colorBtn.style.backgroundColor);
-      recalcLicenciasTotal();
-    });
-  });
-  recalcLicenciasTotal();
 }
 
 // ---------------- render calendario ----------------
