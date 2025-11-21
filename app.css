@@ -1310,3 +1310,22 @@ body {
     display: none;
 }
 
+/* ============================================= */
+/* AJUSTES RESPONSIVE PARA EL PANEL CARGA DÍAS   */
+/* (Solo para pantallas pequeñas como móviles)   */
+/* ============================================= */
+@media (max-width: 600px) {
+
+    /* 1. Añade espacio inferior para que los totales no queden
+       ocultos por la barra de navegación inferior. */
+    #licencias-container {
+        padding-bottom: 85px; /* Aumenta este valor si es necesario */
+    }
+
+    /* 2. Reduce el tamaño de la fuente de los títulos de las columnas
+       para que no se amontonen. */
+    .licencia-valores-header span {
+        font-size: 0.75em;
+    }
+}
+
