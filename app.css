@@ -1316,16 +1316,15 @@ body {
 /* ============================================= */
 @media (max-width: 600px) {
 
-    /* 1. Añade espacio inferior para que los totales no queden
-       ocultos por la barra de navegación inferior. */
-    #licencias-container {
-        padding-bottom: 200px; /* Aumenta este valor si es necesario */
-    }
-
-    /* 2. Reduce el tamaño de la fuente de los títulos de las columnas
+    /* 1. Reduce el tamaño de la fuente de los títulos de las columnas
        para que no se amontonen. */
     .licencia-valores-header span {
         font-size: 0.75em;
     }
-}
 
+    /* 2. Reduce el tamaño del nombre de cada licencia para hacer las filas 
+       más compactas y que todo el panel ocupe menos altura. */
+    .licencia-item .licencia-nombre {
+        font-size: 0.9em;
+    }
+}
