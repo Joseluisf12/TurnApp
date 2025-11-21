@@ -1319,7 +1319,7 @@ body {
     /* 1. Añade espacio inferior para que los totales no queden
        ocultos por la barra de navegación inferior. */
     #licencias-container {
-        padding-bottom: 120px; /* Aumenta este valor si es necesario */
+        padding-bottom: 200px; /* Aumenta este valor si es necesario */
     }
 
     /* 2. Reduce el tamaño de la fuente de los títulos de las columnas
