@@ -326,7 +326,7 @@ function initCoordinatorTable() {
 }
 
 // ============================================================
-// VERSIÓN REFORZADA DE initTablon (CON LIMPIEZA DE LISTENERS)
+// VERSIÓN DEFINITIVA DE initTablon (CON PROMPT PARA NOMBRE)
 // ============================================================
 function initTablon() {
     // --- 1. CAPTURA DE ELEMENTOS ---
@@ -334,7 +334,7 @@ function initTablon() {
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
     const tablonPreviewImage = document.getElementById('tablon-preview-image');
-    let fileInput = document.getElementById('file-input'); // Usamos let para poder reemplazarlo
+    let fileInput = document.getElementById('file-input');
     const imageModal = document.getElementById('image-modal');
     const modalImageContent = document.getElementById('modal-image-content');
     const modalCloseBtn = document.querySelector('.image-modal-close');
@@ -346,12 +346,10 @@ function initTablon() {
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
-    // --- 2. REFUERZO DE SEGURIDAD: LIMPIEZA DE LISTENERS ANTIGUOS ---
-    // Clonamos los nodos clave y los reemplazamos para eliminar CUALQUIER 
-    // event listener antiguo que pudiera estar causando conflictos.
+    // --- 2. REFUERZO: LIMPIEZA DE LISTENERS ANTIGUOS ---
     const cleanFileInput = fileInput.cloneNode(true);
     fileInput.parentNode.replaceChild(cleanFileInput, fileInput);
-    fileInput = cleanFileInput; // Reasignamos la variable para usar el nodo limpio
+    fileInput = cleanFileInput;
 
     const cleanBtnUpload = btnUpload.cloneNode(true);
     btnUpload.parentNode.replaceChild(cleanBtnUpload, btnUpload);
@@ -390,7 +388,7 @@ function initTablon() {
         fileListContainer.appendChild(fragment);
     }
 
-    // --- 4. LÓGICA DE SUBIDA (Ahora con los nodos limpios y seguros) ---
+    // --- 4. LÓGICA DE SUBIDA (¡CON LA NUEVA LÓGICA DE PROMPT!) ---
     cleanBtnUpload.addEventListener('click', () => {
         fileInput.value = null;
         fileInput.click();
@@ -399,10 +397,23 @@ function initTablon() {
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
+
+        // --- INICIO DE LA NUEVA LÓGICA ---
+        // Pedimos al usuario un nombre, sugiriendo el que trae el archivo.
+        const suggestedName = file.name || 'archivo.jpg';
+        const finalName = prompt("Introduce un nombre para el archivo:", suggestedName);
+
+        // Si el usuario cancela o no pone nombre, detenemos la subida.
+        if (!finalName || finalName.trim() === '') {
+            fileInput.value = null; // Limpiamos para poder re-subir el mismo archivo.
+            return; 
+        }
+        // --- FIN DE LA NUEVA LÓGICA ---
+
         const reader = new FileReader();
         reader.onload = (event) => {
-            // Esta es la lógica correcta: usamos 'file.name' directamente del archivo original
-            const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
+            // Usamos el nombre que nos dio el usuario.
+            const fileData = { name: finalName.trim(), type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
             const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
             files.unshift(fileData);
             localStorage.setItem(TABLON_KEY, JSON.stringify(files));
@@ -434,9 +445,9 @@ function initTablon() {
             }
         } else if (target.classList.contains('download-btn')) {
             const a = document.createElement('a');
-a.href = file.data;
-a.download = file.name;
-a.click();
+            a.href = file.data;
+            a.download = file.name;
+            a.click();
         } else if (target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
                 files.splice(index, 1);
