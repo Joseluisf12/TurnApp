@@ -1277,20 +1277,19 @@ body {
     pointer-events: none;
 }
 
-/* --- 3. Botón de Color y Placeholder --- */
-/* Handle de color casi imperceptible (como en la tabla del coordinador) */
+/* Estilo del botón de color para licencias (Corregido) */
 .licencia-color-handle {
-    opacity: 0.1;
-    transition: opacity 0.2s;
+    transition: transform 0.15s ease-out;
     border-radius: 6px;
     width: 26px;
     height: 26px;
     cursor: pointer;
     border: 1px solid var(--panel-border);
+    /* Se elimina la opacidad para que el color de fondo se vea siempre sólido */
 }
 
 .licencia-color-handle:hover {
-    opacity: 1;
+    transform: scale(1.1); /* Efecto visual alternativo en hover */
 }
 
 /* Placeholder para alinear la fila de TOTAL */

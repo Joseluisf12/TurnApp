@@ -616,15 +616,20 @@ function initLicenciasPanel() {
             const newHandle = colorHandle.cloneNode(true);
             colorHandle.parentNode.replaceChild(newHandle, colorHandle);
 
-            newHandle.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                openColorPicker(newHandle, (color) => {
-                    if (color !== 'initial') {
-                        newHandle.style.backgroundColor = color;
-                        saveState();
-                    }
-                }, colorPalette);
-            });
+newHandle.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    openColorPicker(newHandle, (color) => {
+        if (color === 'initial') {
+            // Si se restaura, quitamos el color de fondo para volver al estado por defecto
+            newHandle.style.backgroundColor = '';
+        } else {
+            // Si se elige un color, lo aplicamos
+            newHandle.style.backgroundColor = color;
+        }
+        // En ambos casos, guardamos el nuevo estado (con o sin color)
+        saveState();
+    }, colorPalette);
+});
         }
     });
 
