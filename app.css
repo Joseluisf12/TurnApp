@@ -1269,12 +1269,46 @@ body {
     padding: 4px 2px;
 }
 
-/* Estilo para los inputs de "Restan" y los totales */
+/* --- NUEVO BLOQUE CORREGIDO CON COLORES --- */
+/* Estilo para los inputs de solo lectura (Restan y Totales) */
 .licencia-input[readonly] {
-    background-color: var(--table-zebra-bg);
     font-weight: bold;
     color: var(--text-color-light);
     pointer-events: none;
+}
+
+/* --- Colores de fondo específicos para cada columna --- */
+
+/* Columna CARGA (Azul clarito) */
+.licencia-item .carga, 
+#total-carga {
+    background-color: #eaf4ff; /* Azul muy pálido */
+}
+
+/* Columna CONSUMIDOS (Naranja clarito que antes tenía 'Restan') */
+.licencia-item .consumidos, 
+#total-consumidos {
+    background-color: var(--table-zebra-bg); 
+}
+
+/* Columna RESTAN (Verde muy clarito) */
+.licencia-item .restan, 
+#total-restan {
+    background-color: #e8f9e8; /* Verde muy pálido */
+}
+
+/* --- Versiones para TEMA OSCURO para asegurar el contraste --- */
+
+body[data-theme='dark'] .licencia-item .carga,
+body[data-theme='dark'] #total-carga {
+    background-color: #2a3a4e; /* Azul oscuro sutil */
+}
+
+/* El color para 'consumidos' en oscuro ya es gestionado por la variable --table-zebra-bg */
+
+body[data-theme='dark'] .licencia-item .restan,
+body[data-theme='dark'] #total-restan {
+    background-color: #2c422c; /* Verde oscuro sutil */
 }
 
 /* Estilo del botón de color para licencias (Corregido) */
