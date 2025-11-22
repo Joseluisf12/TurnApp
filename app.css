@@ -850,12 +850,6 @@ body {
   box-shadow: none;
 }
 
-/* Estilo del botón para limpiar tabla (ahora usa la clase genérica) */
-#limpiar-tabla {
-    display: block;
-    margin: 0 auto 15px auto;
-}
-
 /* === ESTILO COMPACTO PARA PETICIONES (Móvil + Desktop) === */
 
 /* Contenedor general */
@@ -1416,4 +1410,15 @@ body[data-theme='dark'] #total-restan {
 [data-theme="dark"] #editable-title:focus {
     background-color: #e68a00;
     box-shadow: 0 0 0 3px rgba(216, 125, 0, 0.6);
+}
+
+/* ============================================= */
+/*      ESTILO CONTROLES TABLA COORDINADOR       */
+/* ============================================= */
+#tabla-coordinador-controles {
+    display: flex;
+    justify-content: space-between; /* <-- La clave: separa los elementos */
+    align-items: center;
+    margin-top: 15px;
+    margin-bottom: 15px;
 }
