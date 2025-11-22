@@ -718,10 +718,10 @@ body {
 }
 
 /* --- Estilo del título principal del cajón de peticiones --- */
-#peticiones-section h2 {
-  text-align: center;
+#ajustes-section h2 { /* <-- CORREGIDO: ahora apunta al ID correcto */
+  text-align: center;   /* Asegura que el título esté centrado */
   font-weight: 600;
-  margin-bottom: 25px;
+  margin-bottom: 15px;  /* <-- REDUCIDO: menos espacio debajo del título */
   color: #212529 !important;
 }
 
