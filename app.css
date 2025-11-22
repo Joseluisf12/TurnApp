@@ -1422,3 +1422,94 @@ body[data-theme='dark'] #total-restan {
     margin-top: 15px;
     margin-bottom: 15px;
 }
+
+/* =================================================== */
+/*           PANEL DE DOCUMENTOS (PDFs)              */
+/* =================================================== */
+
+/* Grid que contiene las 4 tarjetas */
+.documentos-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr); /* 2 columnas */
+    gap: 15px;
+    margin-top: 20px;
+}
+
+/* Estilo de cada tarjeta/mini-panel */
+.documento-card {
+    background-color: var(--panel-bg);
+    border: 1px solid var(--panel-border);
+    border-radius: 12px;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.documento-card h3 {
+    margin: 0;
+    font-size: 1em;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+/* Contenedor de la previsualización */
+.documento-preview-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 5; /* Proporción vertical, común en documentos */
+    border: 2px dashed var(--panel-border);
+    border-radius: 8px;
+    cursor: pointer;
+    overflow: hidden; /* Clave para que el iframe no se desborde */
+    background-color: var(--bg-color);
+}
+
+/* El iframe que mostrará el PDF */
+.documento-preview-iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* Capa con texto "No hay PDF" que se superpone */
+.preview-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--bg-color);
+    color: var(--text-color-light);
+    font-size: 0.9em;
+    /* Por defecto está visible. JS lo ocultará si hay PDF */
+    z-index: 2; 
+}
+
+/* Botón de subida dentro de cada tarjeta */
+.btn-upload-pdf {
+    background-color: var(--primary-color) !important; /* Forzar azul */
+    color: white !important;
+    width: 100%;
+}
+.btn-upload-pdf:hover {
+    background-color: var(--primary-color-dark) !important;
+}
+
+/* Estilo del iframe del modal a pantalla completa */
+.pdf-modal-content {
+    width: 95vw;
+    height: 95vh;
+    border: none;
+    border-radius: 8px;
+    background-color: #fff; /* Fondo blanco por si el PDF tarda en cargar */
+}
+
+/* Ajuste responsive para móviles pequeños */
+@media (max-width: 400px) {
+    .documentos-grid {
+        grid-template-columns: 1fr; /* 1 columna en pantallas muy estrechas */
+    }
+}

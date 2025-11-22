@@ -457,6 +457,113 @@ function initTablon() {
     renderFiles();
 }
 
+// ===========================================================
+//         NUEVA FUNCIÓN PARA EL PANEL DE DOCUMENTOS
+// ===========================================================
+function initDocumentosPanel() {
+    const documentosSection = document.getElementById('documentos-section');
+    if (!documentosSection) return;
+
+    const pdfInput = document.getElementById('pdf-input');
+    const pdfModal = document.getElementById('pdf-modal');
+    const modalPdfContent = document.getElementById('modal-pdf-content');
+    const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
+
+    const DOCS_KEY = 'turnapp.documentos.v1';
+    const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
+    let currentUploadCategory = null;
+
+    // Carga los datos desde localStorage
+    function loadDocs() {
+        return JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+    }
+
+    // Guarda los datos en localStorage
+    function saveDocs(docs) {
+        localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
+    }
+
+    // Pinta los datos en la interfaz
+    function renderDocs() {
+        const docs = loadDocs();
+        CATEGORIES.forEach(category => {
+            const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
+            if (!card) return;
+
+            const previewContainer = card.querySelector('.documento-preview-container');
+            const iframe = previewContainer.querySelector('.documento-preview-iframe');
+            const overlay = previewContainer.querySelector('.preview-overlay');
+            
+            const docData = docs[category];
+
+            if (docData && docData.data) {
+                iframe.src = docData.data;
+                overlay.style.display = 'none'; // Oculta el texto "No hay PDF"
+            } else {
+                iframe.src = 'about:blank';
+                overlay.style.display = 'flex'; // Muestra el texto "No hay PDF"
+            }
+        });
+    }
+
+    // --- Event Listeners ---
+
+    // 1. Clic dentro del panel (delegación de eventos)
+    documentosSection.addEventListener('click', (event) => {
+        const target = event.target;
+
+        // Si se hace clic en un botón de subida
+        if (target.matches('.btn-upload-pdf')) {
+            currentUploadCategory = target.dataset.category;
+            pdfInput.value = null; // Resetea el input
+            pdfInput.click();
+        }
+
+        // Si se hace clic en el contenedor de una previsualización
+        if (target.matches('.documento-preview-container, .preview-overlay')) {
+            const container = target.closest('.documento-preview-container');
+            const category = container.closest('.documento-card').dataset.category;
+            const docs = loadDocs();
+            const docData = docs[category];
+
+            if (docData && docData.data) {
+                modalPdfContent.src = docData.data;
+                pdfModal.classList.remove('oculto');
+            }
+        }
+    });
+
+    // 2. Cuando se selecciona un archivo PDF
+    pdfInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file || !currentUploadCategory) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const docs = loadDocs();
+            docs[currentUploadCategory] = {
+                name: file.name,
+                date: new Date().toISOString(),
+                data: event.target.result
+            };
+            saveDocs(docs);
+            renderDocs(); // Re-render para mostrar el nuevo PDF
+        };
+        reader.readAsDataURL(file);
+    });
+
+    // 3. Lógica para cerrar el modal
+    modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
+    pdfModal.addEventListener('click', (e) => {
+        if (e.target === pdfModal) {
+            pdfModal.classList.add('oculto');
+        }
+    });
+    
+    // --- Llamada Inicial ---
+    renderDocs();
+}
+
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -465,25 +572,21 @@ initApp();
   initThemeSwitcher();
   initEditableTitle();
 
-
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
   if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
 
-    // conectar handles de licencia a la paleta unificada
- initLicenciasPanel();
+   initLicenciasPanel();
 
   // restaurar persistencia de manualEdits y cadenceSpec
   restoreManualEdits();
   restoreCadenceSpec();
 
-  // inicializar módulo de peticiones (listeners + render)
-  initPeticiones();
-
-  // AÑADE ESTA LÍNEA:
+    initPeticiones();
     initCoordinatorTable();
     initTablon();
+    initDocumentosPanel();
   });
 
 // ---------------- estado ----------------

@@ -252,11 +252,71 @@
     <div id="tablon-lista"></div>
 </section>
 
+<!-- ========= PANEL 4: DOCUMENTOS ========= -->
+<section id="documentos-section" class="panel oculto">
+    <h2>Documentos</h2>
+
+    <!-- Input oculto para la subida de PDFs -->
+    <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
+
+    <!-- Grid para los 4 mini-paneles -->
+    <div class="documentos-grid">
+        <!-- Mini-Panel: Mes -->
+        <div class="documento-card" data-category="mes">
+            <h3>Mes</h3>
+            <div class="documento-preview-container" title="Ver PDF: Mes">
+                <div class="preview-overlay">
+                    <span class="preview-text">No hay PDF</span>
+                </div>
+                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir PDF</button>
+        </div>
+
+        <!-- Mini-Panel: Ciclos Especiales -->
+        <div class="documento-card" data-category="ciclos">
+            <h3>Ciclos Especiales</h3>
+            <div class="documento-preview-container" title="Ver PDF: Ciclos Especiales">
+                <div class="preview-overlay">
+                    <span class="preview-text">No hay PDF</span>
+                </div>
+                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir PDF</button>
+        </div>
+
+        <!-- Mini-Panel: Vacaciones -->
+        <div class="documento-card" data-category="vacaciones">
+            <h3>Vacaciones</h3>
+            <div class="documento-preview-container" title="Ver PDF: Vacaciones">
+                <div class="preview-overlay">
+                    <span class="preview-text">No hay PDF</span>
+                </div>
+                <iframe class="documento-preview-iframe" src-="about:blank" loading="lazy"></iframe>
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir PDF</button>
+        </div>
+
+        <!-- Mini-Panel: Rotación -->
+        <div class="documento-card" data-category="rotacion">
+            <h3>Rotación</h3>
+            <div class="documento-preview-container" title="Ver PDF: Rotación">
+                <div class="preview-overlay">
+                    <span class="preview-text">No hay PDF</span>
+                </div>
+                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir PDF</button>
+        </div>
+    </div>
+</section>
+
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
     <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
       <button data-section="turnos" class="nav-btn active">Calendario</button>
       <button data-section="peticiones" class="nav-btn">Peticiones</button>
       <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Carga Días</button>
+      <button data-section="documentos" class="nav-btn">Documentos</button>
       <button data-section="tablon" class="nav-btn">Tablón</button>
       <button id="btn-install-pwa" class="nav-btn" style="display: none;">⬇️ Instalar</button>
     </nav>
@@ -317,14 +377,16 @@ document.addEventListener('DOMContentLoaded', () => {
     const appContainer = document.getElementById('app');
     const mainContent = document.getElementById('content');
     const ajustesSection = document.getElementById('ajustes-section');
-    const tablonSection = document.getElementById('tablon-section'); // <-- AÑADIDO
+    const tablonSection = document.getElementById('tablon-section');
+    const documentosSection = document.getElementById('documentos-section');
     const licenciasContainer = document.getElementById('licencias-container');
     const calendarPanel = document.getElementById('calendar-panel');
     
     const navButtons = document.querySelectorAll('.nav-btn');
     const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
     const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
-    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]'); // <-- AÑADIDO
+    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
+    const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
     const btnCargaDias = document.getElementById('btn-carga-dias');
 
     // --- 2. LÓGICA DE NAVEGACIÓN (MODIFICADA PARA EL TABLÓN) ---
@@ -332,8 +394,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Ocultamos todos los paneles principales
         mainContent.classList.add('oculto');
         ajustesSection.classList.add('oculto');
-        tablonSection.classList.add('oculto'); // <-- AÑADIDO
-        
+        tablonSection.classList.add('oculto');
+        documentosSection.classList.add('oculto');
+
         // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
         licenciasContainer.classList.add('oculto');
 
@@ -344,9 +407,13 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (targetSection === 'peticiones') {
             ajustesSection.classList.remove('oculto');
             ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'tablon') { // <-- AÑADIDO
+        } else if (targetSection === 'tablon') {
             tablonSection.classList.remove('oculto');
             tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+         else if (targetSection === 'documentos') {
+            documentosSection.classList.remove('oculto');
+            documentosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
 
         // Actualizamos el botón activo
@@ -379,6 +446,16 @@ document.addEventListener('DOMContentLoaded', () => {
             switchPanel('tablon');
         }
     });
+
+    // Botón "Documentos" 
+btnDocumentos.addEventListener('click', () => {
+    const isDocumentosVisible = !documentosSection.classList.contains('oculto');
+    if (isDocumentosVisible) {
+        switchPanel('turnos'); // Si ya está visible, vuelve a turnos
+    } else {
+        switchPanel('documentos');
+    }
+});
 
     // Botón "Carga Días" (Mantiene su lógica original)
     btnCargaDias.addEventListener('click', () => {
@@ -479,6 +556,13 @@ document.addEventListener('DOMContentLoaded', () => {
   <span class="image-modal-close">&times;</span>
   <img class="image-modal-content" id="modal-image-content">
 </div>
+
+<!-- Contenedor Modal para la visualización de PDFs a pantalla completa -->
+<div id="pdf-modal" class="image-modal-overlay oculto">
+  <span class="image-modal-close">&times;</span>
+  <iframe class="pdf-modal-content" id="modal-pdf-content"></iframe>
+</div>
+
 
 </body>
 </html>
