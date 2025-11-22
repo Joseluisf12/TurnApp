@@ -325,36 +325,61 @@ function initCoordinatorTable() {
     bindEvents();      
 }
 
-// ============================================================
-// VERSIÓN DEFINITIVA DE initTablon (CON PROMPT PARA NOMBRE)
-// ============================================================
+// =========================================================================
+// VERSIÓN DEFINITIVA Y SEGURA DE initTablon (CON GUARDIA DE INICIALIZACIÓN)
+// =========================================================================
 function initTablon() {
+    // ¡GUARDIA! Si ya se ha inicializado, no hacer nada más.
+    if (window.isTablonInitialized) {
+        return;
+    }
+
     // --- 1. CAPTURA DE ELEMENTOS ---
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
     const tablonPreviewImage = document.getElementById('tablon-preview-image');
-    let fileInput = document.getElementById('file-input');
+    const fileInput = document.getElementById('file-input');
     const imageModal = document.getElementById('image-modal');
     const modalImageContent = document.getElementById('modal-image-content');
     const modalCloseBtn = document.querySelector('.image-modal-close');
 
     if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
-        console.error("TurnApp Error: Faltan elementos del DOM para la funcionalidad del Tablón.");
+        console.error("TurnApp Error: Faltan elementos del DOM para el Tablón.");
         return;
     }
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
-    // --- 2. REFUERZO: LIMPIEZA DE LISTENERS ANTIGUOS ---
-    const cleanFileInput = fileInput.cloneNode(true);
-    fileInput.parentNode.replaceChild(cleanFileInput, fileInput);
-    fileInput = cleanFileInput;
+    // --- 2. LÓGICA DE SUBIDA (sin clonación, con prompt) ---
+    btnUpload.addEventListener('click', () => {
+        fileInput.value = null;
+        fileInput.click();
+    });
 
-    const cleanBtnUpload = btnUpload.cloneNode(true);
-    btnUpload.parentNode.replaceChild(cleanBtnUpload, btnUpload);
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
 
-    // --- 3. FUNCIÓN PARA PINTAR LA LISTA DE ARCHIVOS (Sin cambios) ---
+        const suggestedName = file.name || 'archivo.jpg';
+        const finalName = prompt("Introduce un nombre para el archivo:", suggestedName);
+
+        if (!finalName || finalName.trim() === '') {
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const fileData = { name: finalName.trim(), type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            files.unshift(fileData);
+            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+            renderFiles();
+        };
+        reader.readAsDataURL(file);
+    });
+    
+    // --- 3. FUNCIÓN PARA PINTAR LA LISTA DE ARCHIVOS ---
     function renderFiles() {
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
         fileListContainer.innerHTML = '';
@@ -388,41 +413,7 @@ function initTablon() {
         fileListContainer.appendChild(fragment);
     }
 
-    // --- 4. LÓGICA DE SUBIDA (¡CON LA NUEVA LÓGICA DE PROMPT!) ---
-    cleanBtnUpload.addEventListener('click', () => {
-        fileInput.value = null;
-        fileInput.click();
-    });
-
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-
-        // --- INICIO DE LA NUEVA LÓGICA ---
-        // Pedimos al usuario un nombre, sugiriendo el que trae el archivo.
-        const suggestedName = file.name || 'archivo.jpg';
-        const finalName = prompt("Introduce un nombre para el archivo:", suggestedName);
-
-        // Si el usuario cancela o no pone nombre, detenemos la subida.
-        if (!finalName || finalName.trim() === '') {
-            fileInput.value = null; // Limpiamos para poder re-subir el mismo archivo.
-            return; 
-        }
-        // --- FIN DE LA NUEVA LÓGICA ---
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            // Usamos el nombre que nos dio el usuario.
-            const fileData = { name: finalName.trim(), type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            files.unshift(fileData);
-            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            renderFiles();
-        };
-        reader.readAsDataURL(file);
-    });
-
-    // --- 5. LÓGICA DE BOTONES Y MODAL (Sin cambios) ---
+    // --- 4. LÓGICA DE BOTONES Y MODAL ---
     fileListContainer.addEventListener('click', (event) => {
         const target = event.target;
         const index = target.dataset.index;
@@ -440,7 +431,7 @@ function initTablon() {
                  if (file.type === 'application/pdf') {
                      win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
                 } else {
-                     win.document.write(`<p>Contenido no visualizable directamente. Puede intentar descargarlo.</p>`);
+                    win.document.write(`<p>Contenido no visualizable directamente. Puede intentar descargarlo.</p>`);
                 }
             }
         } else if (target.classList.contains('download-btn')) {
@@ -457,6 +448,7 @@ function initTablon() {
         }
     });
 
+    // --- INICIO DEL CÓDIGO QUE FALTABA ---
     tablonPreviewImage.addEventListener('click', () => {
         if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
             modalImageContent.src = tablonPreviewImage.src;
@@ -466,9 +458,13 @@ function initTablon() {
     modalCloseBtn.addEventListener('click', () => { imageModal.classList.add('oculto'); });
     imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
+    // --- FIN DEL CÓDIGO QUE FALTABA ---
 
-    // --- 6. LLAMADA INICIAL ---
+    // --- 5. LLAMADA INICIAL Y ESTABLECIMIENTO DE LA BANDERA ---
     renderFiles();
+
+    // ¡Clave! Marcamos la función como inicializada para que no se vuelva a ejecutar.
+    window.isTablonInitialized = true;
 }
 
 
@@ -504,6 +500,7 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+let isTablonInitialized = false;
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
