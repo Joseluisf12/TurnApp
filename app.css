@@ -1653,3 +1653,58 @@ body[data-theme='dark'] #total-restan {
         gap: 5px; /* Menos separación entre ellos */
     }
 }
+
+/* =================================================== */
+/*      ESTILOS PARA LAS LISTAS DE DOCUMENTOS (PDF)    */
+/* =================================================== */
+
+.documento-file-list {
+    width: 100%;
+    margin-top: 10px;
+}
+
+.documento-file-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 5px;
+    border-top: 1px solid rgba(0,0,0,0.1);
+    gap: 8px;
+}
+
+.documento-file-info {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    gap: 3px;
+}
+
+.documento-file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.documento-file-meta {
+    font-size: 0.75em;
+    color: var(--text-color-light);
+}
+
+.documento-file-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+/* Ajustes para que los botones de las listas sean más compactos */
+.documento-file-actions .modern-btn {
+    padding: 5px 10px;
+    font-size: 0.85em;
+}
+
+/* En modo oscuro, el separador de la lista debe ser más claro */
+[data-theme="dark"] .documento-file-item {
+    border-top-color: rgba(255,255,255,0.1);
+}

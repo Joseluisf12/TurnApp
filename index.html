@@ -253,72 +253,61 @@
     <div id="tablon-lista"></div>
 </section>
 
-<!-- ========= PANEL 4: DOCUMENTOS ========= -->
+<!-- ========= PANEL 4: DOCUMENTOS (AHORA CON LISTAS) ========= -->
 <section id="documentos-section" class="panel oculto">
     <h2 style="text-align: center;">Documentos</h2>
 
-    <!-- Input oculto para la subida de PDFs -->
+    <!-- Input oculto para la subida de PDFs (sin cambios) -->
     <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
 
-    <!-- Grid para los 4 mini-paneles -->
+    <!-- Grid para los 4 mini-paneles (estructura interna modificada) -->
     <div class="documentos-grid">
-        <!-- Mini-Panel: Turnos por Mes -->
+
+        <!-- Card: Turnos por Mes -->
         <div class="documento-card" data-category="mes">
             <h3>Turnos por Mes</h3>
-        <div class="documento-preview-container" title="Ver PDF: Mes">
-            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
-            <img class="documento-preview-img" alt="Previsualización PDF Mes">
-            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-mes"></div>
         </div>
-        <div class="documento-card-actions">
-            <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir</button>
-            <button class="btn-delete-pdf modern-btn red" data-category="mes" title="Eliminar PDF">🗑️</button>
-        </div>
-    </div>
 
-    <!-- Mini-Panel: Ciclos Especiales -->
-    <div class="documento-card" data-category="ciclos">
-        <h3>Ciclos Especiales</h3>
-        <div class="documento-preview-container" title="Ver PDF: Ciclos Especiales">
-            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
-            <img class="documento-preview-img" alt="Previsualización PDF Ciclos">
-            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        <!-- Card: Ciclos Especiales -->
+        <div class="documento-card" data-category="ciclos">
+            <h3>Ciclos Especiales</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-ciclos"></div>
         </div>
-        <div class="documento-card-actions">
-            <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir</button>
-            <button class="btn-delete-pdf modern-btn red" data-category="ciclos" title="Eliminar PDF">🗑️</button>
-        </div>
-    </div>
 
-    <!-- Mini-Panel: Vacaciones -->
-    <div class="documento-card" data-category="vacaciones">
-        <h3>Vacaciones</h3>
-        <div class="documento-preview-container" title="Ver PDF: Vacaciones">
-            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
-            <img class="documento-preview-img" alt="Previsualización PDF Vacaciones">
-            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        <!-- Card: Vacaciones -->
+        <div class="documento-card" data-category="vacaciones">
+            <h3>Vacaciones</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-vacaciones"></div>
         </div>
-        <div class="documento-card-actions">
-            <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir</button>
-            <button class="btn-delete-pdf modern-btn red" data-category="vacaciones" title="Eliminar PDF">🗑️</button>
-        </div>
-    </div>
 
-    <!-- Mini-Panel: Rotación -->
-    <div class="documento-card" data-category="rotacion">
-        <h3>Rotación</h3>
-        <div class="documento-preview-container" title="Ver PDF: Rotación">
-            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
-            <img class="documento-preview-img" alt="Previsualización PDF Rotación">
-            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        <!-- Card: Rotación -->
+        <div class="documento-card" data-category="rotacion">
+            <h3>Rotación</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-rotacion"></div>
         </div>
-        <div class="documento-card-actions">
-            <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir</button>
-            <button class="btn-delete-pdf modern-btn red" data-category="rotacion" title="Eliminar PDF">🗑️</button>
-        </div>
-    </div>
-</div>
 
+    </div>
 </section>
 
     <!-- ========= NAVEGACIÓN INFERIOR (CON NOMBRES CORREGIDOS) ========= -->
