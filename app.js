@@ -325,11 +325,10 @@ function initCoordinatorTable() {
     bindEvents();      
 }
 
-// ============================================================
-// BLOQUE COMPLETO REEMPLAZANDO LA FUNCIÓN initTablon EXISTENTE
-// ============================================================
+// ========================================================
+//    VERSIÓN MEJORADA de initTablon (con ICONOS en botones)
+// ========================================================
 function initTablon() {
-    // --- 1. CAPTURA DE ELEMENTOS ---
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -337,9 +336,9 @@ function initTablon() {
     const fileInput = document.getElementById('file-input');
     const imageModal = document.getElementById('image-modal');
     const modalImageContent = document.getElementById('modal-image-content');
-    const modalCloseBtn = document.querySelector('.image-modal-close');
+    // Corregido: El modal de PDF tiene su propio botón de cierre
+    const modalCloseBtn = imageModal.querySelector('.image-modal-close');
 
-    // Validación de que todos los elementos necesarios existen
     if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
         console.error("TurnApp Error: Faltan elementos del DOM para la funcionalidad del Tablón.");
         return;
@@ -347,13 +346,11 @@ function initTablon() {
 
     const TABLON_KEY = 'turnapp.tablon.files';
 
-    // --- 2. FUNCIÓN PARA PINTAR LA LISTA DE ARCHIVOS ---
     function renderFiles() {
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        fileListContainer.innerHTML = ''; // Limpiar la lista actual
+        fileListContainer.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // Lógica para mostrar la última imagen en la previsualización al cargar
         if (files.length > 0 && files[0].type.startsWith('image/')) {
             tablonPreviewImage.src = files[0].data;
             tablonPreviewContainer.classList.remove('oculto');
@@ -366,16 +363,16 @@ function initTablon() {
             fileItem.className = 'tablon-item';
             const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-            // Se crean los botones con el atributo 'data-index' que tu código ya utiliza
+            // --- ¡CAMBIO AQUÍ! Usamos iconos, añadimos 'title' y las clases de color 'green' y 'red' ---
             fileItem.innerHTML = `
                 <div class="tablon-item-info">
                     <strong class="tablon-item-name">${file.name}</strong>
                     <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
                 </div>
                 <div class="tablon-item-actions">
-                    <button class="view-btn modern-btn" data-index="${index}">Ver</button>
-                    <button class="download-btn modern-btn" data-index="${index}">Descargar</button>
-                    <button class="delete-btn modern-btn red" data-index="${index}">Eliminar</button>
+                    <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
+                    <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
+                    <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
                 </div>
             `;
             fragment.appendChild(fileItem);
@@ -383,9 +380,8 @@ function initTablon() {
         fileListContainer.appendChild(fragment);
     }
 
-    // --- 3. LÓGICA DE SUBIDA DE ARCHIVOS ---
     btnUpload.addEventListener('click', () => {
-        fileInput.value = null; // Permite subir el mismo archivo otra vez
+        fileInput.value = null;
         fileInput.click();
     });
 
@@ -394,45 +390,40 @@ function initTablon() {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-            // Usamos 'data' como clave para ser consistentes con tu código
             const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
             const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            files.unshift(fileData); // Añadir al principio
+            files.unshift(fileData);
             localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            renderFiles(); // Volver a pintar todo
+            renderFiles();
         };
         reader.readAsDataURL(file);
     });
 
-    // --- 4. LÓGICA DE LOS BOTONES DE LA LISTA (MÉTODO DE EVENT DELEGATION) ---
     fileListContainer.addEventListener('click', (event) => {
         const target = event.target;
         const index = target.dataset.index;
-        if (index === undefined) return; // Si el clic no fue en un botón con data-index, no hacer nada
+        if (index === undefined) return;
 
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
         const file = files[index];
 
         if (target.classList.contains('view-btn')) {
-            // SI ES IMAGEN: Abrimos el MODAL
             if (file.type.startsWith('image/')) {
                 modalImageContent.src = file.data;
                 imageModal.classList.remove('oculto');
             } else {
-            // SI NO ES IMAGEN (PDF, etc.): Abrimos en nueva pestaña (tu lógica original)
                 const win = window.open("", "_blank");
                  if (file.type === 'application/pdf') {
                      win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
                 } else {
-                    // Fallback para otros tipos de archivo
                      win.document.write(`<p>Contenido no visualizable directamente. Puede intentar descargarlo.</p>`);
                 }
             }
         } else if (target.classList.contains('download-btn')) {
             const a = document.createElement('a');
-            a.href = file.data;
-            a.download = file.name;
-            a.click();
+a.href = file.data;
+a.download = file.name;
+a.click();
         } else if (target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
                 files.splice(index, 1);
@@ -442,7 +433,6 @@ function initTablon() {
         }
     });
 
-    // --- 5. LÓGICA PARA ABRIR Y CERRAR EL MODAL ---
     tablonPreviewImage.addEventListener('click', () => {
         if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
             modalImageContent.src = tablonPreviewImage.src;
@@ -453,7 +443,6 @@ function initTablon() {
     imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
 
-    // --- 6. LLAMADA INICIAL PARA PINTAR LOS ARCHIVOS ---
     renderFiles();
 }
 
