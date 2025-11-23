@@ -1580,3 +1580,40 @@ body[data-theme='dark'] #total-restan {
     flex-grow: 0;
     transition: background-color 0.3s; /* Para que se adapte al cambio de tema */
 }
+
+/* ============================================================= */
+/*   NUEVO ESTILO BARRA DE NAVEGACIÓN (BOTONES INDIVIDUALES)   */
+/* ============================================================= */
+
+/* 1. Fondo de la barra con el azul de los sábados y espaciado */
+.bottom-nav {
+    background-color: var(--saturday-bg, rgba(163, 193, 255, 0.65));
+    gap: 5px;   /* Espacio entre cada botón */
+    padding: 5px; /* Pequeño margen interior en la barra */
+}
+
+/* 2. Estilo de cada botón con el azul de día laboral */
+.nav-btn {
+    background-color: var(--day-cell-bg, #e8f0ff);
+    color: var(--text-color, #212529); /* Texto oscuro para buen contraste */
+    font-weight: 600;
+    border: 1px solid rgba(0,0,0,0.05);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    /* flex-grow: 1; -> Mantenemos esto para que ocupen todo el ancho disponible */
+}
+
+/* 3. Estilo para el botón que está ACTIVO */
+.nav-btn.active {
+    background-color: var(--primary-color, #0d6efd); /* Azul principal de la app */
+    color: white; /* Texto blanco */
+    border-color: transparent;
+    font-weight: bold;
+}
+
+/* 4. Efecto hover para botones no activos (solo en escritorio) */
+@media (hover: hover) and (pointer: fine) {
+    .nav-btn:not(.active):hover {
+        background-color: #d6e4ff; /* Un azul un poco más intenso al pasar el ratón */
+        transform: translateY(-1px);
+    }
+}
