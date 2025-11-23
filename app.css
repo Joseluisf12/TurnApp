@@ -1708,3 +1708,31 @@ body[data-theme='dark'] #total-restan {
 [data-theme="dark"] .documento-file-item {
     border-top-color: rgba(255,255,255,0.1);
 }
+
+/* ============================================================= */
+/* AJUSTES BOTONES LISTA DE DOCUMENTOS (VER, DESCARGAR, ELIMINAR) */
+/* ============================================================= */
+
+/* 1. Hacemos los botones más compactos en general (menos padding y letra más pequeña) */
+.documento-file-actions .modern-btn {
+    padding: 5px 10px;
+    font-size: 0.8em;
+}
+
+/* 2. Asignamos el color VERDE al botón "Ver" */
+.documento-file-actions .green {
+    background-color: var(--green-color);
+}
+.documento-file-actions .green:hover {
+    background-color: var(--green-color-dark);
+}
+
+/* 3. Asignamos el color ROJO al botón "Eliminar" */
+.documento-file-actions .red {
+    background-color: var(--red-color);
+}
+.documento-file-actions .red:hover {
+    background-color: var(--red-color-dark);
+}
+
+/* Nota: El botón "Descargar" usará el color gris por defecto de .modern-btn */
