@@ -1555,18 +1555,6 @@ body[data-theme='dark'] #total-restan {
 }
 
 /* =================================================== */
-/*      AJUSTE COLOR MARCO DOCUMENTOS PDF            */
-/* =================================================== */
-
-/*
- * Cambia el color del borde de los contenedores de PDF
- * para usar el azul claro de los sábados del calendario.
- */
-.documento-preview-container {
-    border: 2px solid var(--saturday-bg);
-}
-
-/* =================================================== */
 /*      SEPARADOR VISUAL EN LA BARRA DE NAVEGACIÓN     */
 /* =================================================== */
 
@@ -1616,4 +1604,18 @@ body[data-theme='dark'] #total-restan {
         background-color: #d6e4ff; /* Un azul un poco más intenso al pasar el ratón */
         transform: translateY(-1px);
     }
+}
+
+/* =================================================== */
+/*      NUEVOS COLORES PANEL DOCUMENTOS (DOCS)       */
+/* =================================================== */
+
+/* 1. Fondo del panel "Docs" con el azul de día laboral */
+#documentos-section {
+    background-color: var(--day-cell-bg);
+}
+
+/* 2. Fondo de cada tarjeta individual con el azul de los sábados */
+.documento-card {
+    background-color: var(--saturday-bg);
 }
