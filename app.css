@@ -1566,3 +1566,17 @@ body[data-theme='dark'] #total-restan {
     border: 2px solid var(--saturday-bg);
 }
 
+/* =================================================== */
+/*      SEPARADOR VISUAL EN LA BARRA DE NAVEGACIÓN     */
+/* =================================================== */
+
+.nav-separator {
+    width: 1px;
+    background-color: var(--panel-border);
+    /* Margen vertical para que la línea no ocupe toda la altura de la barra */
+    margin-top: 8px;
+    margin-bottom: 8px;
+    /* Evita que el separador se estire y ocupe más espacio del necesario */
+    flex-grow: 0;
+    transition: background-color 0.3s; /* Para que se adapte al cambio de tema */
+}
