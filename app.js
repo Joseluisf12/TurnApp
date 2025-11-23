@@ -358,25 +358,43 @@ function initTablon() {
             tablonPreviewContainer.classList.add('oculto');
         }
 
+        // --- ¡AJUSTE CLAVE AQUÍ! ---
+        // Se reconstruye el listado usando métodos del DOM más robustos
+        // para asegurar que el nombre del archivo se muestre correctamente.
         files.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'tablon-item';
-            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-            // --- ¡CAMBIO AQUÍ! Usamos iconos, añadimos 'title' y las clases de color 'green' y 'red' ---
-            fileItem.innerHTML = `
-                <div class="tablon-item-info">
-                    <strong class="tablon-item-name">${file.name}</strong>
-                    <small class="tablon-item-meta">Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB</small>
-                </div>
-                <div class="tablon-item-actions">
-                    <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
-                    <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
-                    <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
-                </div>
+            const infoDiv = document.createElement('div');
+            infoDiv.className = 'tablon-item-info';
+
+            const nameStrong = document.createElement('strong');
+            nameStrong.className = 'tablon-item-name';
+            // Se usa .textContent para insertar el nombre de forma segura
+            nameStrong.textContent = file.name; 
+
+            const metaSmall = document.createElement('small');
+            metaSmall.className = 'tablon-item-meta';
+            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
+
+            infoDiv.appendChild(nameStrong);
+            infoDiv.appendChild(metaSmall);
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'tablon-item-actions';
+            // Para los botones, que son estáticos, innerHTML sigue siendo seguro y eficiente
+            actionsDiv.innerHTML = `
+                <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
+                <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
+                <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
             `;
+
+            fileItem.appendChild(infoDiv);
+            fileItem.appendChild(actionsDiv);
             fragment.appendChild(fileItem);
         });
+
         fileListContainer.appendChild(fragment);
     }
 
