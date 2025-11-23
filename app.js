@@ -457,14 +457,14 @@ function initTablon() {
     renderFiles();
 }
 
-// ===========================================================
-//    NUEVA VERSIÓN DE initDocumentosPanel (CON LISTAS DE PDF)
-// ===========================================================
+// =================================================================
+//    VERSIÓN MEJORADA de initDocumentosPanel (con botón Descargar)
+// =================================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
-    // Configuración de PDF.js (sin cambios)
+    // Configuración de PDF.js
     if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
     }
@@ -474,18 +474,14 @@ function initDocumentosPanel() {
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
-    // Nueva clave para evitar conflictos con la estructura de datos anterior
     const DOCS_KEY = 'turnapp.documentos.v3'; 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
     function loadDocs() {
         const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-        // Asegurarse de que cada categoría es un array
         CATEGORIES.forEach(cat => {
-            if (!Array.isArray(data[cat])) {
-                data[cat] = [];
-            }
+            if (!Array.isArray(data[cat])) data[cat] = [];
         });
         return data;
     }
@@ -494,7 +490,6 @@ function initDocumentosPanel() {
         localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
     }
     
-    // Generador de miniaturas (sin cambios)
     async function generatePdfThumbnail(pdfDataUrl) {
         try {
             const pdf = await pdfjsLib.getDocument(pdfDataUrl).promise;
@@ -512,7 +507,6 @@ function initDocumentosPanel() {
         }
     }
 
-    // --- ¡NUEVO! Función para renderizar todo (previsualización y listas) ---
     function renderDocs() {
         const docs = loadDocs();
         
@@ -526,9 +520,8 @@ function initDocumentosPanel() {
             
             const files = docs[category];
 
-            // 1. Actualizar la previsualización con el último archivo
             if (files && files.length > 0) {
-                const lastFile = files[0]; // El último subido está al principio
+                const lastFile = files[0];
                 if (lastFile.thumbnail) {
                     imgPreview.src = lastFile.thumbnail;
                     imgPreview.style.display = 'block';
@@ -540,7 +533,6 @@ function initDocumentosPanel() {
                 overlay.style.display = 'flex';
             }
 
-            // 2. Renderizar la lista de archivos
             fileListContainer.innerHTML = '';
             const fragment = document.createDocumentFragment();
 
@@ -550,6 +542,7 @@ function initDocumentosPanel() {
                     fileItem.className = 'documento-file-item';
                     const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
+                    // --- ¡CAMBIO AQUÍ! Añadimos el botón Descargar y las clases de color ---
                     fileItem.innerHTML = `
                         <div class="documento-file-info">
                             <strong class="documento-file-name">${file.name}</strong>
@@ -557,6 +550,7 @@ function initDocumentosPanel() {
                         </div>
                         <div class="documento-file-actions">
                             <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}">Ver</button>
+                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}">Descargar</button>
                             <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}">Eliminar</button>
                         </div>
                     `;
@@ -567,11 +561,9 @@ function initDocumentosPanel() {
         });
     }
 
-    // --- ¡MODIFICADO! Event Listener principal con delegación de eventos ---
     documentosSection.addEventListener('click', (event) => {
         const target = event.target;
 
-        // Botón para subir un nuevo PDF a una categoría
         if (target.matches('.btn-upload-pdf')) {
             currentUploadCategory = target.dataset.category;
             pdfInput.value = null;
@@ -579,19 +571,15 @@ function initDocumentosPanel() {
             return;
         }
 
-        // Botón para ver un PDF de la lista
         if (target.matches('.doc-view-btn')) {
             const category = target.dataset.category;
             const index = parseInt(target.dataset.index, 10);
-            const docs = loadDocs();
-            const file = docs[category][index];
+            const file = loadDocs()[category][index];
             
             if (file && file.data) {
-                if (window.innerWidth < 768) { // En móvil, abre en nueva pestaña
-                    fetch(file.data).then(res => res.blob()).then(blob => {
-                        window.open(URL.createObjectURL(blob), '_blank');
-                    });
-                } else { // En escritorio, abre en el modal
+                if (window.innerWidth < 768) {
+                    fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
+                } else {
                     modalPdfContent.src = file.data;
                     pdfModal.classList.remove('oculto');
                 }
@@ -599,7 +587,23 @@ function initDocumentosPanel() {
             return;
         }
 
-        // Botón para eliminar un PDF de la lista
+        // --- ¡NUEVO! Lógica para el botón de Descargar ---
+        if (target.matches('.doc-download-btn')) {
+            const category = target.dataset.category;
+            const index = parseInt(target.dataset.index, 10);
+            const file = loadDocs()[category][index];
+
+            if (file && file.data) {
+                const a = document.createElement('a');
+                a.href = file.data;
+                a.download = file.name;
+                document.body.appendChild(a); // Requerido para compatibilidad
+                a.click();
+                document.body.removeChild(a);
+            }
+            return;
+        }
+
         if (target.matches('.doc-delete-btn')) {
             const category = target.dataset.category;
             const index = parseInt(target.dataset.index, 10);
@@ -609,12 +613,11 @@ function initDocumentosPanel() {
             if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
                 docs[category].splice(index, 1);
                 saveDocs(docs);
-                renderDocs(); // Re-renderizar para actualizar la lista y previsualización
+                renderDocs();
             }
             return;
         }
         
-        // Clic en la imagen de previsualización (muestra el último PDF)
         const previewContainer = target.closest('.documento-preview-container');
         if (previewContainer) {
             const category = previewContainer.closest('.documento-card').dataset.category;
@@ -622,9 +625,7 @@ function initDocumentosPanel() {
             if (docs[category] && docs[category].length > 0) {
                 const lastFile = docs[category][0];
                 if (window.innerWidth < 768) {
-                    fetch(lastFile.data).then(res => res.blob()).then(blob => {
-                        window.open(URL.createObjectURL(blob), '_blank');
-                    });
+                    fetch(lastFile.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
                 } else {
                     modalPdfContent.src = lastFile.data;
                     pdfModal.classList.remove('oculto');
@@ -633,7 +634,6 @@ function initDocumentosPanel() {
         }
     });
 
-    // --- ¡MODIFICADO! Lógica de subida de archivos ---
     pdfInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file || !currentUploadCategory) return;
@@ -642,38 +642,26 @@ function initDocumentosPanel() {
         reader.onload = async (event) => {
             const pdfData = event.target.result;
             
-            // Indicar carga en la UI (opcional pero recomendable)
             const card = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"]`);
             const overlayText = card.querySelector('.preview-text');
             if (overlayText) overlayText.textContent = 'Procesando...';
 
             const thumbnailData = await generatePdfThumbnail(pdfData);
-
             const docs = loadDocs();
-            const newFileData = {
-                name: file.name,
-                size: file.size,
-                date: new Date().toISOString(),
-                data: pdfData,
-                thumbnail: thumbnailData
-            };
+            const newFileData = { name: file.name, size: file.size, date: new Date().toISOString(), data: pdfData, thumbnail: thumbnailData };
 
-            // Añadir el nuevo archivo al principio del array de su categoría
             docs[currentUploadCategory].unshift(newFileData);
-            
             saveDocs(docs);
-            renderDocs(); // Actualiza toda la UI de este panel
+            renderDocs();
         };
         reader.readAsDataURL(file);
     });
 
-    // Lógica del modal (sin cambios)
     modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
     pdfModal.addEventListener('click', (e) => {
         if (e.target === pdfModal) pdfModal.classList.add('oculto');
     });
     
-    // Primera renderización al cargar
     renderDocs();
 }
 
