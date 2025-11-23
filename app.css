@@ -1634,3 +1634,22 @@ body[data-theme='dark'] #total-restan {
     background-color: var(--saturday-bg);
     border: 1px solid var(--saturday-bg); /* Cambiamos el borde a sólido y del mismo color para unificar */
 }
+
+/* ============================================================= */
+/*   AJUSTE BOTONES DEL TABLÓN PARA MEJORAR VISTA EN MÓVIL   */
+/* ============================================================= */
+
+/* Solo se aplica en pantallas pequeñas (móviles) */
+@media (max-width: 600px) {
+
+    /* 1. Reduce el padding y el tamaño de la fuente de los botones */
+    .tablon-item-actions .modern-btn {
+        padding: 6px 8px; /* Menos espaciado interno */
+        font-size: 0.8em;   /* Letra más pequeña */
+    }
+
+    /* 2. Reduce el espacio entre los botones */
+    .tablon-item-actions {
+        gap: 5px; /* Menos separación entre ellos */
+    }
+}
