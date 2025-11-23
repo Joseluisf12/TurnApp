@@ -458,7 +458,7 @@ function initTablon() {
 }
 
 // =================================================================
-//    VERSIÓN MEJORADA de initDocumentosPanel (con botón Descargar)
+//    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
@@ -542,16 +542,16 @@ function initDocumentosPanel() {
                     fileItem.className = 'documento-file-item';
                     const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-                    // --- ¡CAMBIO AQUÍ! Añadimos el botón Descargar y las clases de color ---
+                    // --- ¡CAMBIO AQUÍ! Usamos iconos en lugar de texto y añadimos un 'title' para accesibilidad ---
                     fileItem.innerHTML = `
                         <div class="documento-file-info">
                             <strong class="documento-file-name">${file.name}</strong>
                             <small class="documento-file-meta">Subido: ${uploadDate}</small>
                         </div>
                         <div class="documento-file-actions">
-                            <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}">Ver</button>
-                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}">Descargar</button>
-                            <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}">Eliminar</button>
+                            <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}" title="Ver">👁️</button>
+                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}" title="Descargar">📥</button>
+                            <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}" title="Eliminar">🗑️</button>
                         </div>
                     `;
                     fragment.appendChild(fileItem);
@@ -587,7 +587,6 @@ function initDocumentosPanel() {
             return;
         }
 
-        // --- ¡NUEVO! Lógica para el botón de Descargar ---
         if (target.matches('.doc-download-btn')) {
             const category = target.dataset.category;
             const index = parseInt(target.dataset.index, 10);
@@ -597,7 +596,7 @@ function initDocumentosPanel() {
                 const a = document.createElement('a');
                 a.href = file.data;
                 a.download = file.name;
-                document.body.appendChild(a); // Requerido para compatibilidad
+                document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
             }

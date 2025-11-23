@@ -1698,11 +1698,6 @@ body[data-theme='dark'] #total-restan {
     flex-shrink: 0;
 }
 
-/* Ajustes para que los botones de las listas sean más compactos */
-.documento-file-actions .modern-btn {
-    padding: 5px 10px;
-    font-size: 0.85em;
-}
 
 /* En modo oscuro, el separador de la lista debe ser más claro */
 [data-theme="dark"] .documento-file-item {
@@ -1710,16 +1705,17 @@ body[data-theme='dark'] #total-restan {
 }
 
 /* ============================================================= */
-/* AJUSTES BOTONES LISTA DE DOCUMENTOS (VER, DESCARGAR, ELIMINAR) */
+/* AJUSTES BOTONES LISTA DE DOCUMENTOS (CON ICONOS) */
 /* ============================================================= */
 
-/* 1. Hacemos los botones más compactos en general (menos padding y letra más pequeña) */
+/* 1. Hacemos los botones más compactos y con el icono más grande */
 .documento-file-actions .modern-btn {
-    padding: 5px 10px;
-    font-size: 0.8em;
+    padding: 6px 12px;   /* Ajustamos padding para un look más equilibrado */
+    font-size: 1.2em;      /* Hacemos el icono más grande y fácil de pulsar */
+    line-height: 1;      /* Mejora la alineación vertical del icono */
 }
 
-/* 2. Asignamos el color VERDE al botón "Ver" */
+/* 2. Asignamos el color VERDE al botón "Ver" (ojo) */
 .documento-file-actions .green {
     background-color: var(--green-color);
 }
@@ -1727,7 +1723,7 @@ body[data-theme='dark'] #total-restan {
     background-color: var(--green-color-dark);
 }
 
-/* 3. Asignamos el color ROJO al botón "Eliminar" */
+/* 3. Asignamos el color ROJO al botón "Eliminar" (papelera) */
 .documento-file-actions .red {
     background-color: var(--red-color);
 }
