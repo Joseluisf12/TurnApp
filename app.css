@@ -1554,3 +1554,15 @@ body[data-theme='dark'] #total-restan {
     border-radius: 6px;
 }
 
+/* =================================================== */
+/*      AJUSTE COLOR MARCO DOCUMENTOS PDF            */
+/* =================================================== */
+
+/*
+ * Cambia el color del borde de los contenedores de PDF
+ * para usar el azul claro de los sábados del calendario.
+ */
+.documento-preview-container {
+    border: 2px solid var(--saturday-bg);
+}
+
