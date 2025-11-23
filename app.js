@@ -457,57 +457,56 @@ function initTablon() {
     renderFiles();
 }
 
-// ===========================================================
-//         FUNCIÓN DEFINITIVA PARA EL PANEL DE DOCUMENTOS (V3)
-//    (Genera miniaturas de imagen para los PDFs y las muestra)
-// ===========================================================
+// ===================================================================
+//      FUNCIÓN FINAL Y ROBUSTA PARA EL PANEL DE DOCUMENTOS (V4)
+// (Maneja errores de carga y resetea el estado de la interfaz)
+// ===================================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
-    // Configuración de la librería PDF.js
-    if (typeof pdfjsLib !== 'undefined') {
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
+    // --- Verificación de la librería PDF.js ---
+    // Si la librería externa no ha cargado, se deshabilitan los botones.
+    if (typeof pdfjsLib === 'undefined') {
+        console.error("Error: La librería pdf.js no se ha podido cargar.");
+        documentosSection.querySelectorAll('.btn-upload-pdf').forEach(btn => {
+            btn.disabled = true;
+            btn.textContent = "Error de Carga";
+        });
+        return;
     }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
 
     const pdfInput = document.getElementById('pdf-input');
     const pdfModal = document.getElementById('pdf-modal');
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
-    const DOCS_KEY = 'turnapp.documentos.v2'; // Versión de clave para evitar conflictos
+    const DOCS_KEY = 'turnapp.documentos.v2';
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
-    function loadDocs() {
-        return JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-    }
-
-    function saveDocs(docs) {
-        localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
-    }
+    function loadDocs() { return JSON.parse(localStorage.getItem(DOCS_KEY) || '{}'); }
+    function saveDocs(docs) { localStorage.setItem(DOCS_KEY, JSON.stringify(docs)); }
     
-    // ¡NUEVO! Función para generar la miniatura de un PDF
     async function generatePdfThumbnail(pdfDataUrl) {
         try {
             const pdf = await pdfjsLib.getDocument(pdfDataUrl).promise;
-            const page = await pdf.getPage(1); // Coge la primera página
-            
-            const viewport = page.getViewport({ scale: 0.5 }); // Escala para la miniatura
+            const page = await pdf.getPage(1);
+            const viewport = page.getViewport({ scale: 0.5 });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
-
             await page.render({ canvasContext: context, viewport: viewport }).promise;
-            
-            return canvas.toDataURL('image/jpeg', 0.8); // Devuelve la imagen como data URL
+            return canvas.toDataURL('image/jpeg', 0.8);
         } catch (error) {
             console.error("Error generando la miniatura del PDF:", error);
-            return null; // Devuelve null si falla
+            return null;
         }
     }
 
+    // FUNCIÓN DE RENDERIZADO MEJORADA
     function renderDocs() {
         const docs = loadDocs();
         CATEGORIES.forEach(category => {
@@ -516,10 +515,13 @@ function initDocumentosPanel() {
 
             const imgPreview = card.querySelector('.documento-preview-img');
             const overlay = card.querySelector('.preview-overlay');
+            const overlayText = overlay.querySelector('.preview-text');
+            
+            // Aseguramos que el texto se reinicie siempre
+            overlayText.textContent = 'No hay PDF';
             
             const docData = docs[category];
 
-            // Modificado: Muestra la miniatura si existe
             if (docData && docData.thumbnail) {
                 imgPreview.src = docData.thumbnail;
                 imgPreview.style.display = 'block';
@@ -556,7 +558,6 @@ function initDocumentosPanel() {
             const category = target.closest('.documento-card').dataset.category;
             const docs = loadDocs();
             const docData = docs[category];
-
             if (docData && docData.data) {
                 if (window.innerWidth < 768) {
                     fetch(docData.data).then(res => res.blob()).then(blob => {
@@ -570,30 +571,42 @@ function initDocumentosPanel() {
         }
     });
 
-    // Modificado: Ahora genera la miniatura al subir el archivo
+    // LISTENER DE SUBIDA MEJORADO
     pdfInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
         if (!file || !currentUploadCategory) return;
 
+        const card = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"]`);
+        const overlayText = card ? card.querySelector('.preview-text') : null;
+
         const reader = new FileReader();
         reader.onload = async (event) => {
             const pdfData = event.target.result;
-            // Muestra un indicador de carga si es necesario
-            const overlayText = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"] .preview-text`);
-            if(overlayText) overlayText.textContent = 'Procesando...';
+            
+            if (overlayText) {
+                overlayText.textContent = 'Procesando...';
+                card.querySelector('.overlay').style.display = 'flex';
+                card.querySelector('.documento-preview-img').style.display = 'none';
+            }
 
-            // Genera la miniatura y luego guarda todo
             const thumbnailData = await generatePdfThumbnail(pdfData);
+
+            // ¡NUEVO! Manejo de error en la generación de la miniatura
+            if (!thumbnailData) {
+                alert('Error: No se pudo procesar el archivo PDF. Puede que esté dañado o no sea compatible.');
+                if (overlayText) overlayText.textContent = 'No hay PDF';
+                return; // No guardamos nada si falla
+            }
 
             const docs = loadDocs();
             docs[currentUploadCategory] = {
                 name: file.name,
                 date: new Date().toISOString(),
                 data: pdfData,
-                thumbnail: thumbnailData // Guardamos la miniatura
+                thumbnail: thumbnailData
             };
             saveDocs(docs);
-            renderDocs();
+            renderDocs(); // Vuelve a pintar la interfaz con el resultado
         };
         reader.readAsDataURL(file);
     });
