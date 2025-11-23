@@ -458,7 +458,8 @@ function initTablon() {
 }
 
 // ===========================================================
-//         NUEVA FUNCIÓN PARA EL PANEL DE DOCUMENTOS
+//         NUEVA FUNCIÓN PARA EL PANEL DE DOCUMENTOS (V2)
+//    (Incluye lógica de borrado y solución para vista en móvil)
 // ===========================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
@@ -473,17 +474,14 @@ function initDocumentosPanel() {
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
-    // Carga los datos desde localStorage
     function loadDocs() {
         return JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
     }
 
-    // Guarda los datos en localStorage
     function saveDocs(docs) {
         localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
     }
 
-    // Pinta los datos en la interfaz
     function renderDocs() {
         const docs = loadDocs();
         CATEGORIES.forEach(category => {
@@ -498,42 +496,62 @@ function initDocumentosPanel() {
 
             if (docData && docData.data) {
                 iframe.src = docData.data;
-                overlay.style.display = 'none'; // Oculta el texto "No hay PDF"
+                overlay.style.display = 'none';
             } else {
                 iframe.src = 'about:blank';
-                overlay.style.display = 'flex'; // Muestra el texto "No hay PDF"
+                overlay.style.display = 'flex';
             }
         });
     }
 
     // --- Event Listeners ---
 
-    // 1. Clic dentro del panel (delegación de eventos)
     documentosSection.addEventListener('click', (event) => {
-        const target = event.target;
+        const target = event.target.closest('button, .documento-preview-container');
+        if (!target) return;
 
-        // Si se hace clic en un botón de subida
+        // Si se pulsa un botón de SUBIDA
         if (target.matches('.btn-upload-pdf')) {
             currentUploadCategory = target.dataset.category;
-            pdfInput.value = null; // Resetea el input
+            pdfInput.value = null;
             pdfInput.click();
         }
 
-        // Si se hace clic en el contenedor de una previsualización
-        if (target.matches('.documento-preview-container, .preview-overlay')) {
-            const container = target.closest('.documento-preview-container');
-            const category = container.closest('.documento-card').dataset.category;
+        // ¡NUEVO! Si se pulsa un botón de BORRADO
+        if (target.matches('.btn-delete-pdf')) {
+            const categoryToDelete = target.dataset.category;
+            if (confirm(`¿Seguro que quieres eliminar el PDF de "${categoryToDelete}"?`)) {
+                const docs = loadDocs();
+                delete docs[categoryToDelete];
+                saveDocs(docs);
+                renderDocs();
+            }
+        }
+
+        // Si se pulsa en la PREVISUALIZACIÓN
+        if (target.matches('.documento-preview-container')) {
+            const category = target.closest('.documento-card').dataset.category;
             const docs = loadDocs();
             const docData = docs[category];
 
             if (docData && docData.data) {
-                modalPdfContent.src = docData.data;
-                pdfModal.classList.remove('oculto');
+                // Si la pantalla es estrecha (móvil), abre en nueva pestaña.
+                if (window.innerWidth < 768) {
+                    fetch(docData.data)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const url = URL.createObjectURL(blob);
+                            window.open(url, '_blank');
+                        });
+                } else {
+                    // Si es pantalla ancha (desktop), usa el modal.
+                    modalPdfContent.src = docData.data;
+                    pdfModal.classList.remove('oculto');
+                }
             }
         }
     });
 
-    // 2. Cuando se selecciona un archivo PDF
     pdfInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file || !currentUploadCategory) return;
@@ -547,20 +565,16 @@ function initDocumentosPanel() {
                 data: event.target.result
             };
             saveDocs(docs);
-            renderDocs(); // Re-render para mostrar el nuevo PDF
+            renderDocs();
         };
         reader.readAsDataURL(file);
     });
 
-    // 3. Lógica para cerrar el modal
     modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
     pdfModal.addEventListener('click', (e) => {
-        if (e.target === pdfModal) {
-            pdfModal.classList.add('oculto');
-        }
+        if (e.target === pdfModal) pdfModal.classList.add('oculto');
     });
     
-    // --- Llamada Inicial ---
     renderDocs();
 }
 

@@ -1513,3 +1513,26 @@ body[data-theme='dark'] #total-restan {
         grid-template-columns: 1fr; /* 1 columna en pantallas muy estrechas */
     }
 }
+/* =================================================== */
+/*      AJUSTES TARJETAS DE DOCUMENTOS (Botones)     */
+/* =================================================== */
+
+/* Contenedor que agrupa los botones de subir y eliminar */
+.documento-card-actions {
+    display: flex;
+    width: 100%;
+    gap: 8px; /* Espacio entre los botones */
+}
+
+/* El botón de subida ahora es flexible y ocupa el espacio disponible */
+.documento-card-actions .btn-upload-pdf {
+    flex-grow: 1; 
+}
+
+/* El botón de eliminar es más pequeño y cuadrado, para el icono */
+.documento-card-actions .btn-delete-pdf {
+    flex-grow: 0;
+    flex-shrink: 0;
+    padding: 8px 10px;
+}
+
