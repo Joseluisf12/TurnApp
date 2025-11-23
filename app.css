@@ -1536,3 +1536,21 @@ body[data-theme='dark'] #total-restan {
     padding: 8px 10px;
 }
 
+/* =================================================== */
+/*      AJUSTES PREVISUALIZACIÓN PDF CON IMAGEN      */
+/* =================================================== */
+
+/* El iframe ahora estará siempre oculto en la previsualización */
+.documento-preview-iframe {
+    display: none;
+}
+
+/* La nueva imagen de previsualización */
+.documento-preview-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 'cover' para rellenar, 'contain' para mostrar todo */
+    display: none; /* Se mostrará con JS cuando exista */
+    border-radius: 6px;
+}
+

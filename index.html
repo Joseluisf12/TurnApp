@@ -7,6 +7,7 @@
   <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body class="light">
 
@@ -259,67 +260,67 @@
     <!-- Input oculto para la subida de PDFs -->
     <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
 
-    <!-- Grid para los 4 mini-paneles -->
-    <div class="documentos-grid">
-        <!-- Mini-Panel: Mes -->
-        <div class="documento-card" data-category="mes">
-            <h3>Mes</h3>
-            <div class="documento-preview-container" title="Ver PDF: Mes">
-                <div class="preview-overlay">
-                    <span class="preview-text">No hay PDF</span>
-                </div>
-                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
-            </div>
-            <div class="documento-card-actions">
-        <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir</button>
-        <button class="btn-delete-pdf modern-btn red" data-category="mes" title="Eliminar PDF">🗑️</button>
+    <!-- index.html (reemplazo completo del grid) -->
+
+<!-- Grid para los 4 mini-paneles -->
+<div class="documentos-grid">
+    <!-- Mini-Panel: Mes -->
+    <div class="documento-card" data-category="mes">
+        <h3>Mes</h3>
+        <div class="documento-preview-container" title="Ver PDF: Mes">
+            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
+            <img class="documento-preview-img" alt="Previsualización PDF Mes">
+            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        </div>
+        <div class="documento-card-actions">
+            <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir</button>
+            <button class="btn-delete-pdf modern-btn red" data-category="mes" title="Eliminar PDF">🗑️</button>
+        </div>
+    </div>
+
+    <!-- Mini-Panel: Ciclos Especiales -->
+    <div class="documento-card" data-category="ciclos">
+        <h3>Ciclos Especiales</h3>
+        <div class="documento-preview-container" title="Ver PDF: Ciclos Especiales">
+            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
+            <img class="documento-preview-img" alt="Previsualización PDF Ciclos">
+            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        </div>
+        <div class="documento-card-actions">
+            <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir</button>
+            <button class="btn-delete-pdf modern-btn red" data-category="ciclos" title="Eliminar PDF">🗑️</button>
+        </div>
+    </div>
+
+    <!-- Mini-Panel: Vacaciones -->
+    <div class="documento-card" data-category="vacaciones">
+        <h3>Vacaciones</h3>
+        <div class="documento-preview-container" title="Ver PDF: Vacaciones">
+            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
+            <img class="documento-preview-img" alt="Previsualización PDF Vacaciones">
+            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        </div>
+        <div class="documento-card-actions">
+            <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir</button>
+            <button class="btn-delete-pdf modern-btn red" data-category="vacaciones" title="Eliminar PDF">🗑️</button>
+        </div>
+    </div>
+
+    <!-- Mini-Panel: Rotación -->
+    <div class="documento-card" data-category="rotacion">
+        <h3>Rotación</h3>
+        <div class="documento-preview-container" title="Ver PDF: Rotación">
+            <div class="preview-overlay"><span class="preview-text">No hay PDF</span></div>
+            <img class="documento-preview-img" alt="Previsualización PDF Rotación">
+            <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
+        </div>
+        <div class="documento-card-actions">
+            <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir</button>
+            <button class="btn-delete-pdf modern-btn red" data-category="rotacion" title="Eliminar PDF">🗑️</button>
+        </div>
     </div>
 </div>
 
-        <!-- Mini-Panel: Ciclos Especiales -->
-        <div class="documento-card" data-category="ciclos">
-            <h3>Ciclos Especiales</h3>
-            <div class="documento-preview-container" title="Ver PDF: Ciclos Especiales">
-                <div class="preview-overlay">
-                    <span class="preview-text">No hay PDF</span>
-                </div>
-                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
-            </div>
-            <div class="documento-card-actions">
-        <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir</button>
-        <button class="btn-delete-pdf modern-btn red" data-category="ciclos" title="Eliminar PDF">🗑️</button>
-    </div>
-</div>
-
-        <!-- Mini-Panel: Vacaciones -->
-        <div class="documento-card" data-category="vacaciones">
-            <h3>Vacaciones</h3>
-            <div class="documento-preview-container" title="Ver PDF: Vacaciones">
-                <div class="preview-overlay">
-                    <span class="preview-text">No hay PDF</span>
-                </div>
-                <iframe class="documento-preview-iframe" src-="about:blank" loading="lazy"></iframe>
-            </div>
-            <div class="documento-card-actions">
-        <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir</button>
-        <button class="btn-delete-pdf modern-btn red" data-category="vacaciones" title="Eliminar PDF">🗑️</button>
-    </div>
-</div>
-
-        <!-- Mini-Panel: Rotación -->
-        <div class="documento-card" data-category="rotacion">
-            <h3>Rotación</h3>
-            <div class="documento-preview-container" title="Ver PDF: Rotación">
-                <div class="preview-overlay">
-                    <span class="preview-text">No hay PDF</span>
-                </div>
-                <iframe class="documento-preview-iframe" src="about:blank" loading="lazy"></iframe>
-            </div>
-            <div class="documento-card-actions">
-        <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir</button>
-        <button class="btn-delete-pdf modern-btn red" data-category="rotacion" title="Eliminar PDF">🗑️</button>
-    </div>
-</div>
 </section>
 
     <!-- ========= NAVEGACIÓN INFERIOR ========= -->
