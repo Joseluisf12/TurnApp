@@ -1619,3 +1619,18 @@ body[data-theme='dark'] #total-restan {
 .documento-card {
     background-color: var(--saturday-bg);
 }
+
+/* =================================================== */
+/*        NUEVOS COLORES PANEL TABLÓN DE ANUNCIOS      */
+/* =================================================== */
+
+/* 1. Fondo del panel "Tablón" con el azul de día laboral */
+#tablon-section {
+    background-color: var(--day-cell-bg);
+}
+
+/* 2. Fondo del marco de previsualización con el azul de los sábados */
+.tablon-preview-container {
+    background-color: var(--saturday-bg);
+    border: 1px solid var(--saturday-bg); /* Cambiamos el borde a sólido y del mismo color para unificar */
+}
