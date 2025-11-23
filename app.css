@@ -1704,18 +1704,23 @@ body[data-theme='dark'] #total-restan {
     border-top-color: rgba(255,255,255,0.1);
 }
 
-/* ============================================================= */
-/* AJUSTES BOTONES LISTA DE DOCUMENTOS (CON ICONOS) */
-/* ============================================================= */
+/* ================================================================= */
+/* AJUSTES BOTONES LISTA DE DOCUMENTOS (VERSIÓN SÚPER-COMPACTA)      */
+/* ================================================================= */
 
-/* 1. Hacemos los botones más compactos y con el icono más grande */
-.documento-file-actions .modern-btn {
-    padding: 6px 12px;   /* Ajustamos padding para un look más equilibrado */
-    font-size: 1.2em;      /* Hacemos el icono más grande y fácil de pulsar */
-    line-height: 1;      /* Mejora la alineación vertical del icono */
+/* 1. Reduce el espacio entre los botones */
+.documento-file-actions {
+    gap: 5px; /* Menos separación entre ellos */
 }
 
-/* 2. Asignamos el color VERDE al botón "Ver" (ojo) */
+/* 2. Hacemos los botones (y sus iconos) mucho más pequeños */
+.documento-file-actions .modern-btn {
+    padding: 5px 9px;   /* Reducimos drásticamente el espaciado interno */
+    font-size: 1em;       /* Devolvemos el icono a un tamaño más pequeño */
+    line-height: 1;      /* Mantenemos la alineación vertical */
+}
+
+/* 3. Mantenemos los colores que ya funcionaban */
 .documento-file-actions .green {
     background-color: var(--green-color);
 }
@@ -1723,7 +1728,6 @@ body[data-theme='dark'] #total-restan {
     background-color: var(--green-color-dark);
 }
 
-/* 3. Asignamos el color ROJO al botón "Eliminar" (papelera) */
 .documento-file-actions .red {
     background-color: var(--red-color);
 }
@@ -1731,4 +1735,4 @@ body[data-theme='dark'] #total-restan {
     background-color: var(--red-color-dark);
 }
 
-/* Nota: El botón "Descargar" usará el color gris por defecto de .modern-btn */
+/* El botón de descarga sigue usando el color gris por defecto */
