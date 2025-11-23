@@ -703,8 +703,8 @@ body {
   background-color: #FAD7A0;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
   border-radius: 14px;
-  padding: 20px 8px; /* <-- 1. ANCHAMOS EL CONTENEDOR REDUCIENDO PADDING LATERAL */
-  margin: 20px auto;
+  padding: 10px 8px;     /* Reducido padding vertical (antes 20px) */
+  margin: 10px auto 20px; /* Reducido margen superior (antes 20px) */
 }
 
 /* === Subcajones (usuario y administrador) === */
@@ -718,10 +718,12 @@ body {
 }
 
 /* --- Estilo del título principal del cajón de peticiones --- */
-#ajustes-section h2 { /* <-- CORREGIDO: ahora apunta al ID correcto */
-  text-align: center;   /* Asegura que el título esté centrado */
+#ajustes-section h2 {
+  text-align: center;
   font-weight: 600;
-  margin-bottom: 15px;  /* <-- REDUCIDO: menos espacio debajo del título */
+  font-size: 1.1em;      /* Añadido: Reducimos ligeramente el tamaño del título */
+  margin-top: 0;         /* Añadido: Quitamos cualquier margen superior residual */
+  margin-bottom: 10px;   /* Reducido el espacio inferior (antes 15px) */
   color: #212529 !important;
 }
 
