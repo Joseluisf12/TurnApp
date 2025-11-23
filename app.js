@@ -325,9 +325,9 @@ function initCoordinatorTable() {
     bindEvents();      
 }
 
-// ========================================================
-//    VERSIÓN MEJORADA de initTablon (con ICONOS en botones)
-// ========================================================
+// =================================================================
+//    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
+// =================================================================
 function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
@@ -336,7 +336,6 @@ function initTablon() {
     const fileInput = document.getElementById('file-input');
     const imageModal = document.getElementById('image-modal');
     const modalImageContent = document.getElementById('modal-image-content');
-    // Corregido: El modal de PDF tiene su propio botón de cierre
     const modalCloseBtn = imageModal.querySelector('.image-modal-close');
 
     if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
@@ -358,20 +357,21 @@ function initTablon() {
             tablonPreviewContainer.classList.add('oculto');
         }
 
-        // --- ¡AJUSTE CLAVE AQUÍ! ---
-        // Se reconstruye el listado usando métodos del DOM más robustos
-        // para asegurar que el nombre del archivo se muestre correctamente.
         files.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'tablon-item';
-
+            
             const infoDiv = document.createElement('div');
             infoDiv.className = 'tablon-item-info';
 
             const nameStrong = document.createElement('strong');
             nameStrong.className = 'tablon-item-name';
-            // Se usa .textContent para insertar el nombre de forma segura
-            nameStrong.textContent = file.name; 
+            nameStrong.textContent = file.name;
+            // --- ¡CAMBIO 1! Hacemos el nombre editable ---
+            nameStrong.contentEditable = true; 
+            nameStrong.spellcheck = false;
+            // Guardamos el índice en el propio elemento para encontrarlo al editar
+            nameStrong.dataset.index = index;
 
             const metaSmall = document.createElement('small');
             metaSmall.className = 'tablon-item-meta';
@@ -383,7 +383,6 @@ function initTablon() {
 
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'tablon-item-actions';
-            // Para los botones, que son estáticos, innerHTML sigue siendo seguro y eficiente
             actionsDiv.innerHTML = `
                 <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
                 <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
@@ -394,10 +393,38 @@ function initTablon() {
             fileItem.appendChild(actionsDiv);
             fragment.appendChild(fileItem);
         });
-
         fileListContainer.appendChild(fragment);
     }
+    
+    // --- ¡CAMBIO 2! Lógica para guardar el nombre editado ---
+    fileListContainer.addEventListener('blur', (event) => {
+        // Se activa cuando se deja de editar un nombre
+        if (event.target && event.target.classList.contains('tablon-item-name')) {
+            const index = parseInt(event.target.dataset.index, 10);
+            const newName = event.target.textContent.trim();
+            
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            if (files[index] && newName) {
+                files[index].name = newName;
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                // Opcional: podrías volver a renderizar, pero no es estrictamente necesario
+                // renderFiles(); 
+            } else {
+                // Si el nombre se deja en blanco, se restaura el original
+                renderFiles();
+            }
+        }
+    }, true); // Usamos 'true' (captura) para asegurar que el evento se gestione bien
 
+    // --- ¡CAMBIO 3! Mejorar la experiencia de usuario con la tecla "Enter" ---
+    fileListContainer.addEventListener('keydown', (event) => {
+        if (event.target && event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
+            event.preventDefault(); // Evita que se cree un salto de línea
+            event.target.blur(); // Dispara el evento 'blur' para guardar
+        }
+    });
+
+    // El resto de la función permanece igual...
     btnUpload.addEventListener('click', () => {
         fileInput.value = null;
         fileInput.click();
@@ -419,7 +446,7 @@ function initTablon() {
 
     fileListContainer.addEventListener('click', (event) => {
         const target = event.target;
-        const index = target.dataset.index;
+        const index = target.closest('[data-index]')?.dataset.index;
         if (index === undefined) return;
 
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
@@ -430,18 +457,15 @@ function initTablon() {
                 modalImageContent.src = file.data;
                 imageModal.classList.remove('oculto');
             } else {
-                const win = window.open("", "_blank");
-                 if (file.type === 'application/pdf') {
-                     win.document.write(`<iframe src="${file.data}" frameborder="0" style="border:0; top:0px; left:0px; bottom:0px; right:0px; width:100%; height:100%;" allowfullscreen></iframe>`);
-                } else {
-                     win.document.write(`<p>Contenido no visualizable directamente. Puede intentar descargarlo.</p>`);
-                }
+                fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
             }
         } else if (target.classList.contains('download-btn')) {
             const a = document.createElement('a');
-a.href = file.data;
-a.download = file.name;
-a.click();
+            a.href = file.data;
+            a.download = file.name;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         } else if (target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
                 files.splice(index, 1);
