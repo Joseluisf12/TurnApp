@@ -38,44 +38,53 @@
 
     <!-- ========= PANEL 1: TURNOS (Calendario y Licencias) ========= -->
     <section id="content" class="content panel">
-      <div id="editable-title" contenteditable="true" spellcheck="false">Guardia 1 Teixeiro</div>
+      <h1 id="editable-title" contenteditable="true" spellcheck="false">Turnos 2024</h1>
 
-<!-- Controles del Calendario y Cadencia -->
-<nav id="main-nav" style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 10px;">
+<nav id="main-nav">
     <button id="btn-apply-cadence" class="modern-btn">Aplicar Cadencia</button>
     <button id="btn-clear-cadence" class="modern-btn">Limpiar Cadencia</button>
 </nav>
 
-<!-- Calendario -->
-<div class="calendar-header">
-    <button id="prevMonth" class="modern-btn">◄</button>
-    <h2 id="monthLabel"></h2>
-    <button id="nextMonth" class="modern-btn">►</button>
-</div>
-<div class="calendar-weekdays">
-    <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
-</div>
-<div id="calendar"></div>
+<section id="calendar-panel" class="panel">
+    <div class="calendar-header">
+        <button id="prevMonth" class="modern-btn">◄</button>
+        <h2 id="monthLabel"></h2>
+        <button id="nextMonth" class="modern-btn">►</button>
+    </div>
+    <div class="calendar-weekdays">
+        <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+    </div>
+    <div id="calendar"></div>
+</section>
 
+<section id="licencias-container" class="panel">
+    <h2>Control de Licencias y Permisos</h2>
+    <div class="licencias-grid">
+        <div class="licencia-item header"><strong>Tipo</strong></div>
+        <div class="licencia-item header"><strong>Carga</strong></div>
+        <div class="licencia-item header"><strong>Consumidos</strong></div>
+        <div class="licencia-item header"><strong>Restan</strong></div>
+        <div class="licencia-item header"><strong>Color</strong></div>
 
-      <div style="margin-top:12px; margin-bottom:25px; text-align:center;">
-        <button id="btn-apply-cadence" class="modern-btn green">Aplicar cadencia</button>
-        <button id="btn-clear-cadence" class="modern-btn red">Limpiar cadencia</button>
-      </div>
+        <div class="licencia-item" data-tipo="AP"><span>Días por Asuntos Particulares</span></div>
+        <div class="licencia-item"><input type="number" class="carga" value="6"></div>
+        <div class="licencia-item"><input type="number" class="consumidos" value="0"></div>
+        <div class="licencia-item"><input type="number" class="restan" readonly></div>
+        <div class="licencia-item"><button class="licencia-color-handle"></button></div>
+        
+        <div class="licencia-item" data-tipo="V"><span>Vacaciones</span></div>
+        <div class="licencia-item"><input type="number" class="carga" value="22"></div>
+        <div class="licencia-item"><input type="number" class="consumidos" value="0"></div>
+        <div class="licencia-item"><input type="number" class="restan" readonly></div>
+        <div class="licencia-item"><button class="licencia-color-handle"></button></div>
 
-      <div class="calendar-controls">
-        <button id="prevMonth">◀ Anterior</button>
-        <span id="monthLabel"></span>
-        <button id="nextMonth">Siguiente ▶</button>
-      </div>
-
-      <div id="calendar-weekdays">
-        <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
-      </div>
-
-      <section id="calendar-panel">
-        <div id="calendar"></div>
-      </section>
+        <div class="licencia-item total"><span>TOTALES</span></div>
+        <div class="licencia-item total"><input type="number" id="total-carga" readonly></div>
+        <div class="licencia-item total"><input type="number" id="total-consumidos" readonly></div>
+        <div class="licencia-item total"><input type="number" id="total-restan" readonly></div>
+        <div class="licencia-item total"></div>
+    </div>
+ </section>
 
        
 <!-- ========================================================================= -->
