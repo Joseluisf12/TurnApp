@@ -908,7 +908,7 @@ function initEditableTitle() {
 
 // festivos nacionales (mes 0-11)
 const spanishHolidays = [
-  { day:1, month:0 }, { day:6, month:0 }, { day:3, month:3 }, { day:1, month:4 },
+  { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
   { day:15, month:7 }, { day:12, month:9 }, { day:2, month:10 },
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
@@ -987,15 +987,14 @@ function initApp(){
   });
 }
 
-// =========================================================================
-// RENDER CALENDARIO (VERSIÓN MEJORADA CON FESTIVOS VARIABLES)
-// =========================================================================
+// =================================================================
+//    renderCalendar (VERSIÓN CORREGIDA QUE PASA EL ESTADO FESTIVO)
+// =================================================================
 function renderCalendar(month, year){
   const calendar = document.getElementById('calendar');
   if(!calendar) return;
   calendar.innerHTML = '';
 
-  // ---> ¡CAMBIO 1! Obtenemos los festivos variables para el año que se está mostrando.
   const variableHolidays = getVariableHolidays(year);
 
   const monthLabel = document.getElementById('monthLabel');
@@ -1025,14 +1024,16 @@ function renderCalendar(month, year){
     if(weekday===6) cell.classList.add('saturday');
     if(weekday===0) cell.classList.add('sunday');
 
-    // ---> ¡CAMBIO 2! Comprobamos tanto los festivos fijos como los variables.
     const isFixedHoliday = spanishHolidays.some(h => h.day === day && h.month === month);
     const isVariableHoliday = variableHolidays.some(h => h.day === day && h.month === month);
+    
+    // --- ¡AJUSTE CLAVE AQUÍ! ---
+    // Guardamos el resultado en una variable para usarlo en varios sitios.
+    const isTodayHoliday = isFixedHoliday || isVariableHoliday;
 
-    if (isFixedHoliday || isVariableHoliday) {
+    if (isTodayHoliday) {
       cell.classList.add('holiday');
     }
-    // --- Fin de los cambios en esta sección ---
 
     const label = document.createElement('div');
     label.className = 'day-label';
@@ -1045,11 +1046,13 @@ function renderCalendar(month, year){
     const row = document.createElement('div');
     row.className = 'shifts-row';
 
-    row.appendChild(createShiftElement(year, month, day, 'M'));
-    row.appendChild(createShiftElement(year, month, day, 'T'));
+    // --- ¡Y PASAMOS EL RESULTADO A LA FUNCIÓN QUE CREA LOS TURNOS! ---
+    row.appendChild(createShiftElement(year, month, day, 'M', isTodayHoliday));
+    row.appendChild(createShiftElement(year, month, day, 'T', isTodayHoliday));
     wrapper.appendChild(row);
 
-    wrapper.appendChild(createShiftElement(year, month, day, 'N'));
+    wrapper.appendChild(createShiftElement(year, month, day, 'N', isTodayHoliday));
+    // --- Fin de los cambios ---
 
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
@@ -1060,8 +1063,10 @@ function renderCalendar(month, year){
   }
 }
 
-// ---------------- crear turno ----------------
-function createShiftElement(year, month, day, shiftKey){
+// =================================================================
+//    createShiftElement (VERSIÓN CORREGIDA CON LÓGICA DE FESTIVOS)
+// =================================================================
+function createShiftElement(year, month, day, shiftKey, isHoliday){
   const container = document.createElement('div');
   container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
 
@@ -1072,13 +1077,22 @@ function createShiftElement(year, month, day, shiftKey){
   shift.dataset.shift = shiftKey;
 
   const dk = dateKey(year, month, day);
-  let defaultBg = '#e8f0ff';
+  let defaultBg = ''; // Lo inicializamos vacío
   const weekday = new Date(year, month, day).getDay();
-  if(weekday === 6) defaultBg = 'rgba(163,193,255,0.65)';
-  if(weekday === 0 || spanishHolidays.some(h=>h.day===day && h.month===month)) defaultBg = 'rgba(255,179,179,0.45)';
+
+  // --- ¡AJUSTE CLAVE AQUÍ! ---
+  // Ahora usamos el parámetro 'isHoliday' para decidir el color de fondo.
+  if (isHoliday || weekday === 0) { // Si es festivo (fijo o variable) O domingo
+      defaultBg = 'rgba(255,179,179,0.45)'; // Color rosa festivo
+  } else if (weekday === 6) { // Si es sábado
+      defaultBg = 'rgba(163,193,255,0.65)'; // Color azul sábado
+  } else { // Si es un día laboral normal
+      defaultBg = '#e8f0ff'; // Color azul laboral
+  }
   shift.style.backgroundColor = defaultBg;
   shift.style.color = '#000';
 
+  // El resto de la lógica de la función para restaurar ediciones manuales no cambia...
   if(manualEdits[dk] && manualEdits[dk][shiftKey]){
     const obj = manualEdits[dk][shiftKey];
     if(obj.text !== undefined && obj.text !== null) shift.textContent = obj.text;
