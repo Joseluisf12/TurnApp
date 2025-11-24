@@ -1716,3 +1716,88 @@ body[data-theme='dark'] #total-restan {
 .tablon-item-actions .green:hover { background-color: var(--green-color-dark); }
 .tablon-item-actions .red { background-color: var(--red-color); }
 .tablon-item-actions .red:hover { background-color: var(--red-color-dark); }
+
+
+/* ========================================================================= */
+/*     ESTILOS PARA LA NUEVA PANTALLA DE LOGIN                             */
+/* ========================================================================= */
+
+.login-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vw;
+    height: 100vh;
+    background-color: var(--bg-color);
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 20000; /* Asegura que esté por encima de todo */
+}
+
+.login-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px;
+    background-color: var(--panel-bg);
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    width: 90%;
+    max-width: 380px;
+    border: 1px solid var(--border-color);
+}
+
+.login-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 15px;
+}
+
+#login-title {
+    margin: 0 0 25px 0;
+    font-size: 1.8em;
+    font-weight: 600;
+    color: var(--text-color);
+}
+
+#login-email,
+#login-password {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-size: 1em;
+}
+
+#login-email::placeholder,
+#login-password::placeholder {
+    color: #888;
+}
+
+#btn-login {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 6px;
+    background-color: #0b5ed7; /* Un azul primario atractivo */
+    color: white;
+    font-size: 1.1em;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#btn-login:hover {
+    background-color: #0a50c2;
+}
+
+#login-error-message {
+    margin-top: 15px;
+    color: #e53935; /* Un rojo claro para errores */
+    font-size: 0.9em;
+    text-align: center;
+}

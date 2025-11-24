@@ -11,6 +11,21 @@
 </head>
 <body class="light">
 
+    <!-- ========================================================================= -->
+    <!--     NUEVA SECCIÓN DE LOGIN                                                -->
+    <!-- ========================================================================= -->
+    <section id="login-section" class="login-container">
+        <div class="login-box">
+            <img src="icons/icon-192x192.png" alt="Logo TurnApp" class="login-logo">
+            <h1 id="login-title">TurnApp</h1>
+            <input type="email" id="login-email" placeholder="Correo electrónico" autocomplete="email">
+            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+            <button id="btn-login">Iniciar Sesión</button>
+            <p id="login-error-message" class="oculto"></p>
+        </div>
+    </section>
+
+
   <!-- Pantalla inicial / Splash -->
   <div id="splash" class="splash">
     <div class="logo-wrap">
@@ -24,6 +39,7 @@
     <header class="app-header">
       <h2 id="app-title">TurnApp</h2>
       <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
+     <button id="btn-logout" title="Cerrar Sesión" class="icon-btn oculto" aria-label="Cerrar sesión">🚪</button>
     </header>
 
     <!-- ========= PANEL 1: TURNOS (Calendario y Licencias) ========= -->

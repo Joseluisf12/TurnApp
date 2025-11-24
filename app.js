@@ -698,29 +698,12 @@ function initDocumentosPanel() {
     renderDocs();
 }
 
-// Init
+// Init  
 document.addEventListener('DOMContentLoaded', () => {
-initApp();
-
-  initThemeSwitcher();
-  initEditableTitle();
-
-  const applyBtn = document.getElementById('btn-apply-cadence');
-  const clearBtn = document.getElementById('btn-clear-cadence');
-  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
-
-   initLicenciasPanel();
-
-  // restaurar persistencia de manualEdits y cadenceSpec
-  restoreManualEdits();
-  restoreCadenceSpec();
-
-    initPeticiones();
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-  });
+    // Ahora, al cargar la página, solo inicializamos la autenticación.
+    // El resto de la app se inicializará después de un login exitoso.
+    initAuth();
+});
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -973,6 +956,95 @@ const colorPalette = [
   "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
   "rgba(232,240,255,1)","rgba(163,193,255,0.65)","rgba(255,179,179,0.45)"
 ];
+
+// =========================================================================
+//     NUEVO BLOQUE DE AUTENTICACIÓN
+// =========================================================================
+let currentUser = null; // Variable global para guardar el usuario logueado
+
+function handleLogin() {
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    const errorMessage = document.getElementById('login-error-message');
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    // --- Lógica de Autenticación (Temporal) ---
+    // Por ahora, usaremos usuarios "hardcodeados".
+    // En el futuro, esto se conectará a Firebase.
+    if (email === "coordinador@turnapp.es" && password === "1234") {
+        currentUser = { email: email, role: 'coordinador' };
+    } else if (email === "usuario@turnapp.es" && password === "1234") {
+        currentUser = { email: email, role: 'usuario' };
+    } else {
+        errorMessage.textContent = "Credenciales incorrectas. Inténtalo de nuevo.";
+        errorMessage.classList.remove('oculto');
+        return; // Detenemos la ejecución si el login falla
+    }
+    
+    // Si el login es exitoso:
+    document.getElementById('login-section').classList.add('oculto'); // Oculta login
+    document.getElementById('app').classList.remove('oculto');        // Muestra la app
+    document.getElementById('btn-logout').classList.remove('oculto'); // Muestra el botón de logout
+
+    // Aquí llamamos a todas las inicializaciones que antes estaban en DOMContentLoaded
+    initializeMainApp(); 
+}
+
+function handleLogout() {
+    currentUser = null;
+    // Opcional: Limpiar cualquier dato sensible si fuera necesario
+
+    document.getElementById('app').classList.add('oculto');              // Oculta la app
+    document.getElementById('btn-logout').classList.add('oculto');       // Oculta el botón de logout
+    document.getElementById('login-section').classList.remove('oculto'); // Muestra el login
+    
+    // Limpiamos los campos del formulario de login
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error-message').classList.add('oculto');
+}
+
+function initAuth() {
+    const loginButton = document.getElementById('btn-login');
+    const logoutButton = document.getElementById('btn-logout');
+
+    if (loginButton) loginButton.addEventListener('click', handleLogin);
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
+
+    // Permitir login con la tecla "Enter"
+    const passwordInput = document.getElementById('login-password');
+    if(passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                handleLogin();
+            }
+        });
+    }
+}
+
+function initializeMainApp() {
+    // Todas las funciones que configuran los diferentes módulos de la app
+    initApp(); // <-- Esta inicializa el calendario y su navegación
+    initThemeSwitcher();
+    initEditableTitle();
+    initLicenciasPanel();
+    initPeticiones();
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+
+    // Restauramos datos de sesión
+    restoreManualEdits();
+    restoreCadenceSpec();
+
+    // Vinculamos los botones de los modales
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+}
 
 // ---------------- init / navegación (con swipe) ----------------
 function initApp(){
