@@ -1,12 +1,9 @@
 {
   "name": "TurnApp",
   "short_name": "TurnApp",
-  "start_url": "./index.html",
+  "start_url": ".",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#0b5ed7",
-  "icons": [
-    { "src": "logo.svg", "sizes": "192x192", "type": "image/svg+xml" },
-    { "src": "logo.png", "sizes": "512x512", "type": "image/png" }
-  ]
+  "theme_color": "#ffffff",
+  "description": "Gestor de turnos de trabajo."
 }
