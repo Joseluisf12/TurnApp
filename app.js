@@ -1,58 +1,162 @@
 // =========================================================================
-// TurnApp v4.0 - Versión Estable (Single-User)
+// TurnApp v4.1.0 - Base de Autenticación Estable
 // =========================================================================
-// Esta versión incluye todas las funcionalidades para un solo usuario,
-// cálculo de festivos variables y correcciones de UI.
-// Sirve como base para el futuro desarrollo multi-usuario.
+// Esta versión introduce la pantalla de login y la estructura para
+// el futuro desarrollo multi-usuario. Todo el código ha sido revisado
+// y unificado para asegurar su correcto funcionamiento.
 
-/**
- * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
- */
+// =========================================================================
+// GESTIÓN DE ESTADO GLOBAL
+// =========================================================================
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let cadenceData = [];
+let cadenceSpec = null;
+let manualEdits = {};
+let currentUser = null; // Guardará el usuario logueado
+
+// =========================================================================
+// BLOQUE DE AUTENTICACIÓN
+// =========================================================================
+function handleLogin() {
+    const emailInput = document.getElementById('login-email');
+    const passwordInput = document.getElementById('login-password');
+    const errorMessage = document.getElementById('login-error-message');
+
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
+    // Lógica de Autenticación (Temporal)
+    if (email === "coordinador@turnapp.es" && password === "1234") {
+        currentUser = { email: email, role: 'coordinador' };
+    } else if (email === "usuario@turnapp.es" && password === "1234") {
+        currentUser = { email: email, role: 'usuario' };
+    } else {
+        errorMessage.textContent = "Credenciales incorrectas.";
+        errorMessage.classList.remove('oculto');
+        return;
+    }
+    
+    // Si el login es exitoso:
+    errorMessage.classList.add('oculto');
+    document.getElementById('login-section').classList.add('oculto');
+    document.getElementById('app').classList.remove('oculto');
+    document.getElementById('btn-logout').classList.remove('oculto');
+
+    // Llamamos a la inicialización de toda la lógica de la app
+    initializeMainApp(); 
+}
+
+function handleLogout() {
+    currentUser = null;
+    document.getElementById('app').classList.add('oculto');
+    document.getElementById('btn-logout').classList.add('oculto');
+    document.getElementById('login-section').classList.remove('oculto');
+    
+    document.getElementById('login-email').value = '';
+    document.getElementById('login-password').value = '';
+    document.getElementById('login-error-message').classList.add('oculto');
+}
+
+function initAuth() {
+    const loginButton = document.getElementById('btn-login');
+    const logoutButton = document.getElementById('btn-logout');
+    const passwordInput = document.getElementById('login-password');
+
+    if (loginButton) loginButton.addEventListener('click', handleLogin);
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
+    
+    if(passwordInput) {
+        passwordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleLogin();
+        });
+    }
+}
+
+// =========================================================================
+// INICIALIZADOR PRINCIPAL DE LA APP (POST-LOGIN)
+// =========================================================================
+function initializeMainApp() {
+    // Restauramos datos de sesión ANTES de renderizar
+    restoreManualEdits();
+    restoreCadenceSpec();
+    
+    // Inicializamos todos los módulos
+    initThemeSwitcher();
+    initEditableTitle();
+    initApp(); // Calendario y navegación (incluye swipe)
+    initLicenciasPanel();
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones();
+    
+    // Vinculamos botones de modales y otros controles
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+}
+
+
+// =========================================================================
+// MÓDULOS DE LA APP
+// =========================================================================
+
 function initThemeSwitcher() {
     const themeToggleButton = document.getElementById("btn-toggle-theme");
     const body = document.body;
 
-    // Función que aplica el tema y actualiza el botón y localStorage
     const applyTheme = (theme) => {
-        // Usamos un atributo 'data-theme' para poder usarlo en CSS
         body.dataset.theme = theme; 
-        
-        // Guardamos la preferencia para que no se pierda al recargar
         localStorage.setItem('turnapp_theme', theme);
-        
-        // Cambiamos el icono del botón para que refleje el estado actual
         if (themeToggleButton) {
             themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
         }
     };
     
-    // Función que se ejecuta al hacer clic en el botón
     const toggleTheme = () => {
-        // Comprobamos cuál es el tema actual y lo cambiamos
         const newTheme = body.dataset.theme === 'light' ? 'dark' : 'light';
         applyTheme(newTheme);
     };
 
-    // Añadimos el "escuchador" de clics al botón
     if (themeToggleButton) {
         themeToggleButton.addEventListener('click', toggleTheme);
     }
     
-    // Al cargar la app, aplicamos el tema guardado o el claro por defecto
     const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
     applyTheme(savedTheme);
 }
 
-// ====================================================
-// PEGADO COMPLETO PARA REEMPLAZAR initCoordinatorTable
-// ====================================================
+function initEditableTitle() {
+    const titleElement = document.getElementById('editable-title');
+    if (!titleElement) return;
+
+    const EDITABLE_TITLE_KEY = 'turnapp.editableTitle';
+    const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
+    if (savedTitle) {
+        titleElement.textContent = savedTitle;
+    }
+
+    titleElement.addEventListener('blur', () => {
+        const newTitle = titleElement.textContent.trim();
+        localStorage.setItem(EDITABLE_TITLE_KEY, newTitle);
+    });
+
+    titleElement.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            titleElement.blur();
+        }
+    });
+}
+
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
 
-    // 1. ESTADO Y CLAVES
     const KEYS = {
         TEXT: "tablaCoordinadorTextos",
         COLORS: "tablaCoordinadorColores",
@@ -89,7 +193,6 @@ function initCoordinatorTable() {
         };
     }
 
-    // 2. FUNCIONES DE RENDERIZADO DEL DOM
     function renderColgroup() {
         let colgroup = tabla.querySelector('colgroup');
         if (!colgroup) {
@@ -98,24 +201,17 @@ function initCoordinatorTable() {
         }
         colgroup.innerHTML = '';
 
-        // Definimos los anchos fijos para las columnas externas
-        const firstColWidth = 9;  // Ancho para la columna "Nº"
-        const secondColWidth = 18; // Ancho para la columna "NOMBRE"
-        const lastColWidth = 35;   // Ancho para la columna "OBSERVACIONES"
-
-        // Calculamos el espacio restante para las columnas de turno
-        const totalTurnWidth = 100 - firstColWidth - secondColWidth - lastColWidth; // (50% en este caso)
+        const firstColWidth = 9;
+        const secondColWidth = 18;
+        const lastColWidth = 35;
+        const totalTurnWidth = 100 - firstColWidth - secondColWidth - lastColWidth;
         const numTurnCols = tableState.turnColumns.length;
         const individualTurnWidth = numTurnCols > 0 ? totalTurnWidth / numTurnCols : 0;
 
-        // Generamos las etiquetas <col> con los anchos calculados
-        let colgroupHTML = `<col style="width: ${firstColWidth}%;">`;
-        colgroupHTML += `<col style="width: ${secondColWidth}%;">`;
-
+        let colgroupHTML = `<col style="width: ${firstColWidth}%;"><col style="width: ${secondColWidth}%;">`;
         for (let i = 0; i < numTurnCols; i++) {
             colgroupHTML += `<col style="width: ${individualTurnWidth}%;">`;
         }
-
         colgroupHTML += `<col style="width: ${lastColWidth}%;">`;
         colgroup.innerHTML = colgroupHTML;
     }
@@ -155,55 +251,51 @@ function initCoordinatorTable() {
     }
     
     function initializeRow(row, rowIndex) {
-    row.innerHTML = '';
-    for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
-        const cell = document.createElement('td');
-        const cellId = `r${rowIndex}-c${cellIndex}`;
-        const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
-        
-        cell.style.position = 'relative';
-        const textEditor = document.createElement('div');
-        textEditor.className = 'text-editor';
-        textEditor.contentEditable = true;
-        textEditor.innerText = tableState.texts[cellId] || '';
-        cell.appendChild(textEditor);
-
-        if (isTurnoCell) {
-            textEditor.style.paddingBottom = '16px';
-            if (tableState.colors[cellId]) {
-                cell.style.backgroundColor = tableState.colors[cellId];
-            }
-            const handle = document.createElement('button');
-            handle.type = 'button';
-            handle.title = 'Elegir color';
-            handle.innerHTML = '&#9679;';
+        row.innerHTML = '';
+        for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
+            const cell = document.createElement('td');
+            const cellId = `r${rowIndex}-c${cellIndex}`;
+            const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
             
-            // --- CAMBIOS CLAVE AQUÍ ---
-            // Opacidad base reducida de 0.5 a 0.1 para que sea casi imperceptible.
-            handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
-            // Al pasar el ratón, se hace más visible (pero no tanto como antes).
-            handle.onmouseenter = () => handle.style.opacity = '0.6';
-            // Al quitar el ratón, vuelve a ser casi imperceptible.
-            handle.onmouseleave = () => handle.style.opacity = '0.1';
+            cell.style.position = 'relative';
+            const textEditor = document.createElement('div');
+            textEditor.className = 'text-editor';
+            textEditor.contentEditable = true;
+            textEditor.innerText = tableState.texts[cellId] || '';
+            cell.appendChild(textEditor);
 
-            handle.onclick = (ev) => {
-                ev.stopPropagation();
-                openColorPicker(handle, (color) => {
-                    if (color === 'initial') {
-                        cell.style.backgroundColor = '';
-                        delete tableState.colors[cellId];
-                    } else {
-                        cell.style.backgroundColor = color;
-                        tableState.colors[cellId] = color;
-                    }
-                    localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                });
-            };
-            cell.appendChild(handle);
+            if (isTurnoCell) {
+                textEditor.style.paddingBottom = '16px';
+                if (tableState.colors[cellId]) {
+                    cell.style.backgroundColor = tableState.colors[cellId];
+                }
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.title = 'Elegir color';
+                handle.innerHTML = '&#9679;';
+                
+                handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
+                handle.onmouseenter = () => handle.style.opacity = '0.6';
+                handle.onmouseleave = () => handle.style.opacity = '0.1';
+
+                handle.onclick = (ev) => {
+                    ev.stopPropagation();
+                    openColorPicker(handle, (color) => {
+                        if (color === 'initial') {
+                            cell.style.backgroundColor = '';
+                            delete tableState.colors[cellId];
+                        } else {
+                            cell.style.backgroundColor = color;
+                            tableState.colors[cellId] = color;
+                        }
+                        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+                    });
+                };
+                cell.appendChild(handle);
+            }
+            row.appendChild(cell);
         }
-        row.appendChild(cell);
     }
-}
 
     function renderBody() {
         if (!tbody) return;
@@ -216,12 +308,11 @@ function initCoordinatorTable() {
     
     function fullTableRedraw() {
         syncStateFromStorage();
-        renderColgroup(); // ¡NUEVA LLAMADA!
+        renderColgroup();
         renderHeaders();
         renderBody();
     }
 
-    // 3. VINCULACIÓN DE EVENTOS (Se llama una sola vez)
     function bindEvents() {
         thead.addEventListener('blur', (e) => {
             const target = e.target;
@@ -285,13 +376,12 @@ function initCoordinatorTable() {
         };
 
         if (btnAddCol) btnAddCol.onclick = () => {
-            const newTurnName = prompt("Introduce el nombre para la nueva columna:", `T${tableState.turnColumns.length + 1}`);
+            const newTurnName = prompt(`Introduce el nombre para la nueva columna:`, `T${tableState.turnColumns.length + 1}`);
             if (!newTurnName || newTurnName.trim() === '') return;
             
             const newColId = `th-custom-${Date.now()}`;
             tableState.turnColumns.push({ id: newColId, header: newTurnName.trim() });
             localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-            
             fullTableRedraw();
         };
 
@@ -301,7 +391,6 @@ function initCoordinatorTable() {
                 
                 tableState.turnColumns.pop();
                 localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-
                 fullTableRedraw();
             } else {
                 alert("No hay columnas de turno que eliminar.");
@@ -323,14 +412,10 @@ function initCoordinatorTable() {
         }
     }
 
-    // 4. INICIALIZACIÓN
     fullTableRedraw();
     bindEvents();      
 }
 
-// =================================================================
-//    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
-// =================================================================
 function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
@@ -339,10 +424,9 @@ function initTablon() {
     const fileInput = document.getElementById('file-input');
     const imageModal = document.getElementById('image-modal');
     const modalImageContent = document.getElementById('modal-image-content');
-    const modalCloseBtn = imageModal.querySelector('.image-modal-close');
+    const modalCloseBtn = imageModal ? imageModal.querySelector('.image-modal-close') : null;
 
     if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
-        console.error("TurnApp Error: Faltan elementos del DOM para la funcionalidad del Tablón.");
         return;
     }
 
@@ -370,10 +454,8 @@ function initTablon() {
             const nameStrong = document.createElement('strong');
             nameStrong.className = 'tablon-item-name';
             nameStrong.textContent = file.name;
-            // --- ¡CAMBIO 1! Hacemos el nombre editable ---
             nameStrong.contentEditable = true; 
             nameStrong.spellcheck = false;
-            // Guardamos el índice en el propio elemento para encontrarlo al editar
             nameStrong.dataset.index = index;
 
             const metaSmall = document.createElement('small');
@@ -399,9 +481,7 @@ function initTablon() {
         fileListContainer.appendChild(fragment);
     }
     
-    // --- ¡CAMBIO 2! Lógica para guardar el nombre editado ---
     fileListContainer.addEventListener('blur', (event) => {
-        // Se activa cuando se deja de editar un nombre
         if (event.target && event.target.classList.contains('tablon-item-name')) {
             const index = parseInt(event.target.dataset.index, 10);
             const newName = event.target.textContent.trim();
@@ -410,24 +490,19 @@ function initTablon() {
             if (files[index] && newName) {
                 files[index].name = newName;
                 localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-                // Opcional: podrías volver a renderizar, pero no es estrictamente necesario
-                // renderFiles(); 
             } else {
-                // Si el nombre se deja en blanco, se restaura el original
                 renderFiles();
             }
         }
-    }, true); // Usamos 'true' (captura) para asegurar que el evento se gestione bien
+    }, true);
 
-    // --- ¡CAMBIO 3! Mejorar la experiencia de usuario con la tecla "Enter" ---
     fileListContainer.addEventListener('keydown', (event) => {
         if (event.target && event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
-            event.preventDefault(); // Evita que se cree un salto de línea
-            event.target.blur(); // Dispara el evento 'blur' para guardar
+            event.preventDefault();
+            event.target.blur();
         }
     });
 
-    // El resto de la función permanece igual...
     btnUpload.addEventListener('click', () => {
         fileInput.value = null;
         fileInput.click();
@@ -491,14 +566,10 @@ function initTablon() {
     renderFiles();
 }
 
-// =================================================================
-//    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
-// =================================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
-    // Configuración de PDF.js
     if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
     }
@@ -506,7 +577,9 @@ function initDocumentosPanel() {
     const pdfInput = document.getElementById('pdf-input');
     const pdfModal = document.getElementById('pdf-modal');
     const modalPdfContent = document.getElementById('modal-pdf-content');
-    const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
+    const modalCloseBtn = pdfModal ? pdfModal.querySelector('.image-modal-close') : null;
+    
+    if(!pdfInput || !pdfModal || !modalPdfContent || !modalCloseBtn) return;
 
     const DOCS_KEY = 'turnapp.documentos.v3'; 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
@@ -576,7 +649,6 @@ function initDocumentosPanel() {
                     fileItem.className = 'documento-file-item';
                     const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-                    // --- ¡CAMBIO AQUÍ! Usamos iconos en lugar de texto y añadimos un 'title' para accesibilidad ---
                     fileItem.innerHTML = `
                         <div class="documento-file-info">
                             <strong class="documento-file-name">${file.name}</strong>
@@ -698,48 +770,6 @@ function initDocumentosPanel() {
     renderDocs();
 }
 
-// Init  
-document.addEventListener('DOMContentLoaded', () => {
-    // Ahora, al cargar la página, solo inicializamos la autenticación.
-    // El resto de la app se inicializará después de un login exitoso.
-    initAuth();
-});
-
-// ---------------- estado ----------------
-let currentMonth = new Date().getMonth();
-let currentYear = new Date().getFullYear();
-let cadenceData = []; // array con {date: Date, type: string}
-let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
-let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
-
-// ---------------- utilidades ----------------
-function dateKey(year, month, day){
-  const mm = String(month+1).padStart(2,'0');
-  const dd = String(day).padStart(2,'0');
-  return `${year}-${mm}-${dd}`;
-}
-function isColorLight(hex){
-  if(!hex) return true;
-  if(hex.indexOf('rgba')===0 || hex.indexOf('rgb')===0){
-    const nums = hex.replace(/[^\d,]/g,'').split(',').map(n=>parseInt(n,10)||0);
-    const [r,g,b] = nums;
-    const lum = 0.2126*r + 0.7152*g + 0.0722*b;
-    return lum > 200;
-  }
-  if(hex[0] !== '#') return true;
-  const r = parseInt(hex.substr(1,2),16);
-  const g = parseInt(hex.substr(3,2),16);
-  const b = parseInt(hex.substr(5,2),16);
-  const lum = 0.2126*r + 0.7152*g + 0.0722*b;
-  return lum > 200;
-}
-function defaultTextFor(shiftKey){ return shiftKey; }
-
-// =========================================================================
-// INICIO DEL NUEVO BLOQUE DE LÓGICA
-// =========================================================================
-
-// 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
 function restoreManualEdits(){
   try {
     const raw = localStorage.getItem('turnapp.manualEdits');
@@ -753,59 +783,47 @@ function saveManualEdits(){
   try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
 }
 
-// 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
 function initLicenciasPanel() {
     const licenciasContainer = document.getElementById('licencias-container');
-    if (!licenciasContainer) {
-        console.error("Error: Contenedor de licencias no encontrado.");
-        return;
-    }
+    if (!licenciasContainer) return;
 
     const items = licenciasContainer.querySelectorAll('.licencia-item');
     const totalCargaEl = document.getElementById('total-carga');
     const totalConsumidosEl = document.getElementById('total-consumidos');
     const totalRestanEl = document.getElementById('total-restan');
-    const LICENCIAS_KEY = 'turnapp.licenciasData.v3'; // Clave actualizada
+    const LICENCIAS_KEY = 'turnapp.licenciasData.v3';
 
-    // Calcula y actualiza todos los valores derivados (restan, totales)
     function updateCalculations() {
         let totalCarga = 0;
         let totalConsumidos = 0;
-
         items.forEach(item => {
-            const cargaInput = item.querySelector('.carga');
-            const consumidosInput = item.querySelector('.consumidos');
+            const carga = parseInt(item.querySelector('.carga').value, 10) || 0;
+            const consumidos = parseInt(item.querySelector('.consumidos').value, 10) || 0;
             const restanInput = item.querySelector('.restan');
-
-            const carga = parseInt(cargaInput.value, 10) || 0;
-            const consumidos = parseInt(consumidosInput.value, 10) || 0;
-            
             if (restanInput) restanInput.value = carga - consumidos;
             totalCarga += carga;
             totalConsumidos += consumidos;
         });
-
         if (totalCargaEl) totalCargaEl.value = totalCarga;
         if (totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
         if (totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
     }
 
-    // Guarda el estado actual en localStorage
     function saveState() {
         const state = {};
         items.forEach(item => {
             const tipo = item.dataset.tipo;
             if (tipo) {
-                const carga = item.querySelector('.carga').value;
-                const consumidos = item.querySelector('.consumidos').value;
-                const color = item.querySelector('.licencia-color-handle').style.backgroundColor;
-                state[tipo] = { carga, consumidos, color };
+                state[tipo] = {
+                    carga: item.querySelector('.carga').value,
+                    consumidos: item.querySelector('.consumidos').value,
+                    color: item.querySelector('.licencia-color-handle').style.backgroundColor
+                };
             }
         });
         localStorage.setItem(LICENCIAS_KEY, JSON.stringify(state));
     }
 
-    // Carga el estado desde localStorage
     function loadState() {
         const savedState = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
         items.forEach(item => {
@@ -821,96 +839,35 @@ function initLicenciasPanel() {
         });
     }
 
-    // Vincula los eventos a los inputs y botones
     items.forEach(item => {
         const inputs = item.querySelectorAll('.carga, .consumidos');
-        inputs.forEach(input => {
-            input.addEventListener('input', () => {
-                updateCalculations();
-                saveState();
-            });
-        });
+        inputs.forEach(input => input.addEventListener('input', () => { updateCalculations(); saveState(); }));
 
         const colorHandle = item.querySelector('.licencia-color-handle');
         if (colorHandle) {
-            // Prevenimos múltiples listeners
             const newHandle = colorHandle.cloneNode(true);
             colorHandle.parentNode.replaceChild(newHandle, colorHandle);
-
-newHandle.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    openColorPicker(newHandle, (color) => {
-        if (color === 'initial') {
-            // Si se restaura, quitamos el color de fondo para volver al estado por defecto
-            newHandle.style.backgroundColor = '';
-        } else {
-            // Si se elige un color, lo aplicamos
-            newHandle.style.backgroundColor = color;
-        }
-        // En ambos casos, guardamos el nuevo estado (con o sin color)
-        saveState();
-    }, colorPalette);
-});
+            newHandle.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                openColorPicker(newHandle, (color) => {
+                    newHandle.style.backgroundColor = (color === 'initial') ? '' : color;
+                    saveState();
+                }, colorPalette);
+            });
         }
     });
 
-    // Carga inicial
     loadState();
     updateCalculations();
 }
-// =========================================================================
-// FIN DEL NUEVO BLOQUE DE LÓGICA
-// =========================================================================
 
-// =========================================================================
-// LÓGICA PARA EL TÍTULO EDITABLE
-// =========================================================================
-function initEditableTitle() {
-    const titleElement = document.getElementById('editable-title');
-    if (!titleElement) return;
-
-    const EDITABLE_TITLE_KEY = 'turnapp.editableTitle';
-
-    // 1. Cargar el texto guardado al iniciar
-    const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
-    if (savedTitle) {
-        titleElement.textContent = savedTitle;
-    }
-
-    // 2. Guardar el texto cuando el usuario deja de editar
-    titleElement.addEventListener('blur', () => {
-        const newTitle = titleElement.textContent.trim();
-        localStorage.setItem(EDITABLE_TITLE_KEY, newTitle);
-    });
-
-    // 3. Evitar que 'Enter' cree un salto de línea y forzar guardado
-    titleElement.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            titleElement.blur();
-        }
-    });
-}
-
-// festivos nacionales (mes 0-11)
 const spanishHolidays = [
   { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
   { day:15, month:7 }, { day:12, month:9 }, { day:2, month:10 },
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
-// =========================================================================
-// CÁLCULO DE FESTIVOS VARIABLES (SEMANA SANTA)
-// =========================================================================
-
-/**
- * Calcula los festivos que no tienen una fecha fija, como la Semana Santa.
- * Utiliza el algoritmo de Meeus/Jones/Butcher para encontrar el Domingo de Pascua.
- * @param {number} year - El año para el que se calcularán los festivos.
- * @returns {Array<{day: number, month: number}>} Un array de objetos con los festivos variables.
- */
 function getVariableHolidays(year) {
-    // Cálculo del Domingo de Pascua
     const a = year % 19;
     const b = Math.floor(year / 100);
     const c = year % 100;
@@ -923,207 +880,66 @@ function getVariableHolidays(year) {
     const k = c % 4;
     const l = (32 + 2 * e + 2 * i - h - k) % 7;
     const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31); // Mes (3 = Marzo, 4 = Abril)
+    const month = Math.floor((h + l - 7 * m + 114) / 31);
     const day = ((h + l - 7 * m + 114) % 31) + 1;
 
     const easterSunday = new Date(year, month - 1, day);
-
-    // El Viernes Santo es siempre 2 días antes del Domingo de Pascua.
     const goodFriday = new Date(easterSunday);
     goodFriday.setDate(easterSunday.getDate() - 2);
     
-    // (Opcional) Jueves Santo es 3 días antes. Puedes añadirlo si lo necesitas.
-    // const maundyThursday = new Date(easterSunday);
-    // maundyThursday.setDate(easterSunday.getDate() - 3);
-
-    const variableHolidays = [
-        { day: goodFriday.getDate(), month: goodFriday.getMonth() }
-        // { day: maundyThursday.getDate(), month: maundyThursday.getMonth() }
-    ];
-    
-    return variableHolidays;
+    return [{ day: goodFriday.getDate(), month: goodFriday.getMonth() }];
 }
 
-// paleta color
 const colorPalette = [
-  "#d87d00", // naranja oscuro noche
-  "#4d9ef7", // azul garantizado
-  "#f7a64d", // naranja probable
-  "#6fd773", // verde descanso
-  "#e65252", // rojo baja
-  "#c9c9c9", // gris otros
-  "#ff4d4d","#ffa64d","#ffd24d","#85e085","#4dd2ff",
-  "#4d79ff","#b84dff","#ff4da6","#a6a6a6","#ffffff",
-  "rgba(232,240,255,1)","rgba(163,193,255,0.65)","rgba(255,179,179,0.45)"
+  "#d87d00", "#4d9ef7", "#f7a64d", "#6fd773", "#e65252", "#c9c9c9", "#ff4d4d",
+  "#ffa64d", "#ffd24d", "#85e085", "#4dd2ff", "#4d79ff", "#b84dff", "#ff4da6",
+  "#a6a6a6", "#ffffff", "rgba(232,240,255,1)", "rgba(163,193,255,0.65)", "rgba(255,179,179,0.45)"
 ];
 
-// =========================================================================
-//     NUEVO BLOQUE DE AUTENTICACIÓN
-// =========================================================================
-let currentUser = null; // Variable global para guardar el usuario logueado
-
-function handleLogin() {
-    const emailInput = document.getElementById('login-email');
-    const passwordInput = document.getElementById('login-password');
-    const errorMessage = document.getElementById('login-error-message');
-
-    const email = emailInput.value;
-    const password = passwordInput.value;
-
-    // --- Lógica de Autenticación (Temporal) ---
-    // Por ahora, usaremos usuarios "hardcodeados".
-    // En el futuro, esto se conectará a Firebase.
-    if (email === "coordinador@turnapp.es" && password === "1234") {
-        currentUser = { email: email, role: 'coordinador' };
-    } else if (email === "usuario@turnapp.es" && password === "1234") {
-        currentUser = { email: email, role: 'usuario' };
-    } else {
-        errorMessage.textContent = "Credenciales incorrectas. Inténtalo de nuevo.";
-        errorMessage.classList.remove('oculto');
-        return; // Detenemos la ejecución si el login falla
-    }
-    
-    // Si el login es exitoso:
-    document.getElementById('login-section').classList.add('oculto'); // Oculta login
-    document.getElementById('app').classList.remove('oculto');        // Muestra la app
-    document.getElementById('btn-logout').classList.remove('oculto'); // Muestra el botón de logout
-
-    // Aquí llamamos a todas las inicializaciones que antes estaban en DOMContentLoaded
-    initializeMainApp(); 
-}
-
-function handleLogout() {
-    currentUser = null;
-    // Opcional: Limpiar cualquier dato sensible si fuera necesario
-
-    document.getElementById('app').classList.add('oculto');              // Oculta la app
-    document.getElementById('btn-logout').classList.add('oculto');       // Oculta el botón de logout
-    document.getElementById('login-section').classList.remove('oculto'); // Muestra el login
-    
-    // Limpiamos los campos del formulario de login
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
-    document.getElementById('login-error-message').classList.add('oculto');
-}
-
-function initAuth() {
-    const loginButton = document.getElementById('btn-login');
-    const logoutButton = document.getElementById('btn-logout');
-
-    if (loginButton) loginButton.addEventListener('click', handleLogin);
-    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
-
-    // Permitir login con la tecla "Enter"
-    const passwordInput = document.getElementById('login-password');
-    if(passwordInput) {
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') {
-                handleLogin();
-            }
-        });
-    }
-}
-
-function initializeMainApp() {
-    // Todas las funciones que configuran los diferentes módulos de la app
-    initApp(); // <-- Esta inicializa el calendario y su navegación
-    initThemeSwitcher();
-    initEditableTitle();
-    initLicenciasPanel();
-    initPeticiones();
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-
-    // Restauramos datos de sesión
-    restoreManualEdits();
-    restoreCadenceSpec();
-
-    // Vinculamos los botones de los modales
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
-}
-
-// ---------------- init / navegación (con swipe) ----------------
 function initApp(){
   renderCalendar(currentMonth, currentYear);
 
   const prevBtn = document.getElementById('prevMonth');
   const nextBtn = document.getElementById('nextMonth');
-  // Usamos el panel principal como área de detección para el swipe
-  const calendarPanel = document.getElementById('calendar-panel'); 
+  const calendarPanel = document.getElementById('calendar-panel');
 
-  // --- Lógica de navegación encapsulada ---
   const goToNextMonth = () => {
     currentMonth++;
-    if (currentMonth > 11) {
-        currentMonth = 0;
-        currentYear++;
-    }
+    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
     renderCalendar(currentMonth, currentYear);
   };
 
   const goToPrevMonth = () => {
     currentMonth--;
-    if (currentMonth < 0) {
-        currentMonth = 11;
-        currentYear--;
-    }
+    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
     renderCalendar(currentMonth, currentYear);
   };
 
-  // 1. Asignamos la lógica a los botones existentes
   if(prevBtn) prevBtn.addEventListener('click', goToPrevMonth);
   if(nextBtn) nextBtn.addEventListener('click', goToNextMonth);
 
-  // 2. Añadimos la nueva lógica para el swipe
   if (calendarPanel) {
     let touchStartX = 0;
-    let touchEndX = 0;
-
-    calendarPanel.addEventListener('touchstart', e => {
-        // Guardamos la coordenada X inicial del toque
-        touchStartX = e.changedTouches[0].screenX;
-    }, { passive: true }); // {passive: true} mejora el rendimiento del scroll
-
+    calendarPanel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
     calendarPanel.addEventListener('touchend', e => {
-        // Guardamos la coordenada X final
-        touchEndX = e.changedTouches[0].screenX;
-        
+        const touchEndX = e.changedTouches[0].screenX;
         const swipeDistance = touchEndX - touchStartX;
-        const swipeThreshold = 50; // Distancia mínima en píxeles para considerarlo un swipe
-
-        // Comprobamos si el deslizamiento fue lo suficientemente largo
+        const swipeThreshold = 50; // Min pixels for swipe
         if (Math.abs(swipeDistance) > swipeThreshold) {
-            if (swipeDistance < 0) {
-                // Si la distancia es negativa, el swipe fue hacia la izquierda (mes siguiente)
-                goToNextMonth();
-            } else {
-                // Si la distancia es positiva, el swipe fue hacia la derecha (mes anterior)
-                goToPrevMonth();
-            }
+            if (swipeDistance < 0) { goToNextMonth(); } else { goToPrevMonth(); }
         }
     });
   }
 }
 
-// =================================================================
-//    renderCalendar (VERSIÓN CORREGIDA QUE PASA EL ESTADO FESTIVO)
-// =================================================================
 function renderCalendar(month, year){
   const calendar = document.getElementById('calendar');
   if(!calendar) return;
   calendar.innerHTML = '';
 
   const variableHolidays = getVariableHolidays(year);
-
   const monthLabel = document.getElementById('monthLabel');
-  const meses = [
-    "Enero","Febrero","Marzo","Abril","Mayo","Junio",
-    "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"
-  ];
+  const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio", "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
   let firstDay = new Date(year, month, 1).getDay();
@@ -1132,9 +948,7 @@ function renderCalendar(month, year){
   const daysInMonth = new Date(year, month+1, 0).getDate();
 
   for(let i=0;i<firstDay;i++){
-    const emptyCell = document.createElement('div');
-    emptyCell.className = 'day-cell empty';
-    calendar.appendChild(emptyCell);
+    calendar.appendChild(document.createElement('div')).className = 'day-cell empty';
   }
 
   for(let day=1; day<=daysInMonth; day++){
@@ -1148,14 +962,9 @@ function renderCalendar(month, year){
 
     const isFixedHoliday = spanishHolidays.some(h => h.day === day && h.month === month);
     const isVariableHoliday = variableHolidays.some(h => h.day === day && h.month === month);
-    
-    // --- ¡AJUSTE CLAVE AQUÍ! ---
-    // Guardamos el resultado en una variable para usarlo en varios sitios.
     const isTodayHoliday = isFixedHoliday || isVariableHoliday;
 
-    if (isTodayHoliday) {
-      cell.classList.add('holiday');
-    }
+    if (isTodayHoliday) cell.classList.add('holiday');
 
     const label = document.createElement('div');
     label.className = 'day-label';
@@ -1164,30 +973,21 @@ function renderCalendar(month, year){
 
     const wrapper = document.createElement('div');
     wrapper.className = 'shifts-wrapper';
-
     const row = document.createElement('div');
     row.className = 'shifts-row';
 
-    // --- ¡Y PASAMOS EL RESULTADO A LA FUNCIÓN QUE CREA LOS TURNOS! ---
     row.appendChild(createShiftElement(year, month, day, 'M', isTodayHoliday));
     row.appendChild(createShiftElement(year, month, day, 'T', isTodayHoliday));
     wrapper.appendChild(row);
-
     wrapper.appendChild(createShiftElement(year, month, day, 'N', isTodayHoliday));
-    // --- Fin de los cambios ---
-
+    
     cell.appendChild(wrapper);
     calendar.appendChild(cell);
   }
 
-  if(cadenceData.length>0){
-    applyCadenceRender(month, year);
-  }
+  if(cadenceData.length>0) applyCadenceRender(month, year);
 }
 
-// =================================================================
-//    createShiftElement (VERSIÓN CORREGIDA CON LÓGICA DE FESTIVOS)
-// =================================================================
 function createShiftElement(year, month, day, shiftKey, isHoliday){
   const container = document.createElement('div');
   container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
@@ -1198,75 +998,70 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
   shift.spellcheck = false;
   shift.dataset.shift = shiftKey;
 
-  const dk = dateKey(year, month, day);
-  let defaultBg = ''; // Lo inicializamos vacío
+  const dk = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  let defaultBg = '';
   const weekday = new Date(year, month, day).getDay();
 
-  // --- ¡AJUSTE CLAVE AQUÍ! ---
-  // Ahora usamos el parámetro 'isHoliday' para decidir el color de fondo.
-  if (isHoliday || weekday === 0) { // Si es festivo (fijo o variable) O domingo
-      defaultBg = 'rgba(255,179,179,0.45)'; // Color rosa festivo
-  } else if (weekday === 6) { // Si es sábado
-      defaultBg = 'rgba(163,193,255,0.65)'; // Color azul sábado
-  } else { // Si es un día laboral normal
-      defaultBg = '#e8f0ff'; // Color azul laboral
+  if (isHoliday || weekday === 0) {
+      defaultBg = 'rgba(255,179,179,0.45)';
+  } else if (weekday === 6) {
+      defaultBg = 'rgba(163,193,255,0.65)';
+  } else {
+      defaultBg = '#e8f0ff';
   }
   shift.style.backgroundColor = defaultBg;
   shift.style.color = '#000';
+  
+  const defaultTextForShift = (sk) => sk;
 
-  // El resto de la lógica de la función para restaurar ediciones manuales no cambia...
   if(manualEdits[dk] && manualEdits[dk][shiftKey]){
     const obj = manualEdits[dk][shiftKey];
-    if(obj.text !== undefined && obj.text !== null) shift.textContent = obj.text;
-    else shift.textContent = defaultTextFor(shiftKey);
+    shift.textContent = obj.text ?? defaultTextForShift(shiftKey);
     if(obj.color){
       shift.style.backgroundColor = obj.color;
       shift.dataset.userColor = 'true';
     }
-    if(obj.text !== undefined && obj.text !== null){
-      shift.dataset.edited = (String(obj.text).trim() !== defaultTextFor(shiftKey)) ? 'true' : 'false';
-    } else {
-      shift.dataset.edited = 'false';
-    }
+    shift.dataset.edited = (String(obj.text ?? '').trim() !== defaultTextForShift(shiftKey)) ? 'true' : 'false';
   } else {
-    shift.textContent = defaultTextFor(shiftKey);
+    shift.textContent = defaultTextForShift(shiftKey);
     shift.dataset.edited = 'false';
   }
 
   shift.addEventListener('blur', ()=> {
     const text = shift.textContent.trim();
-    saveShiftText(year, month, day, shiftKey, text);
-    shift.dataset.edited = (text !== defaultTextFor(shiftKey)) ? 'true' : 'false';
+    if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
+    manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
+    manualEdits[dk][shiftKey].text = text;
+    saveManualEdits();
+    shift.dataset.edited = (text !== defaultTextForShift(shiftKey)) ? 'true' : 'false';
   });
-  shift.addEventListener('keypress', (e)=> {
-    if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); }
-  });
+
+  shift.addEventListener('keypress', (e)=> { if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); } });
 
   const handle = document.createElement('button');
   handle.type = 'button';
   handle.className = 'color-handle';
   handle.title = 'Elegir color';
-  handle.innerText = '●';
-  handle.style.height = '12px';
-  handle.style.width = '24px';
-  handle.style.fontSize = '10px';
-  handle.style.opacity = '0.28';
-  handle.style.background = 'transparent';
-  handle.style.border = 'none';
-  handle.style.cursor = 'pointer';
+  handle.innerHTML = '●';
+  handle.style.cssText = 'height:12px; width:24px; font-size:10px; opacity:0.28; background:transparent; border:none; cursor:pointer;';
   handle.addEventListener('mouseenter', ()=> handle.style.opacity = '0.6');
   handle.addEventListener('mouseleave', ()=> handle.style.opacity = '0.28');
 
   handle.addEventListener('click', (ev)=> {
     ev.stopPropagation();
     openColorPicker(handle, (color)=>{
-      shift.style.backgroundColor = color;
-      shift.style.color = isColorLight(color) ? '#000' : '#fff';
-      shift.dataset.userColor = 'true';
+      const isLight = ((c) => {
+          if(!c || c === 'initial') return true;
+          if(c.indexOf('rgb')===0){ const n = c.replace(/[^\\d,]/g,'').split(',').map(Number); return (0.2126*n[0] + 0.7152*n[1] + 0.0722*n[2]) > 200; }
+          if(c[0]==='#'){ const [r,g,b] = [parseInt(c.substr(1,2),16), parseInt(c.substr(3,2),16), parseInt(c.substr(5,2),16)]; return (0.2126*r + 0.7152*g + 0.0722*b) > 200; }
+          return true;
+      })(color);
+      shift.style.backgroundColor = color === 'initial' ? defaultBg : color;
+      shift.style.color = isLight ? '#000' : '#fff';
+      shift.dataset.userColor = color !== 'initial';
       if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-      manualEdits[dk][shiftKey].color = color;
-      manualEdits[dk][shiftKey].userColor = true;
+      manualEdits[dk][shiftKey].color = color === 'initial' ? undefined : color;
       saveManualEdits();
     }, colorPalette);
   });
@@ -1276,242 +1071,58 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
   return container;
 }
 
-// ---------------- guardar texto/color específicos ----------------
-function saveShiftText(year, month, day, shiftKey, text){
-  const dk = dateKey(year, month, day);
-  if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-  manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-  manualEdits[dk][shiftKey].text = text;
-  saveManualEdits();
-}
-
-// ---------------- paleta ----------------
-function bindLicenciaHandles(){
-  const licenciaHandles = document.querySelectorAll('.licencia-color-handle');
-  licenciaHandles.forEach(handle => {
-    handle.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const item = handle.closest('.licencia-item');
-      if(!item) return;
-      openColorPicker(handle, (color) => {
-        handle.style.backgroundColor = color;
-        const tipo = item.dataset.tipo;
-        const value = (item.querySelector('.cantidad-input')||{value:0}).value;
-        saveLicenciaValue(tipo, value, color);
-      }, colorPalette);
-    });
-  });
-
-  const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
-  inputs.forEach(i=>i.addEventListener('input', ()=> {
-    const item = i.closest('.licencia-item');
-    const tipo = item.dataset.tipo;
-    const colorBtn = item.querySelector('.licencia-color');
-    saveLicenciaValue(tipo, i.value, colorBtn && colorBtn.style.backgroundColor);
-    recalcLicenciasTotal();
-  }));
-}
-
-// =========================================================================
-// PEGADO COMPLETO PARA REEMPLAZAR openColorPicker (LÍNEAS 683-725)
-// =========================================================================
 function openColorPicker(anchorEl, onSelect, palette = colorPalette){
-  const existing = document.getElementById('color-picker-popup');
-  if(existing) existing.remove();
+  document.getElementById('color-picker-popup')?.remove();
 
   const popup = document.createElement('div');
   popup.id = 'color-picker-popup';
-  popup.style.position = 'absolute';
-  popup.style.display = 'flex';
-  popup.style.flexWrap = 'wrap';
-  popup.style.background = 'var(--panel-bg)'; // Adaptado a tema
-  popup.style.border = '1px solid var(--border-color)'; // Adaptado a tema
-  popup.style.padding = '6px';
-  popup.style.borderRadius = '6px';
-  popup.style.boxShadow = '0 6px 18px rgba(0,0,0,0.12)';
-  popup.style.zIndex = 10000;
-  popup.style.width = '150px'; // Ancho fijo para que quepan bien
+  popup.style.cssText = 'position:absolute; display:flex; flex-wrap:wrap; background:var(--panel-bg); border:1px solid var(--border-color); padding:6px; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.12); z-index:10000; width:150px;';
 
-  // Añade las muestras de color
   palette.forEach(color => {
     const b = document.createElement('button');
     b.type = 'button';
-    b.className = 'palette-swatch'; // Clase creada en CSS
+    b.className = 'palette-swatch';
     b.style.backgroundColor = color;
-    b.addEventListener('click', (e)=> {
-      e.stopPropagation();
-      onSelect(color);
-      popup.remove();
-    });
+    b.onclick = (e)=> { e.stopPropagation(); onSelect(color); popup.remove(); };
     popup.appendChild(b);
   });
   
-  // Añade el botón de restaurar
   const resetButton = document.createElement('button');
   resetButton.type = 'button';
-  resetButton.className = 'palette-swatch reset-btn'; // Clase creada en CSS
+  resetButton.className = 'palette-swatch reset-btn';
   resetButton.innerHTML = '🔄';
   resetButton.title = 'Restaurar color original';
-  resetButton.addEventListener('click', (e) => {
-      e.stopPropagation();
-      onSelect('initial'); // Envía la señal 'initial'
-      popup.remove();
-  });
+  resetButton.onclick = (e) => { e.stopPropagation(); onSelect('initial'); popup.remove(); };
   popup.appendChild(resetButton);
 
   document.body.appendChild(popup);
 
   const rect = anchorEl.getBoundingClientRect();
-  let left = rect.left + window.scrollX;
-  let top = rect.bottom + window.scrollY + 6;
-  const guessW = 180;
-  if(left + guessW > window.scrollX + window.innerWidth) left = window.scrollX + window.innerWidth - guessW - 8;
-  popup.style.left = `${left}px`;
-  popup.style.top = `${top}px`;
+  popup.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 158)}px`;
+  popup.style.top = `${rect.bottom + window.scrollY + 6}px`;
 
   const closeFn = (ev) => {
-    if(!popup.contains(ev.target) && ev.target !== anchorEl) {
+    if(!popup.contains(ev.target)) {
       popup.remove();
-      document.removeEventListener('click', closeFn);
+      document.removeEventListener('click', closeFn, true);
     }
   };
-  setTimeout(()=> document.addEventListener('click', closeFn), 10);
+  setTimeout(()=> document.addEventListener('click', closeFn, true), 10);
 }
 
-// ---------------- persistencia/CADENCIA spec ----------------
 function saveCadenceSpec(spec){
   try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
 }
+
 function restoreCadenceSpec(){
   try {
     const raw = localStorage.getItem('turnapp.cadenceSpec');
     if(!raw) return;
     cadenceSpec = JSON.parse(raw);
-    if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern){
-      cadenceData = [];
-      const start = new Date(cadenceSpec.startISO);
-      for(let i=0;i<10000;i++){
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        const type = cadenceSpec.pattern[i % cadenceSpec.pattern.length];
-        cadenceData.push({ date: d, type: type });
-      }
-      renderCalendar(currentMonth, currentYear);
-    }
+    if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern) buildCadenceDataFromSpec();
   } catch(e){ cadenceSpec = null; }
 }
 
-// ------------------ CADENCIAS (modal) ------------------
-function openCadenceModal(){
-  const overlay = document.getElementById('cadence-modal-overlay');
-  const modal = document.getElementById('cadence-modal');
-  if(!overlay || !modal) return;
-
-  document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
-  const v1 = document.getElementById('v1-options');
-  const v2 = document.getElementById('v2-options');
-  const custom = document.getElementById('custom-section');
-  if(v1) v1.style.display = 'none';
-  if(v2) v2.style.display = 'none';
-  if(custom) custom.style.display = 'none';
-  const cp = document.getElementById('custom-pattern');
-  if(cp) cp.value = '';
-  const cs = document.getElementById('cadence-start');
-  if(cs) cs.value = '';
-
-  if(cadenceSpec){
-    if(cs) cs.value = (new Date(cadenceSpec.startISO)).toLocaleDateString('es-ES');
-    if(cadenceSpec.type === 'V-1'){
-      const btn = document.querySelector('.modal-type-btn[data-type="V-1"]');
-      if(btn) btn.classList.add('active');
-      if(v1) v1.style.display = 'block';
-      if(typeof cadenceSpec.v1Index !== 'undefined'){
-        const r = document.querySelector(`input[name="v1opt"][value="${cadenceSpec.v1Index}"]`);
-        if(r) r.checked = true;
-      }
-    } else if(cadenceSpec.type === 'V-2'){
-      const btn = document.querySelector('.modal-type-btn[data-type="V-2"]');
-      if(btn) btn.classList.add('active');
-      if(v2) v2.style.display = 'block';
-    } else if(cadenceSpec.type === 'Personalizada'){
-      const btn = document.querySelector('.modal-type-btn[data-type="Personalizada"]');
-      if(btn) btn.classList.add('active');
-      if(custom) custom.style.display = 'block';
-      if(cadenceSpec.pattern && cp) cp.value = cadenceSpec.pattern.join(',');
-    }
-  }
-
-  document.querySelectorAll('.modal-type-btn').forEach(btn=>{
-    btn.onclick = () => {
-      document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const t = btn.dataset.type;
-      if(v1) v1.style.display = (t==='V-1') ? 'block' : 'none';
-      if(v2) v2.style.display = (t==='V-2') ? 'block' : 'none';
-      if(custom) custom.style.display = (t==='Personalizada') ? 'block' : 'none';
-    };
-  });
-
-  const closeBtn = document.getElementById('close-cadence');
-  if(closeBtn) closeBtn.onclick = () => {
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden','true');
-  };
-
-  const applyBtn = document.getElementById('apply-cadence-confirm');
-  if(applyBtn) applyBtn.onclick = () => {
-    const activeBtn = document.querySelector('.modal-type-btn.active');
-    if(!activeBtn) return alert('Seleccione un tipo de cadencia.');
-    const typ = activeBtn.dataset.type;
-    const startStr = (document.getElementById('cadence-start')||{}).value;
-    if(!startStr) return alert('Introduce la fecha de inicio (DD/MM/AAAA).');
-    const parts = startStr.split('/');
-    if(parts.length !== 3) return alert('Formato de fecha incorrecto.');
-    const d = parseInt(parts[0],10), m = parseInt(parts[1],10)-1, y = parseInt(parts[2],10);
-    const start = new Date(y,m,d);
-    if(isNaN(start)) return alert('Fecha inválida.');
-
-    if(typ === 'V-1'){
-      const r = document.querySelector('input[name="v1opt"]:checked');
-      if(!r) return alert('Selecciona una opción de V-1.');
-      const idx = parseInt(r.value,10);
-      const v1options = [
-        ['M/T', 'L', 'M/T', 'N', 'L', 'L', 'L', 'L'],
-        ['M/T', 'M/T', 'N', 'L', 'L', 'L', 'L', 'L'],
-        ['T', 'M/T', 'M/N', 'L', 'L', 'L', 'L', 'L'],
-        ['M/T', 'N', 'L', 'L', 'L'],
-        ['T', 'M/N', 'L', 'L', 'L']
-      ];
-      const pattern = v1options[idx];
-      cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
-      saveCadenceSpec(cadenceSpec);
-      buildCadenceDataFromSpec();
-      renderCalendar(currentMonth, currentYear);
-    } else if(typ === 'V-2'){
-      const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
-      cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec);
-      buildCadenceDataFromSpec();
-      renderCalendar(currentMonth, currentYear);
-    } else if(typ === 'Personalizada'){
-      const raw = (document.getElementById('custom-pattern')||{}).value;
-      if(!raw) return alert('Introduce un patrón personalizado.');
-      const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
-      if(pattern.length === 0) return alert('Patrón inválido.');
-      cadenceSpec = { type: 'Personalizada', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec);
-      buildCadenceDataFromSpec();
-      renderCalendar(currentMonth, currentYear);
-    }
-    overlay.style.display = 'none';
-    overlay.setAttribute('aria-hidden','true');
-  };
-
-  overlay.style.display = 'flex';
-  overlay.setAttribute('aria-hidden','false');
-}
-
-// construir cadenceData a partir de cadenceSpec
 function buildCadenceDataFromSpec(){
   if(!cadenceSpec || !cadenceSpec.startISO || !cadenceSpec.pattern) { cadenceData = []; return; }
   cadenceData = [];
@@ -1523,105 +1134,145 @@ function buildCadenceDataFromSpec(){
   }
 }
 
-// Limpieza de cadencia desde fecha
+function applyCadenceRender(month, year) {
+    document.querySelectorAll('.day-cell').forEach(cell => {
+        const day = parseInt(cell.querySelector('.day-label')?.textContent, 10);
+        if (isNaN(day)) return;
+
+        const cellDate = new Date(year, month, day);
+        const cd = cadenceData.find(c => c.date.toDateString() === cellDate.toDateString());
+
+        ['M', 'T', 'N'].forEach(shiftKey => {
+            const shiftEl = cell.querySelector(`.shift-${shiftKey.toLowerCase()}`);
+            if (!shiftEl) return;
+
+            const dk = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const edited = manualEdits[dk]?.[shiftKey]?.text !== undefined;
+            const userColor = manualEdits[dk]?.[shiftKey]?.color !== undefined;
+
+            if (cd) {
+                const types = String(cd.type).split('/');
+                const isCadenceShift = types.includes(shiftKey) || (types.includes('MT') && (shiftKey==='M'||shiftKey==='T')) || (types.includes('M/N') && (shiftKey==='M'||shiftKey==='N'));
+                
+                if (isCadenceShift && !edited && !userColor) {
+                    shiftEl.style.backgroundColor = shiftKey === 'N' ? '#d87d00' : '#ffa94d';
+                    shiftEl.style.color = shiftKey === 'N' ? '#fff' : '#000';
+                    shiftEl.dataset.cadenceApplied = 'true';
+                }
+            } else if (shiftEl.dataset.cadenceApplied === 'true' && !edited && !userColor) {
+                // This logic is now handled inside createShiftElement by default
+                const isHoliday = cell.classList.contains('holiday') || cell.classList.contains('sunday');
+                const isSaturday = cell.classList.contains('saturday');
+                shiftEl.style.backgroundColor = isHoliday ? 'rgba(255,179,179,0.45)' : isSaturday ? 'rgba(163,193,255,0.65)' : '#e8f0ff';
+                shiftEl.style.color = '#000';
+                delete shiftEl.dataset.cadenceApplied;
+            }
+        });
+    });
+}
+
+function openCadenceModal(){
+  const overlay = document.getElementById('cadence-modal-overlay');
+  const modal = document.getElementById('cadence-modal');
+  if(!overlay || !modal) return;
+  
+  // Reset UI
+  document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
+  ['v1-options', 'v2-options', 'custom-section'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = 'none';
+  });
+  const cp = document.getElementById('custom-pattern'); if(cp) cp.value = '';
+  const cs = document.getElementById('cadence-start'); if(cs) cs.value = '';
+
+  // Populate from spec
+  if(cadenceSpec){
+    if(cs) cs.value = new Date(cadenceSpec.startISO).toLocaleDateString('es-ES', {year: 'numeric', month: '2-digit', day: '2-digit'});
+    const btn = document.querySelector(`.modal-type-btn[data-type="${cadenceSpec.type}"]`);
+    if(btn) {
+        btn.classList.add('active');
+        const sectionId = { 'V-1': 'v1-options', 'V-2': 'v2-options', 'Personalizada': 'custom-section' }[cadenceSpec.type];
+        const section = document.getElementById(sectionId);
+        if(section) section.style.display = 'block';
+
+        if(cadenceSpec.type === 'V-1' && typeof cadenceSpec.v1Index !== 'undefined'){
+            const r = document.querySelector(`input[name="v1opt"][value="${cadenceSpec.v1Index}"]`);
+            if(r) r.checked = true;
+        } else if (cadenceSpec.type === 'Personalizada' && cadenceSpec.pattern && cp){
+            cp.value = cadenceSpec.pattern.join(',');
+        }
+    }
+  }
+
+  // Bind buttons
+  document.querySelectorAll('.modal-type-btn').forEach(btn => {
+    btn.onclick = () => {
+      document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const t = btn.dataset.type;
+      document.getElementById('v1-options').style.display = (t==='V-1') ? 'block' : 'none';
+      document.getElementById('v2-options').style.display = (t==='V-2') ? 'block' : 'none';
+      document.getElementById('custom-section').style.display = (t==='Personalizada') ? 'block' : 'none';
+    };
+  });
+  
+  document.getElementById('close-cadence').onclick = () => { overlay.style.display = 'none'; };
+  
+  document.getElementById('apply-cadence-confirm').onclick = () => {
+    const activeBtn = document.querySelector('.modal-type-btn.active');
+    if(!activeBtn) return alert('Seleccione un tipo de cadencia.');
+    const typ = activeBtn.dataset.type;
+    const startStr = document.getElementById('cadence-start').value;
+    if(!startStr) return alert('Introduce la fecha de inicio (DD/MM/AAAA).');
+    const parts = startStr.split('/');
+    if(parts.length !== 3) return alert('Formato de fecha incorrecto.');
+    const start = new Date(parts[2], parts[1]-1, parts[0]);
+    if(isNaN(start)) return alert('Fecha inválida.');
+
+    let pattern;
+    let spec = { type: typ, startISO: start.toISOString() };
+
+    if(typ === 'V-1'){
+      const r = document.querySelector('input[name="v1opt"]:checked');
+      if(!r) return alert('Selecciona una opción de V-1.');
+      const idx = parseInt(r.value,10);
+      const v1options = [['M/T', 'L', 'M/T', 'N', 'L', 'L', 'L', 'L'], ['M/T', 'M/T', 'N', 'L', 'L', 'L', 'L', 'L'], ['T', 'M/T', 'M/N', 'L', 'L', 'L', 'L', 'L'], ['M/T', 'N', 'L', 'L', 'L'], ['T', 'M/N', 'L', 'L', 'L']];
+      pattern = v1options[idx];
+      spec.v1Index = idx;
+    } else if(typ === 'V-2'){
+      pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
+    } else if(typ === 'Personalizada'){
+      pattern = document.getElementById('custom-pattern').value.split(',').map(s=>s.trim()).filter(Boolean);
+      if(pattern.length === 0) return alert('Patrón inválido.');
+    }
+    
+    spec.pattern = pattern;
+    cadenceSpec = spec;
+    saveCadenceSpec(cadenceSpec);
+    buildCadenceDataFromSpec();
+    renderCalendar(currentMonth, currentYear);
+    overlay.style.display = 'none';
+  };
+
+  overlay.style.display = 'flex';
+}
+
 function clearCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
   if(parts.length!==3) return alert("Formato incorrecto");
-  const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
-  const startDate = new Date(year, month, day);
+  const startDate = new Date(parts[2], parts[1]-1, parts[0]);
   if(isNaN(startDate)) return alert("Fecha inválida");
 
   cadenceData = cadenceData.filter(cd => cd.date < startDate);
-
   if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
     cadenceSpec = null;
-    try { localStorage.removeItem('turnapp.cadenceSpec'); } catch(e){}
+    localStorage.removeItem('turnapp.cadenceSpec');
   }
   renderCalendar(currentMonth, currentYear);
 }
 
-// ---------------- aplicar cadencia sobre DOM ----------------
-function applyCadenceRender(month, year){
-  const cells = document.querySelectorAll('.day-cell');
-  if(!cells) return;
-
-  const cadColorMT = '#ffa94d';
-  const cadColorN = '#d87d00';
-
-  cells.forEach(cell=>{
-    const label = cell.querySelector('.day-label');
-    if(!label) return;
-    const parts = label.textContent.split(' ');
-    const day = parseInt(parts[0],10);
-    if(isNaN(day)) return;
-
-    const cellDate = new Date(year, month, day);
-    const cd = cadenceData.find(c=> c.date.getFullYear()===cellDate.getFullYear() &&
-                                     c.date.getMonth()===cellDate.getMonth() &&
-                                     c.date.getDate()===cellDate.getDate());
-
-    const shiftM = cell.querySelector('.shift-m');
-    const shiftT = cell.querySelector('.shift-t');
-    const shiftN = cell.querySelector('.shift-n');
-
-    function getFlagsForShift(shiftEl, shiftKey){
-      const dk = dateKey(year, month, day);
-      const saved = (manualEdits[dk] && manualEdits[dk][shiftKey]) ? manualEdits[dk][shiftKey] : {};
-      const userColor = !!saved.color || shiftEl.dataset.userColor === 'true';
-      let edited = false;
-      if(saved.text !== undefined && saved.text !== null){
-        edited = String(saved.text).trim() !== defaultTextFor(shiftKey);
-      } else {
-        edited = String(shiftEl.textContent || '').trim() !== defaultTextFor(shiftKey);
-      }
-      if(shiftEl.dataset.edited === 'true') edited = true;
-      return { userColor, edited, savedText: saved.text, savedColor: saved.color };
-    }
-
-    function applyToShift(shiftEl, shiftKey, activeForCadence, cadenceColor){
-      if(!shiftEl) return;
-      const { userColor, edited } = getFlagsForShift(shiftEl, shiftKey);
-      const allowCadence = !(userColor && edited);
-      if(activeForCadence){
-        if(allowCadence){
-          shiftEl.style.backgroundColor = cadenceColor;
-          shiftEl.style.color = (shiftKey === 'N') ? '#fff' : '#000';
-          shiftEl.dataset.cadenceApplied = 'true';
-        } else {
-          shiftEl.dataset.cadenceApplied = 'false';
-        }
-      } else {
-        if(allowCadence){
-          if(shiftEl.dataset.cadenceApplied === 'true'){
-            shiftEl.style.backgroundColor = '';
-            shiftEl.style.color = '#000';
-            shiftEl.dataset.cadenceApplied = 'false';
-          }
-        }
-      }
-    }
-
-    if(cd){
-      const types = String(cd.type).split('/');
-      applyToShift(shiftM,'M', types.includes('M') || types.includes('MT'), cadColorMT);
-      applyToShift(shiftT,'T', types.includes('T') || types.includes('MT'), cadColorMT);
-      applyToShift(shiftN,'N', types.includes('N') || types.includes('M/N'), cadColorN);
-    } else {
-      [['M',shiftM],['T',shiftT],['N',shiftN]].forEach(([k,el])=>{
-        if(!el) return;
-        if(el.dataset.cadenceApplied === 'true'){
-          el.style.backgroundColor = '';
-          el.style.color = '#000';
-          el.dataset.cadenceApplied = 'false';
-        }
-      });
-    }
-  });
-}
-
-// ------------------ MÓDULO PETICIONES (LÓGICA UNIFICADA) ------------------
 function initPeticiones() {
     const listaUsuario = document.getElementById('lista-peticiones-usuario');
     const peticionTexto = document.getElementById('peticion-texto');
@@ -1629,10 +1280,7 @@ function initPeticiones() {
     const btnPeticiones = document.getElementById("btn-peticiones");
     const peticionesSection = document.getElementById("peticiones-section");
 
-    if (!listaUsuario || !peticionTexto || !enviarPeticionBtn || !btnPeticiones || !peticionesSection) {
-        console.warn("initPeticiones: faltan elementos del DOM para el módulo de Peticiones.");
-        return;
-    }
+    if (!listaUsuario || !peticionTexto || !enviarPeticionBtn || !btnPeticiones || !peticionesSection) return;
 
     const KEY_USER = 'peticionesUsuario';
     const load = () => JSON.parse(localStorage.getItem(KEY_USER) || '[]');
@@ -1646,72 +1294,65 @@ function initPeticiones() {
             li.className = 'peticion-item';
             const fechaHora = p.fecha ? `<div class="fecha-hora" style="font-size: 0.85em; opacity: 0.85;">${p.fecha}</div>` : '';
             li.innerHTML = `
-                <div class="peticion-left">
-                    <div>${p.texto}</div>
-                    ${fechaHora}
-                </div>
-                <div style="display: flex; gap: 8px;">
-                    <input type="checkbox" class="peticion-visto" data-index="${idx}" ${p.visto ? 'checked' : ''}>
-                    <button class="peticion-delete" data-index="${idx}">🗑️</button>
+                <div class="peticion-left"><div>${p.texto}</div>${fechaHora}</div>
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="checkbox" class="peticion-visto" data-index="${idx}" ${p.visto ? 'checked' : ''} style="transform: scale(1.2);">
+                    <button class="peticion-delete modern-btn red" title="Eliminar" data-index="${idx}">🗑️</button>
                 </div>
             `;
             listaUsuario.appendChild(li);
         });
     }
 
-    function agregarPeticion(textoRaw) {
-        const texto = String(textoRaw || '').trim();
-        if (!texto) return;
-        const nueva = { texto, fecha: new Date().toLocaleString(), visto: false };
-        const u = load();
-        u.unshift(nueva);
-        save(u);
-        render();
-    }
-
-    // --- Vinculación de Eventos ---
-    
-    // Toggle para mostrar/ocultar el panel
     btnPeticiones.addEventListener("click", (e) => {
         e.preventDefault();
         const esVisible = peticionesSection.style.display === "block";
         peticionesSection.style.display = esVisible ? "none" : "block";
     });
 
-    // Enviar nueva petición
     enviarPeticionBtn.addEventListener('click', () => {
         agregarPeticion(peticionTexto.value);
         peticionTexto.value = '';
     });
 
-    // Eventos para marcar como visto o borrar (delegación de eventos)
     listaUsuario.addEventListener('click', (e) => {
         const target = e.target;
-        const index = target.dataset.index;
+        const index = target.closest('[data-index]')?.dataset.index;
         if (index === undefined) return;
 
         const u = load();
-        if (target.classList.contains('peticion-visto')) {
+        if (target.matches('input.peticion-visto')) {
             u[index].visto = target.checked;
-        } else if (target.classList.contains('peticion-delete')) {
-            u.splice(index, 1);
+        } else if (target.matches('.peticion-delete')) {
+            if (confirm(`¿Seguro que quieres eliminar esta petición?`)) {
+                u.splice(index, 1);
+            }
+        } else {
+            return; // No-op
         }
         save(u);
         render();
     });
-
-    // Carga inicial
+    
+    function agregarPeticion(textoRaw) {
+        const texto = String(textoRaw || '').trim();
+        if (!texto) return;
+        const nueva = { texto, fecha: new Date().toLocaleString('es-ES'), visto: false };
+        const u = load();
+        u.unshift(nueva);
+        save(u);
+        render();
+    }
+    
     render();
 }
 
 // =========================================================================
-//     ARRANQUE PRINCIPAL DE LA APLICACIÓN
+// ARRANQUE PRINCIPAL DE LA APLICACIÓN
 // =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
   // Al cargar la página, solo se inicializa el sistema de autenticación.
   // El resto de la app (initializeMainApp) se llamará después de un login exitoso.
   initAuth();
 });
-
-
-  // ------------------ FIN app.js ------------------
+// ------------------ FIN app.js ------------------
