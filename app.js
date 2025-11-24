@@ -913,6 +913,51 @@ const spanishHolidays = [
   { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
 ];
 
+// =========================================================================
+// CÁLCULO DE FESTIVOS VARIABLES (SEMANA SANTA)
+// =========================================================================
+
+/**
+ * Calcula los festivos que no tienen una fecha fija, como la Semana Santa.
+ * Utiliza el algoritmo de Meeus/Jones/Butcher para encontrar el Domingo de Pascua.
+ * @param {number} year - El año para el que se calcularán los festivos.
+ * @returns {Array<{day: number, month: number}>} Un array de objetos con los festivos variables.
+ */
+function getVariableHolidays(year) {
+    // Cálculo del Domingo de Pascua
+    const a = year % 19;
+    const b = Math.floor(year / 100);
+    const c = year % 100;
+    const d = Math.floor(b / 4);
+    const e = b % 4;
+    const f = Math.floor((b + 8) / 25);
+    const g = Math.floor((b - f + 1) / 3);
+    const h = (19 * a + b - d - g + 15) % 30;
+    const i = Math.floor(c / 4);
+    const k = c % 4;
+    const l = (32 + 2 * e + 2 * i - h - k) % 7;
+    const m = Math.floor((a + 11 * h + 22 * l) / 451);
+    const month = Math.floor((h + l - 7 * m + 114) / 31); // Mes (3 = Marzo, 4 = Abril)
+    const day = ((h + l - 7 * m + 114) % 31) + 1;
+
+    const easterSunday = new Date(year, month - 1, day);
+
+    // El Viernes Santo es siempre 2 días antes del Domingo de Pascua.
+    const goodFriday = new Date(easterSunday);
+    goodFriday.setDate(easterSunday.getDate() - 2);
+    
+    // (Opcional) Jueves Santo es 3 días antes. Puedes añadirlo si lo necesitas.
+    // const maundyThursday = new Date(easterSunday);
+    // maundyThursday.setDate(easterSunday.getDate() - 3);
+
+    const variableHolidays = [
+        { day: goodFriday.getDate(), month: goodFriday.getMonth() }
+        // { day: maundyThursday.getDate(), month: maundyThursday.getMonth() }
+    ];
+    
+    return variableHolidays;
+}
+
 // paleta color
 const colorPalette = [
   "#d87d00", // naranja oscuro noche
@@ -942,11 +987,16 @@ function initApp(){
   });
 }
 
-// ---------------- render calendario ----------------
+// =========================================================================
+// RENDER CALENDARIO (VERSIÓN MEJORADA CON FESTIVOS VARIABLES)
+// =========================================================================
 function renderCalendar(month, year){
   const calendar = document.getElementById('calendar');
   if(!calendar) return;
   calendar.innerHTML = '';
+
+  // ---> ¡CAMBIO 1! Obtenemos los festivos variables para el año que se está mostrando.
+  const variableHolidays = getVariableHolidays(year);
 
   const monthLabel = document.getElementById('monthLabel');
   const meses = [
@@ -955,7 +1005,6 @@ function renderCalendar(month, year){
   ];
   if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
 
-  // Primer día del mes (lunes=0)
   let firstDay = new Date(year, month, 1).getDay();
   firstDay = (firstDay === 0)? 6 : firstDay-1;
 
@@ -976,9 +1025,14 @@ function renderCalendar(month, year){
     if(weekday===6) cell.classList.add('saturday');
     if(weekday===0) cell.classList.add('sunday');
 
-    if(spanishHolidays.some(h => h.day===day && h.month===month)){
+    // ---> ¡CAMBIO 2! Comprobamos tanto los festivos fijos como los variables.
+    const isFixedHoliday = spanishHolidays.some(h => h.day === day && h.month === month);
+    const isVariableHoliday = variableHolidays.some(h => h.day === day && h.month === month);
+
+    if (isFixedHoliday || isVariableHoliday) {
       cell.classList.add('holiday');
     }
+    // --- Fin de los cambios en esta sección ---
 
     const label = document.createElement('div');
     label.className = 'day-label';
