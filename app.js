@@ -1,567 +1,360 @@
 // =========================================================================
-// TurnApp v4.1.0 - Base de Autenticación Estable
-// =========================================================================
-// Esta versión introduce la pantalla de login y la estructura para
-// el futuro desarrollo multi-usuario. Todo el código ha sido revisado
-// y unificado para asegurar su correcto funcionamiento.
-
-// =========================================================================
-// GESTIÓN DE ESTADO GLOBAL
+// VARIABLES GLOBALES DE LA APLICACIÓN
 // =========================================================================
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
+let manualEdits = {};
 let cadenceData = [];
 let cadenceSpec = null;
-let manualEdits = {};
-let currentUser = null; // Guardará el usuario logueado
 
 // =========================================================================
-// BLOQUE DE AUTENTICACIÓN
+// LÓGICA DE AUTENTICACIÓN Y ARRANQUE
 // =========================================================================
-function handleLogin() {
-    const emailInput = document.getElementById('login-email');
-    const passwordInput = document.getElementById('login-password');
+
+// Base de datos de usuarios (simplificada)
+const users = {
+  "coordinador@turnapp.es": { password: "1234" }
+};
+
+/**
+ * Inicializa el sistema de autenticación. Es la ÚNICA función que se llama al cargar la página.
+ */
+function initAuth() {
+    const loginSection = document.getElementById('login-section');
+    const appSection = document.getElementById('app');
+    const loginEmail = document.getElementById('login-email');
+    const loginPassword = document.getElementById('login-password');
+    const btnLogin = document.getElementById('btn-login');
     const errorMessage = document.getElementById('login-error-message');
 
-    const email = emailInput.value;
-    const password = passwordInput.value;
+    // Función para intentar el login
+    const attemptLogin = () => {
+        const email = loginEmail.value.trim();
+        const password = loginPassword.value.trim();
 
-    // Lógica de Autenticación (Temporal)
-    if (email === "coordinador@turnapp.es" && password === "1234") {
-        currentUser = { email: email, role: 'coordinador' };
-    } else if (email === "usuario@turnapp.es" && password === "1234") {
-        currentUser = { email: email, role: 'usuario' };
-    } else {
-        errorMessage.textContent = "Credenciales incorrectas.";
-        errorMessage.classList.remove('oculto');
-        return;
-    }
-    
-    // Si el login es exitoso:
-    errorMessage.classList.add('oculto');
-    document.getElementById('login-section').classList.add('oculto');
-    document.getElementById('app').classList.remove('oculto');
-    document.getElementById('btn-logout').classList.remove('oculto');
+        if (users[email] && users[email].password === password) {
+            // Éxito
+            localStorage.setItem('turnapp_loggedIn', 'true');
+            
+            // Oculta login y muestra la app con una transición suave
+            loginSection.style.opacity = '0';
+            setTimeout(() => {
+                loginSection.classList.add('oculto');
+                appSection.classList.remove('oculto');
+                appSection.style.opacity = '1';
+                initializeMainApp(); // <-- ARRANCA LA APP PRINCIPAL
+            }, 500);
 
-    // Llamamos a la inicialización de toda la lógica de la app
-    initializeMainApp(); 
-}
-
-function handleLogout() {
-    currentUser = null;
-    document.getElementById('app').classList.add('oculto');
-    document.getElementById('btn-logout').classList.add('oculto');
-    document.getElementById('login-section').classList.remove('oculto');
-    
-    document.getElementById('login-email').value = '';
-    document.getElementById('login-password').value = '';
-    document.getElementById('login-error-message').classList.add('oculto');
-}
-
-function initAuth() {
-    const loginButton = document.getElementById('btn-login');
-    const logoutButton = document.getElementById('btn-logout');
-    const passwordInput = document.getElementById('login-password');
-
-    if (loginButton) loginButton.addEventListener('click', handleLogin);
-    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
-    
-    if(passwordInput) {
-        passwordInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') handleLogin();
-        });
-    }
-}
-
-// =========================================================================
-// INICIALIZADOR PRINCIPAL DE LA APP (POST-LOGIN)
-// =========================================================================
-function initializeMainApp() {
-    // Restauramos datos de sesión ANTES de renderizar
-    restoreManualEdits();
-    restoreCadenceSpec();
-    
-    // Inicializamos todos los módulos
-    initThemeSwitcher();
-    initEditableTitle();
-    initApp(); // Calendario y navegación (incluye swipe)
-    initLicenciasPanel();
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones();
-    
-    // Vinculamos botones de modales y otros controles
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
-}
-
-
-// =========================================================================
-// MÓDULOS DE LA APP
-// =========================================================================
-
-function initThemeSwitcher() {
-    const themeToggleButton = document.getElementById("btn-toggle-theme");
-    const body = document.body;
-
-    const applyTheme = (theme) => {
-        body.dataset.theme = theme; 
-        localStorage.setItem('turnapp_theme', theme);
-        if (themeToggleButton) {
-            themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
+        } else {
+            // Fracaso
+            errorMessage.textContent = 'Email o contraseña incorrectos.';
+            errorMessage.classList.remove('oculto');
+            loginPassword.value = '';
         }
     };
     
-    const toggleTheme = () => {
-        const newTheme = body.dataset.theme === 'light' ? 'dark' : 'light';
-        applyTheme(newTheme);
-    };
+    // Listeners del formulario de login
+    btnLogin.addEventListener('click', attemptLogin);
+    loginPassword.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') attemptLogin();
+    });
+    loginEmail.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') attemptLogin();
+    });
 
-    if (themeToggleButton) {
-        themeToggleButton.addEventListener('click', toggleTheme);
+    // Comprobar si ya hay una sesión activa al cargar la página
+    if (localStorage.getItem('turnapp_loggedIn') === 'true') {
+        loginSection.classList.add('oculto');
+        appSection.classList.remove('oculto');
+        appSection.style.opacity = '1';
+        initializeMainApp();
+    } else {
+        loginSection.classList.remove('oculto');
+        loginSection.style.opacity = '1';
     }
-    
-    const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
-    applyTheme(savedTheme);
+}
+
+/**
+ * Contenedor que inicializa TODOS los componentes de la aplicación principal.
+ * Solo se llama después de un login exitoso.
+ */
+function initializeMainApp() {
+    initTheme();
+    initEditableTitle();
+    initTablaCoordinador();
+    initTablonAnuncios();
+    initDocumentosPanel();
+    restoreManualEdits();
+    initLicenciasPanel();
+    initApp(); // Contiene el renderizado del calendario
+    restoreCadenceSpec();
+    initPeticiones();
+    initLogout(); // Nueva función para el botón de logout
+    console.log("Aplicación principal inicializada.");
+}
+
+// =========================================================================
+// TODAS LAS FUNCIONES DE LA APLICACIÓN PRINCIPAL
+// (Aquí va todo tu código original, ahora encapsulado y ordenado)
+// =========================================================================
+
+function initLogout() {
+    const btnLogout = document.getElementById('btn-logout');
+    if (!btnLogout) return;
+
+    btnLogout.addEventListener('click', () => {
+        if (confirm('¿Seguro que quieres cerrar la sesión?')) {
+            localStorage.removeItem('turnapp_loggedIn');
+            window.location.reload(); // Recarga la página para volver al login
+        }
+    });
+}
+
+function initTheme() {
+    const btnToggleTheme = document.getElementById('btn-toggle-theme');
+    const currentTheme = localStorage.getItem('turnapp-theme') || 'light';
+    document.body.className = currentTheme + '-theme';
+    if(btnToggleTheme) btnToggleTheme.textContent = currentTheme === 'light' ? '🌙' : '☀️';
+
+    btnToggleTheme.addEventListener('click', () => {
+        let theme = document.body.classList.contains('light-theme') ? 'dark' : 'light';
+        document.body.className = theme + '-theme';
+        btnToggleTheme.textContent = theme === 'light' ? '🌙' : '☀️';
+        localStorage.setItem('turnapp-theme', theme);
+    });
 }
 
 function initEditableTitle() {
-    const titleElement = document.getElementById('editable-title');
-    if (!titleElement) return;
+    const editableTitle = document.getElementById('editable-title');
+    const savedTitle = localStorage.getItem('turnapp.title');
+    if (savedTitle) editableTitle.textContent = savedTitle;
 
-    const EDITABLE_TITLE_KEY = 'turnapp.editableTitle';
-    const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
-    if (savedTitle) {
-        titleElement.textContent = savedTitle;
-    }
-
-    titleElement.addEventListener('blur', () => {
-        const newTitle = titleElement.textContent.trim();
-        localStorage.setItem(EDITABLE_TITLE_KEY, newTitle);
+    editableTitle.addEventListener('blur', () => {
+        localStorage.setItem('turnapp.title', editableTitle.textContent);
     });
-
-    titleElement.addEventListener('keypress', (e) => {
+    editableTitle.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             e.preventDefault();
-            titleElement.blur();
+            editableTitle.blur();
         }
     });
 }
 
-function initCoordinatorTable() {
-    const tabla = document.getElementById("tabla-coordinador");
+function initTablaCoordinador() {
+    const tabla = document.getElementById('tabla-coordinador');
     if (!tabla) return;
-    const thead = tabla.querySelector("thead");
-    const tbody = tabla.querySelector("tbody");
+    const thead = tabla.querySelector('thead');
+    const tbody = tabla.querySelector('tbody');
+    const STORAGE_KEY = 'tablaCoordinadorState.v2';
 
-    const KEYS = {
-        TEXT: "tablaCoordinadorTextos",
-        COLORS: "tablaCoordinadorColores",
-        ROWS: "tablaCoordinadorFilas",
-        COLS: "tablaCoordinadorColumnas",
-        HEADERS: "tablaCoordinadorHeaders"
-    };
-    const DEFAULT_TURN_COLUMNS = [
-        { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
-        { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
-        { id: 'th-n', header: 'N' }
+    const defaultHeaders = ["Nombre", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom", "Observaciones"];
+    const defaultData = [
+        ["Coordinador", "", "", "", "", "", "", "", ""],
+        ["Vigilante 1", "", "", "", "", "", "", "", ""],
+        ["Vigilante 2", "", "", "", "", "", "", "", ""]
     ];
-    let tableState = {};
 
-    function syncStateFromStorage() {
-        let turnColumns;
-        try {
-            turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
-            if (!Array.isArray(turnColumns)) throw new Error("La estructura de columnas está corrupta.");
-        } catch (e) {
-            console.error("Error al leer las columnas desde localStorage, se resetea a valores por defecto.", e);
-            turnColumns = [...DEFAULT_TURN_COLUMNS];
-            localStorage.setItem(KEYS.COLS, JSON.stringify(turnColumns));
-        }
-
-        tableState = {
-            rowCount: parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10),
-            turnColumns: turnColumns,
-            columnCount: 2 + turnColumns.length + 1,
-            turnColumnIndices: Array.from({ length: turnColumns.length }, (_, i) => i + 2),
-            texts: JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}'),
-            colors: JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}'),
-            headers: JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}')
-        };
+    function guardarTabla() {
+        const headers = Array.from(thead.querySelectorAll('th')).map(th => th.textContent);
+        const data = Array.from(tbody.querySelectorAll('tr')).map(tr => 
+            Array.from(tr.querySelectorAll('td')).map(td => td.textContent)
+        );
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ headers, data }));
     }
 
-    function renderColgroup() {
-        let colgroup = tabla.querySelector('colgroup');
-        if (!colgroup) {
-            colgroup = document.createElement('colgroup');
-            tabla.insertBefore(colgroup, thead);
+    function cargarTabla() {
+        const guardado = localStorage.getItem(STORAGE_KEY);
+        if (guardado) {
+            const { headers, data } = JSON.parse(guardado);
+            renderizarTabla(headers, data);
+        } else {
+            renderizarTabla(defaultHeaders, defaultData);
         }
-        colgroup.innerHTML = '';
-
-        const firstColWidth = 9;
-        const secondColWidth = 18;
-        const lastColWidth = 35;
-        const totalTurnWidth = 100 - firstColWidth - secondColWidth - lastColWidth;
-        const numTurnCols = tableState.turnColumns.length;
-        const individualTurnWidth = numTurnCols > 0 ? totalTurnWidth / numTurnCols : 0;
-
-        let colgroupHTML = `<col style="width: ${firstColWidth}%;"><col style="width: ${secondColWidth}%;">`;
-        for (let i = 0; i < numTurnCols; i++) {
-            colgroupHTML += `<col style="width: ${individualTurnWidth}%;">`;
-        }
-        colgroupHTML += `<col style="width: ${lastColWidth}%;">`;
-        colgroup.innerHTML = colgroupHTML;
     }
 
-    function renderHeaders() {
-        if (!thead) return;
+    function renderizarTabla(headers, data) {
         thead.innerHTML = '';
-        const row1 = thead.insertRow();
-        const row2 = thead.insertRow();
-
-        row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
-        const thCiclo = document.createElement('th');
-        thCiclo.id = "th-ciclo";
-        thCiclo.colSpan = tableState.turnColumns.length > 0 ? tableState.turnColumns.length : 1;
-        thCiclo.contentEditable = true;
-        thCiclo.className = "titulo-ciclo";
-        thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
-        row1.appendChild(thCiclo);
-        const thObservaciones = document.createElement('th');
-        thObservaciones.colSpan = 1;
-        thObservaciones.innerText = 'OBSERVACIONES';
-        row1.appendChild(thObservaciones);
-
-        row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
-        tableState.turnColumns.forEach(col => {
-            const th = document.createElement('th');
-            th.id = col.id;
-            th.contentEditable = true;
-            th.innerText = tableState.headers[col.id] || col.header;
-            row2.appendChild(th);
-        });
-        const thCocina = document.createElement('th');
-        thCocina.id = 'th-cocina';
-        thCocina.contentEditable = true;
-        thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
-        row2.appendChild(thCocina);
-    }
-    
-    function initializeRow(row, rowIndex) {
-        row.innerHTML = '';
-        for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
-            const cell = document.createElement('td');
-            const cellId = `r${rowIndex}-c${cellIndex}`;
-            const isTurnoCell = tableState.turnColumnIndices.includes(cellIndex);
-            
-            cell.style.position = 'relative';
-            const textEditor = document.createElement('div');
-            textEditor.className = 'text-editor';
-            textEditor.contentEditable = true;
-            textEditor.innerText = tableState.texts[cellId] || '';
-            cell.appendChild(textEditor);
-
-            if (isTurnoCell) {
-                textEditor.style.paddingBottom = '16px';
-                if (tableState.colors[cellId]) {
-                    cell.style.backgroundColor = tableState.colors[cellId];
-                }
-                const handle = document.createElement('button');
-                handle.type = 'button';
-                handle.title = 'Elegir color';
-                handle.innerHTML = '&#9679;';
-                
-                handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
-                handle.onmouseenter = () => handle.style.opacity = '0.6';
-                handle.onmouseleave = () => handle.style.opacity = '0.1';
-
-                handle.onclick = (ev) => {
-                    ev.stopPropagation();
-                    openColorPicker(handle, (color) => {
-                        if (color === 'initial') {
-                            cell.style.backgroundColor = '';
-                            delete tableState.colors[cellId];
-                        } else {
-                            cell.style.backgroundColor = color;
-                            tableState.colors[cellId] = color;
-                        }
-                        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                    });
-                };
-                cell.appendChild(handle);
-            }
-            row.appendChild(cell);
-        }
-    }
-
-    function renderBody() {
-        if (!tbody) return;
         tbody.innerHTML = '';
-        for (let i = 0; i < tableState.rowCount; i++) {
-            const row = tbody.insertRow();
-            initializeRow(row, i);
-        }
+        const headerRow = document.createElement('tr');
+        headers.forEach(h => {
+            const th = document.createElement('th');
+            th.textContent = h;
+            th.contentEditable = "true";
+            headerRow.appendChild(th);
+        });
+        thead.appendChild(headerRow);
+
+        data.forEach(rowData => {
+            const tr = document.createElement('tr');
+            rowData.forEach(cellData => {
+                const td = document.createElement('td');
+                td.textContent = cellData;
+                td.contentEditable = "true";
+                tr.appendChild(td);
+            });
+            tbody.appendChild(tr);
+        });
     }
     
-    function fullTableRedraw() {
-        syncStateFromStorage();
-        renderColgroup();
-        renderHeaders();
-        renderBody();
-    }
-
-    function bindEvents() {
-        thead.addEventListener('blur', (e) => {
-            const target = e.target;
-            if (target.tagName === 'TH' && target.isContentEditable && target.id) {
-                tableState.headers[target.id] = target.innerText.trim();
-                localStorage.setItem(KEYS.HEADERS, JSON.stringify(tableState.headers));
-            }
-        }, true);
-
-        tbody.addEventListener("input", (e) => {
-            const textEditor = e.target;
-            if (!textEditor.classList.contains('text-editor')) return;
-            const cell = textEditor.closest('td');
-            const row = cell.closest('tr');
-            if (!row || !cell) return;
-            
-            const rowIndex = row.rowIndex - thead.rows.length;
-            const cellIndex = cell.cellIndex;
-            const cellId = `r${rowIndex}-c${cellIndex}`;
-
-            tableState.texts[cellId] = textEditor.innerText;
-            localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
-        });
-        
-        tbody.addEventListener("click", (e) => {
-            if (e.target.closest('.color-handle')) return;
-            const fila = e.target.closest("tr");
-            if (fila && fila.parentElement === tbody) {
-                Array.from(tbody.children).forEach(tr => tr.classList.remove("seleccionada"));
-                fila.classList.add("seleccionada");
-            }
-        });
-
-        const btnAddRow = document.getElementById('btn-add-row');
-        const btnRemoveRow = document.getElementById('btn-remove-row');
-        const btnAddCol = document.getElementById('btn-add-col');
-        const btnRemoveCol = document.getElementById('btn-remove-col');
-        const btnLimpiar = document.getElementById("limpiar-tabla");
-        
-        if (btnAddRow) btnAddRow.onclick = () => {
-            tableState.rowCount++;
-            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-            const newRow = tbody.insertRow();
-            initializeRow(newRow, tableState.rowCount - 1);
-        };
-
-        if (btnRemoveRow) btnRemoveRow.onclick = () => {
-            if (tableState.rowCount > 0 && tbody.rows.length > 0) {
-                const lastRowIndex = tableState.rowCount - 1;
-                for (let i = 0; i < tableState.columnCount; i++) {
-                    delete tableState.texts[`r${lastRowIndex}-c${i}`];
-                    delete tableState.colors[`r${lastRowIndex}-c${i}`];
-                }
-                localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
-                localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                
-                tbody.deleteRow(-1);
-                tableState.rowCount--;
-                localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-            }
-        };
-
-        if (btnAddCol) btnAddCol.onclick = () => {
-            const newTurnName = prompt(`Introduce el nombre para la nueva columna:`, `T${tableState.turnColumns.length + 1}`);
-            if (!newTurnName || newTurnName.trim() === '') return;
-            
-            const newColId = `th-custom-${Date.now()}`;
-            tableState.turnColumns.push({ id: newColId, header: newTurnName.trim() });
-            localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-            fullTableRedraw();
-        };
-
-        if (btnRemoveCol) btnRemoveCol.onclick = () => {
-            if (tableState.turnColumns.length > 0) {
-                if (!confirm("¿Seguro que quieres eliminar la última columna de turno?")) return;
-                
-                tableState.turnColumns.pop();
-                localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-                fullTableRedraw();
-            } else {
-                alert("No hay columnas de turno que eliminar.");
-            }
-        };
-        
-        if (btnLimpiar) {
-            const newBtn = btnLimpiar.cloneNode(true);
-            btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-            newBtn.addEventListener("click", () => {
-                if (confirm("¿Seguro que quieres borrar todos los textos y colores de la tabla?")) {
-                    tableState.texts = {};
-                    tableState.colors = {};
-                    localStorage.removeItem(KEYS.TEXT);
-                    localStorage.removeItem(KEYS.COLORS);
-                    renderBody();
-                }
-            });
+    document.getElementById('btn-add-row').addEventListener('click', () => {
+        const newRow = document.createElement('tr');
+        const numCols = thead.querySelector('tr').cells.length;
+        for (let i = 0; i < numCols; i++) {
+            const td = document.createElement('td');
+            td.contentEditable = "true";
+            newRow.appendChild(td);
         }
-    }
+        tbody.appendChild(newRow);
+    });
 
-    fullTableRedraw();
-    bindEvents();      
+    document.getElementById('btn-remove-row').addEventListener('click', () => {
+        if (tbody.rows.length > 1) tbody.deleteRow(-1);
+    });
+
+    document.getElementById('btn-add-col').addEventListener('click', () => {
+        const th = document.createElement('th');
+        th.contentEditable = "true";
+        th.textContent = "Turno";
+        const obsHeader = thead.querySelector('tr').lastChild;
+        thead.querySelector('tr').insertBefore(th, obsHeader);
+        Array.from(tbody.rows).forEach(tr => {
+            const td = document.createElement('td');
+            td.contentEditable = "true";
+            tr.insertBefore(td, tr.lastChild);
+        });
+    });
+
+    document.getElementById('btn-remove-col').addEventListener('click', () => {
+        const headerRow = thead.querySelector('tr');
+        if (headerRow.cells.length > 2) {
+            const lastTurnoIndex = headerRow.cells.length - 2;
+            headerRow.deleteCell(lastTurnoIndex);
+            Array.from(tbody.rows).forEach(tr => tr.deleteCell(lastTurnoIndex));
+        }
+    });
+
+    document.getElementById('limpiar-tabla').addEventListener('click', () => {
+        if (confirm("¿Limpiar todo el contenido de la tabla?")) {
+            tbody.querySelectorAll('td').forEach(td => td.textContent = '');
+            guardarTabla();
+        }
+    });
+
+    tabla.addEventListener('input', (e) => {
+        if (e.target.tagName === 'TD' || e.target.tagName === 'TH') {
+            guardarTabla();
+        }
+    });
+    
+    cargarTabla();
 }
 
-function initTablon() {
-    const btnUpload = document.getElementById('btn-upload-file');
-    const fileListContainer = document.getElementById('tablon-lista');
-    const tablonPreviewContainer = document.getElementById('tablon-preview-container');
-    const tablonPreviewImage = document.getElementById('tablon-preview-image');
+function initTablonAnuncios() {
     const fileInput = document.getElementById('file-input');
-    const imageModal = document.getElementById('image-modal');
-    const modalImageContent = document.getElementById('modal-image-content');
-    const modalCloseBtn = imageModal ? imageModal.querySelector('.image-modal-close') : null;
+    const btnUpload = document.getElementById('btn-upload-file');
+    const previewContainer = document.getElementById('tablon-preview-container');
+    const previewImage = document.getElementById('tablon-preview-image');
+    const lista = document.getElementById('tablon-lista');
+    const modal = document.getElementById('image-modal');
+    const modalImg = document.getElementById('modal-image-content');
+    const modalClose = modal.querySelector('.image-modal-close');
 
-    if (!btnUpload || !fileListContainer || !tablonPreviewContainer || !tablonPreviewImage || !fileInput || !imageModal || !modalImageContent || !modalCloseBtn) {
-        return;
-    }
+    if(!fileInput || !btnUpload) return;
 
-    const TABLON_KEY = 'turnapp.tablon.files';
+    const TABLON_KEY = 'turnapp.tablon.v3';
+
+    function loadFiles() { return JSON.parse(localStorage.getItem(TABLON_KEY) || '[]'); }
+    function saveFiles(files) { localStorage.setItem(TABLON_KEY, JSON.stringify(files)); }
 
     function renderFiles() {
-        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        fileListContainer.innerHTML = '';
-        const fragment = document.createDocumentFragment();
-
-        if (files.length > 0 && files[0].type.startsWith('image/')) {
-            tablonPreviewImage.src = files[0].data;
-            tablonPreviewContainer.classList.remove('oculto');
-        } else {
-            tablonPreviewContainer.classList.add('oculto');
-        }
+        const files = loadFiles();
+        lista.innerHTML = '';
+        previewContainer.classList.add('oculto');
 
         files.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'tablon-item';
-            
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'tablon-item-info';
-
-            const nameStrong = document.createElement('strong');
-            nameStrong.className = 'tablon-item-name';
-            nameStrong.textContent = file.name;
-            nameStrong.contentEditable = true; 
-            nameStrong.spellcheck = false;
-            nameStrong.dataset.index = index;
-
-            const metaSmall = document.createElement('small');
-            metaSmall.className = 'tablon-item-meta';
-            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
-
-            infoDiv.appendChild(nameStrong);
-            infoDiv.appendChild(metaSmall);
-
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'tablon-item-actions';
-            actionsDiv.innerHTML = `
-                <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
-                <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
-                <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
-            `;
-
-            fileItem.appendChild(infoDiv);
-            fileItem.appendChild(actionsDiv);
-            fragment.appendChild(fileItem);
-        });
-        fileListContainer.appendChild(fragment);
-    }
-    
-    fileListContainer.addEventListener('blur', (event) => {
-        if (event.target && event.target.classList.contains('tablon-item-name')) {
-            const index = parseInt(event.target.dataset.index, 10);
-            const newName = event.target.textContent.trim();
-            
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            if (files[index] && newName) {
-                files[index].name = newName;
-                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            } else {
-                renderFiles();
+            if (file.type.startsWith('image/') && index === 0) {
+                previewImage.src = file.data;
+                previewContainer.classList.remove('oculto');
             }
-        }
-    }, true);
+            const item = document.createElement('div');
+            item.className = 'tablon-item';
+            const uploadDate = new Date(file.date).toLocaleString('es-ES');
+            item.innerHTML = `
+                <div class="tablon-item-info">
+                    <strong>${file.name}</strong>
+                    <small>Subido: ${uploadDate}</small>
+                </div>
+                <div class="tablon-item-actions">
+                    <button class="view-btn modern-btn green" data-index="${index}">Ver</button>
+                    <button class="delete-btn modern-btn red" data-index="${index}">Borrar</button>
+                </div>`;
+            lista.appendChild(item);
+        });
+    }
 
-    fileListContainer.addEventListener('keydown', (event) => {
-        if (event.target && event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
-            event.preventDefault();
-            event.target.blur();
-        }
-    });
-
-    btnUpload.addEventListener('click', () => {
-        fileInput.value = null;
-        fileInput.click();
-    });
-
+    btnUpload.addEventListener('click', () => fileInput.click());
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
         const reader = new FileReader();
         reader.onload = (event) => {
-            const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            files.unshift(fileData);
-            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+            const newFile = {
+                name: file.name,
+                type: file.type,
+                size: file.size,
+                date: new Date().toISOString(),
+                data: event.target.result
+            };
+            const files = loadFiles();
+            files.unshift(newFile);
+            saveFiles(files);
             renderFiles();
         };
         reader.readAsDataURL(file);
     });
 
-    fileListContainer.addEventListener('click', (event) => {
-        const target = event.target;
-        const index = target.closest('[data-index]')?.dataset.index;
+    lista.addEventListener('click', (e) => {
+        const index = e.target.dataset.index;
         if (index === undefined) return;
 
-        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        const file = files[index];
-
-        if (target.classList.contains('view-btn')) {
+        if (e.target.classList.contains('view-btn')) {
+            const file = loadFiles()[index];
             if (file.type.startsWith('image/')) {
-                modalImageContent.src = file.data;
-                imageModal.classList.remove('oculto');
+                modalImg.src = file.data;
+                modal.classList.remove('oculto');
             } else {
-                fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
+                const blob = dataURLtoBlob(file.data);
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
             }
-        } else if (target.classList.contains('download-btn')) {
-            const a = document.createElement('a');
-            a.href = file.data;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } else if (target.classList.contains('delete-btn')) {
-            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
+        }
+        if (e.target.classList.contains('delete-btn')) {
+            if (confirm("¿Seguro que quieres borrar este archivo?")) {
+                let files = loadFiles();
                 files.splice(index, 1);
-                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                saveFiles(files);
                 renderFiles();
             }
         }
     });
 
-    tablonPreviewImage.addEventListener('click', () => {
-        if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
-            modalImageContent.src = tablonPreviewImage.src;
-            imageModal.classList.remove('oculto');
-        }
+    function dataURLtoBlob(dataurl) {
+        const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)[1],
+            bstr = atob(arr[1]);
+        let n = bstr.length;
+        const u8arr = new Uint8Array(n);
+        while(n--) u8arr[n] = bstr.charCodeAt(n);
+        return new Blob([u8arr], {type:mime});
+    }
+    
+    previewImage.addEventListener('click', () => {
+        modalImg.src = previewImage.src;
+        modal.classList.remove('oculto');
     });
-    modalCloseBtn.addEventListener('click', () => { imageModal.classList.add('oculto'); });
-    imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
+    modalClose.addEventListener('click', () => modal.classList.add('oculto'));
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) modal.classList.add('oculto');
+    });
 
     renderFiles();
 }
@@ -650,92 +443,54 @@ function initDocumentosPanel() {
                     const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
                     fileItem.innerHTML = `
+                        <div class
                         <div class="documento-file-info">
-                            <strong class="documento-file-name">${file.name}</strong>
-                            <small class="documento-file-meta">Subido: ${uploadDate}</small>
+                            <span class="file-name">${file.name}</span>
+                            <small class="file-date">Subido: ${uploadDate}</small>
                         </div>
                         <div class="documento-file-actions">
-                            <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}" title="Ver">👁️</button>
-                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}" title="Descargar">📥</button>
-                            <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}" title="Eliminar">🗑️</button>
-                        </div>
-                    `;
+                            <button class="view-pdf modern-btn" data-category="${category}" data-index="${index}">Ver</button>
+                            <button class="delete-pdf modern-btn red" data-category="${category}" data-index="${index}">Borrar</button>
+                        </div>`;
                     fragment.appendChild(fileItem);
                 });
             }
+
             fileListContainer.appendChild(fragment);
         });
     }
 
-    documentosSection.addEventListener('click', (event) => {
-        const target = event.target;
-
-        if (target.matches('.btn-upload-pdf')) {
-            currentUploadCategory = target.dataset.category;
-            pdfInput.value = null;
+    documentosSection.addEventListener('click', async (e) => {
+        const target = e.target;
+        const category = target.dataset.category;
+        
+        if (target.classList.contains('btn-upload-pdf')) {
+            currentUploadCategory = category;
             pdfInput.click();
-            return;
-        }
-
-        if (target.matches('.doc-view-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
-            const file = loadDocs()[category][index];
-            
-            if (file && file.data) {
-                if (window.innerWidth < 768) {
-                    fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
-                } else {
-                    modalPdfContent.src = file.data;
-                    pdfModal.classList.remove('oculto');
-                }
-            }
-            return;
-        }
-
-        if (target.matches('.doc-download-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
-            const file = loadDocs()[category][index];
-
-            if (file && file.data) {
-                const a = document.createElement('a');
-                a.href = file.data;
-                a.download = file.name;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            }
-            return;
-        }
-
-        if (target.matches('.doc-delete-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
+        } else if (target.classList.contains('view-pdf')) {
+            const index = target.dataset.index;
             const docs = loadDocs();
             const file = docs[category][index];
-
-            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
+            if (file) {
+                modalPdfContent.src = file.data;
+                pdfModal.classList.remove('oculto');
+            }
+        } else if (target.classList.contains('delete-pdf')) {
+            const index = target.dataset.index;
+            if (confirm(`¿Seguro que quieres borrar este documento de la categoría ${category}?`)) {
+                const docs = loadDocs();
                 docs[category].splice(index, 1);
                 saveDocs(docs);
                 renderDocs();
             }
-            return;
-        }
-        
-        const previewContainer = target.closest('.documento-preview-container');
-        if (previewContainer) {
-            const category = previewContainer.closest('.documento-card').dataset.category;
-            const docs = loadDocs();
-            if (docs[category] && docs[category].length > 0) {
-                const lastFile = docs[category][0];
-                if (window.innerWidth < 768) {
-                    fetch(lastFile.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
-                } else {
-                    modalPdfContent.src = lastFile.data;
-                    pdfModal.classList.remove('oculto');
-                }
-            }
+        } else if (target.closest('.documento-preview-container')) {
+             const cardCategory = target.closest('.documento-card').dataset.category;
+             const docs = loadDocs();
+             const lastFile = docs[cardCategory] ? docs[cardCategory][0] : null;
+             if (lastFile) {
+                modalPdfContent.src = lastFile.data;
+                pdfModal.classList.remove('oculto');
+             }
         }
     });
 
@@ -745,19 +500,20 @@ function initDocumentosPanel() {
 
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const pdfData = event.target.result;
-            
-            const card = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"]`);
-            const overlayText = card.querySelector('.preview-text');
-            if (overlayText) overlayText.textContent = 'Procesando...';
+            const dataUrl = event.target.result;
+            const thumbnail = await generatePdfThumbnail(dataUrl);
+            const newDoc = {
+                name: file.name,
+                date: new Date().toISOString(),
+                data: dataUrl,
+                thumbnail: thumbnail
+            };
 
-            const thumbnailData = await generatePdfThumbnail(pdfData);
             const docs = loadDocs();
-            const newFileData = { name: file.name, size: file.size, date: new Date().toISOString(), data: pdfData, thumbnail: thumbnailData };
-
-            docs[currentUploadCategory].unshift(newFileData);
+            docs[currentUploadCategory].unshift(newDoc);
             saveDocs(docs);
             renderDocs();
+            currentUploadCategory = null; 
         };
         reader.readAsDataURL(file);
     });
@@ -766,593 +522,381 @@ function initDocumentosPanel() {
     pdfModal.addEventListener('click', (e) => {
         if (e.target === pdfModal) pdfModal.classList.add('oculto');
     });
-    
+
     renderDocs();
 }
 
-function restoreManualEdits(){
-  try {
-    const raw = localStorage.getItem('turnapp.manualEdits');
-    if (raw) manualEdits = JSON.parse(raw);
-  } catch(e){
-    manualEdits = {};
-  }
-}
-
-function saveManualEdits(){
-  try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
-}
-
 function initLicenciasPanel() {
-    const licenciasContainer = document.getElementById('licencias-container');
-    if (!licenciasContainer) return;
+    const container = document.getElementById('licencias-container');
+    if (!container) return;
 
-    const items = licenciasContainer.querySelectorAll('.licencia-item');
-    const totalCargaEl = document.getElementById('total-carga');
-    const totalConsumidosEl = document.getElementById('total-consumidos');
-    const totalRestanEl = document.getElementById('total-restan');
-    const LICENCIAS_KEY = 'turnapp.licenciasData.v3';
+    const LICENCIAS_KEY = 'turnapp.licencias.v1';
 
-    function updateCalculations() {
-        let totalCarga = 0;
-        let totalConsumidos = 0;
-        items.forEach(item => {
-            const carga = parseInt(item.querySelector('.carga').value, 10) || 0;
-            const consumidos = parseInt(item.querySelector('.consumidos').value, 10) || 0;
-            const restanInput = item.querySelector('.restan');
-            if (restanInput) restanInput.value = carga - consumidos;
-            totalCarga += carga;
-            totalConsumidos += consumidos;
-        });
-        if (totalCargaEl) totalCargaEl.value = totalCarga;
-        if (totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
-        if (totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
+    function updateRow(rowElement) {
+        // Asume que rowElement es el div con data-tipo
+        const cargaInput = rowElement.nextElementSibling.querySelector('input');
+        const consumidosInput = cargaInput.parentElement.nextElementSibling.querySelector('input');
+        const restanInput = consumidosInput.parentElement.nextElementSibling.querySelector('input');
+        
+        const carga = parseInt(cargaInput.value) || 0;
+        const consumidos = parseInt(consumidosInput.value) || 0;
+        
+        restanInput.value = carga - consumidos;
+    }
+
+    function updateTotal() {
+        const allCarga = Array.from(container.querySelectorAll('.carga')).reduce((sum, el) => sum + (parseInt(el.value) || 0), 0);
+        const allConsumidos = Array.from(container.querySelectorAll('.consumidos')).reduce((sum, el) => sum + (parseInt(el.value) || 0), 0);
+        
+        document.getElementById('total-carga').value = allCarga;
+        document.getElementById('total-consumidos').value = allConsumidos;
+        document.getElementById('total-restan').value = allCarga - allConsumidos;
     }
 
     function saveState() {
         const state = {};
-        items.forEach(item => {
-            const tipo = item.dataset.tipo;
-            if (tipo) {
-                state[tipo] = {
-                    carga: item.querySelector('.carga').value,
-                    consumidos: item.querySelector('.consumidos').value,
-                    color: item.querySelector('.licencia-color-handle').style.backgroundColor
-                };
-            }
+        const grid = container.querySelector('.licencias-grid');
+        const rows = grid.querySelectorAll('.licencia-item[data-tipo]');
+        rows.forEach(row => {
+            const tipo = row.dataset.tipo;
+            const carga = row.nextElementSibling.querySelector('input').value;
+            const consumidos = row.nextElementSibling.nextElementSibling.querySelector('input').value;
+            state[tipo] = { carga, consumidos };
         });
         localStorage.setItem(LICENCIAS_KEY, JSON.stringify(state));
     }
 
     function loadState() {
-        const savedState = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
-        items.forEach(item => {
-            const tipo = item.dataset.tipo;
-            if (tipo && savedState[tipo]) {
-                item.querySelector('.carga').value = savedState[tipo].carga || 0;
-                item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
-                const colorBtn = item.querySelector('.licencia-color-handle');
-                if (colorBtn && savedState[tipo].color) {
-                   colorBtn.style.backgroundColor = savedState[tipo].color;
-                }
+        const state = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
+        const grid = container.querySelector('.licencias-grid');
+        const rows = grid.querySelectorAll('.licencia-item[data-tipo]');
+        rows.forEach(row => {
+            const tipo = row.dataset.tipo;
+            if (state[tipo]) {
+                row.nextElementSibling.querySelector('input').value = state[tipo].carga;
+                row.nextElementSibling.nextElementSibling.querySelector('input').value = state[tipo].consumidos;
             }
+            updateRow(row);
         });
+        updateTotal();
     }
-
-    items.forEach(item => {
-        const inputs = item.querySelectorAll('.carga, .consumidos');
-        inputs.forEach(input => input.addEventListener('input', () => { updateCalculations(); saveState(); }));
-
-        const colorHandle = item.querySelector('.licencia-color-handle');
-        if (colorHandle) {
-            const newHandle = colorHandle.cloneNode(true);
-            colorHandle.parentNode.replaceChild(newHandle, colorHandle);
-            newHandle.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                openColorPicker(newHandle, (color) => {
-                    newHandle.style.backgroundColor = (color === 'initial') ? '' : color;
-                    saveState();
-                }, colorPalette);
-            });
+    
+    container.addEventListener('input', (e) => {
+        if (e.target.classList.contains('carga') || e.target.classList.contains('consumidos')) {
+            const rowDiv = e.target.parentElement.previousElementSibling;
+            updateRow(rowDiv);
+            updateTotal();
+            saveState();
         }
     });
 
     loadState();
-    updateCalculations();
 }
 
-const spanishHolidays = [
-  { day:1, month:0 }, { day:6, month:0 }, { day:1, month:4 },
-  { day:15, month:7 }, { day:12, month:9 }, { day:2, month:10 },
-  { day:6, month:11 }, { day:8, month:11 }, { day:25, month:11 }
-];
 
-function getVariableHolidays(year) {
-    const a = year % 19;
-    const b = Math.floor(year / 100);
-    const c = year % 100;
-    const d = Math.floor(b / 4);
-    const e = b % 4;
-    const f = Math.floor((b + 8) / 25);
-    const g = Math.floor((b - f + 1) / 3);
-    const h = (19 * a + b - d - g + 15) % 30;
-    const i = Math.floor(c / 4);
-    const k = c % 4;
-    const l = (32 + 2 * e + 2 * i - h - k) % 7;
-    const m = Math.floor((a + 11 * h + 22 * l) / 451);
-    const month = Math.floor((h + l - 7 * m + 114) / 31);
-    const day = ((h + l - 7 * m + 114) % 31) + 1;
+function saveManualEdits() {
+    localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits));
+}
 
-    const easterSunday = new Date(year, month - 1, day);
-    const goodFriday = new Date(easterSunday);
-    goodFriday.setDate(easterSunday.getDate() - 2);
+function restoreManualEdits() {
+    manualEdits = JSON.parse(localStorage.getItem('turnapp.manualEdits') || '{}');
+}
+
+function saveCadenceSpec() {
+    localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(cadenceSpec));
+}
+
+function restoreCadenceSpec() {
+    const saved = localStorage.getItem('turnapp.cadenceSpec');
+    if (saved) {
+        cadenceSpec = JSON.parse(saved);
+    }
+}
+
+// =========================================================================
+// LÓGICA PRINCIPAL DEL CALENDARIO Y CADENCIAS
+// =========================================================================
+
+function initApp() {
+    const monthLabel = document.getElementById('monthLabel');
+    const calendar = document.getElementById('calendar');
+    const prevMonthBtn = document.getElementById('prevMonth');
+    const nextMonthBtn = document.getElementById('nextMonth');
+    const btnApplyCadence = document.getElementById('btn-apply-cadence');
+    const btnClearCadence = document.getElementById('btn-clear-cadence');
     
-    return [{ day: goodFriday.getDate(), month: goodFriday.getMonth() }];
-}
+    // Elementos del modal de cadencia
+    const cadenceModalOverlay = document.getElementById('cadence-modal-overlay');
+    const cadenceStartInput = document.getElementById('cadence-start');
+    const customPatternInput = document.getElementById('custom-pattern');
+    const applyCadenceConfirmBtn = document.getElementById('apply-cadence-confirm');
+    const closeCadenceBtn = document.getElementById('close-cadence');
+    const v1Options = document.getElementById('v1-options');
+    const v2Options = document.getElementById('v2-options');
+    const customSection = document.getElementById('custom-section');
 
-const colorPalette = [
-  "#d87d00", "#4d9ef7", "#f7a64d", "#6fd773", "#e65252", "#c9c9c9", "#ff4d4d",
-  "#ffa64d", "#ffd24d", "#85e085", "#4dd2ff", "#4d79ff", "#b84dff", "#ff4da6",
-  "#a6a6a6", "#ffffff", "rgba(232,240,255,1)", "rgba(163,193,255,0.65)", "rgba(255,179,179,0.45)"
-];
+    const cadencePatterns = {
+        "V-1": [
+            ["M/T", "L", "M/T", "N", "L", "L", "L", "L"],
+            ["M/T", "M/T", "N", "L", "L", "L", "L", "L"],
+            ["T", "M/T", "M/N", "L", "L", "L", "L", "L"],
+            ["M/T", "N", "L", "L", "L"],
+            ["T", "M/N", "L", "L", "L"]
+        ],
+        "V-2": [
+            ["M/T", "M/T", "L", "L", "L", "L"]
+        ]
+    };
 
-function initApp(){
-  renderCalendar(currentMonth, currentYear);
+    function renderCalendar() {
+        calendar.innerHTML = '';
+        monthLabel.textContent = new Date(currentYear, currentMonth).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' });
+        
+        const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+        const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+        const dayOffset = (firstDay === 0) ? 6 : firstDay - 1;
 
-  const prevBtn = document.getElementById('prevMonth');
-  const nextBtn = document.getElementById('nextMonth');
-  const calendarPanel = document.getElementById('calendar-panel');
-
-  const goToNextMonth = () => {
-    currentMonth++;
-    if (currentMonth > 11) { currentMonth = 0; currentYear++; }
-    renderCalendar(currentMonth, currentYear);
-  };
-
-  const goToPrevMonth = () => {
-    currentMonth--;
-    if (currentMonth < 0) { currentMonth = 11; currentYear--; }
-    renderCalendar(currentMonth, currentYear);
-  };
-
-  if(prevBtn) prevBtn.addEventListener('click', goToPrevMonth);
-  if(nextBtn) nextBtn.addEventListener('click', goToNextMonth);
-
-  if (calendarPanel) {
-    let touchStartX = 0;
-    calendarPanel.addEventListener('touchstart', e => { touchStartX = e.changedTouches[0].screenX; }, { passive: true });
-    calendarPanel.addEventListener('touchend', e => {
-        const touchEndX = e.changedTouches[0].screenX;
-        const swipeDistance = touchEndX - touchStartX;
-        const swipeThreshold = 50; // Min pixels for swipe
-        if (Math.abs(swipeDistance) > swipeThreshold) {
-            if (swipeDistance < 0) { goToNextMonth(); } else { goToPrevMonth(); }
+        for (let i = 0; i < dayOffset; i++) {
+            calendar.innerHTML += `<div class="day empty"></div>`;
         }
-    });
-  }
-}
 
-function renderCalendar(month, year){
-  const calendar = document.getElementById('calendar');
-  if(!calendar) return;
-  calendar.innerHTML = '';
+        for (let day = 1; day <= daysInMonth; day++) {
+            const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            let content = '';
 
-  const variableHolidays = getVariableHolidays(year);
-  const monthLabel = document.getElementById('monthLabel');
-  const meses = ["Enero","Febrero","Marzo","Abril","Mayo","Junio", "Julio","Agosto","Septiembre","Octubre","Noviembre","Diciembre"];
-  if(monthLabel) monthLabel.textContent = `${meses[month]} ${year}`;
+            if (manualEdits[dateStr]) {
+                content = manualEdits[dateStr];
+            } else if (cadenceData[day - 1]) {
+                content = cadenceData[day - 1];
+            }
 
-  let firstDay = new Date(year, month, 1).getDay();
-  firstDay = (firstDay === 0)? 6 : firstDay-1;
-
-  const daysInMonth = new Date(year, month+1, 0).getDate();
-
-  for(let i=0;i<firstDay;i++){
-    calendar.appendChild(document.createElement('div')).className = 'day-cell empty';
-  }
-
-  for(let day=1; day<=daysInMonth; day++){
-    const cell = document.createElement('div');
-    cell.className = 'day-cell';
-
-    const dateObj = new Date(year, month, day);
-    const weekday = dateObj.getDay();
-    if(weekday===6) cell.classList.add('saturday');
-    if(weekday===0) cell.classList.add('sunday');
-
-    const isFixedHoliday = spanishHolidays.some(h => h.day === day && h.month === month);
-    const isVariableHoliday = variableHolidays.some(h => h.day === day && h.month === month);
-    const isTodayHoliday = isFixedHoliday || isVariableHoliday;
-
-    if (isTodayHoliday) cell.classList.add('holiday');
-
-    const label = document.createElement('div');
-    label.className = 'day-label';
-    label.textContent = `${day}`;
-    cell.appendChild(label);
-
-    const wrapper = document.createElement('div');
-    wrapper.className = 'shifts-wrapper';
-    const row = document.createElement('div');
-    row.className = 'shifts-row';
-
-    row.appendChild(createShiftElement(year, month, day, 'M', isTodayHoliday));
-    row.appendChild(createShiftElement(year, month, day, 'T', isTodayHoliday));
-    wrapper.appendChild(row);
-    wrapper.appendChild(createShiftElement(year, month, day, 'N', isTodayHoliday));
+            calendar.innerHTML += `
+                <div class="day" data-date="${dateStr}">
+                    <div class="day-number">${day}</div>
+                    <div class="day-content" contenteditable="true" spellcheck="false">${content}</div>
+                </div>`;
+        }
+        
+        applyCellStyles();
+    }
     
-    cell.appendChild(wrapper);
-    calendar.appendChild(cell);
-  }
-
-  if(cadenceData.length>0) applyCadenceRender(month, year);
-}
-
-function createShiftElement(year, month, day, shiftKey, isHoliday){
-  const container = document.createElement('div');
-  container.className = (shiftKey === 'N') ? 'shift-container night' : 'shift-container';
-
-  const shift = document.createElement('div');
-  shift.className = `shift-${shiftKey.toLowerCase()} shift-cell`;
-  shift.contentEditable = true;
-  shift.spellcheck = false;
-  shift.dataset.shift = shiftKey;
-
-  const dk = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-  let defaultBg = '';
-  const weekday = new Date(year, month, day).getDay();
-
-  if (isHoliday || weekday === 0) {
-      defaultBg = 'rgba(255,179,179,0.45)';
-  } else if (weekday === 6) {
-      defaultBg = 'rgba(163,193,255,0.65)';
-  } else {
-      defaultBg = '#e8f0ff';
-  }
-  shift.style.backgroundColor = defaultBg;
-  shift.style.color = '#000';
-  
-  const defaultTextForShift = (sk) => sk;
-
-  if(manualEdits[dk] && manualEdits[dk][shiftKey]){
-    const obj = manualEdits[dk][shiftKey];
-    shift.textContent = obj.text ?? defaultTextForShift(shiftKey);
-    if(obj.color){
-      shift.style.backgroundColor = obj.color;
-      shift.dataset.userColor = 'true';
-    }
-    shift.dataset.edited = (String(obj.text ?? '').trim() !== defaultTextForShift(shiftKey)) ? 'true' : 'false';
-  } else {
-    shift.textContent = defaultTextForShift(shiftKey);
-    shift.dataset.edited = 'false';
-  }
-
-  shift.addEventListener('blur', ()=> {
-    const text = shift.textContent.trim();
-    if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-    manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-    manualEdits[dk][shiftKey].text = text;
-    saveManualEdits();
-    shift.dataset.edited = (text !== defaultTextForShift(shiftKey)) ? 'true' : 'false';
-  });
-
-  shift.addEventListener('keypress', (e)=> { if(e.key === 'Enter'){ e.preventDefault(); shift.blur(); } });
-
-  const handle = document.createElement('button');
-  handle.type = 'button';
-  handle.className = 'color-handle';
-  handle.title = 'Elegir color';
-  handle.innerHTML = '●';
-  handle.style.cssText = 'height:12px; width:24px; font-size:10px; opacity:0.28; background:transparent; border:none; cursor:pointer;';
-  handle.addEventListener('mouseenter', ()=> handle.style.opacity = '0.6');
-  handle.addEventListener('mouseleave', ()=> handle.style.opacity = '0.28');
-
-  handle.addEventListener('click', (ev)=> {
-    ev.stopPropagation();
-    openColorPicker(handle, (color)=>{
-      const isLight = ((c) => {
-          if(!c || c === 'initial') return true;
-          if(c.indexOf('rgb')===0){ const n = c.replace(/[^\\d,]/g,'').split(',').map(Number); return (0.2126*n[0] + 0.7152*n[1] + 0.0722*n[2]) > 200; }
-          if(c[0]==='#'){ const [r,g,b] = [parseInt(c.substr(1,2),16), parseInt(c.substr(3,2),16), parseInt(c.substr(5,2),16)]; return (0.2126*r + 0.7152*g + 0.0722*b) > 200; }
-          return true;
-      })(color);
-      shift.style.backgroundColor = color === 'initial' ? defaultBg : color;
-      shift.style.color = isLight ? '#000' : '#fff';
-      shift.dataset.userColor = color !== 'initial';
-      if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
-      manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
-      manualEdits[dk][shiftKey].color = color === 'initial' ? undefined : color;
-      saveManualEdits();
-    }, colorPalette);
-  });
-
-  container.appendChild(shift);
-  container.appendChild(handle);
-  return container;
-}
-
-function openColorPicker(anchorEl, onSelect, palette = colorPalette){
-  document.getElementById('color-picker-popup')?.remove();
-
-  const popup = document.createElement('div');
-  popup.id = 'color-picker-popup';
-  popup.style.cssText = 'position:absolute; display:flex; flex-wrap:wrap; background:var(--panel-bg); border:1px solid var(--border-color); padding:6px; border-radius:6px; box-shadow:0 6px 18px rgba(0,0,0,0.12); z-index:10000; width:150px;';
-
-  palette.forEach(color => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'palette-swatch';
-    b.style.backgroundColor = color;
-    b.onclick = (e)=> { e.stopPropagation(); onSelect(color); popup.remove(); };
-    popup.appendChild(b);
-  });
-  
-  const resetButton = document.createElement('button');
-  resetButton.type = 'button';
-  resetButton.className = 'palette-swatch reset-btn';
-  resetButton.innerHTML = '🔄';
-  resetButton.title = 'Restaurar color original';
-  resetButton.onclick = (e) => { e.stopPropagation(); onSelect('initial'); popup.remove(); };
-  popup.appendChild(resetButton);
-
-  document.body.appendChild(popup);
-
-  const rect = anchorEl.getBoundingClientRect();
-  popup.style.left = `${Math.min(rect.left + window.scrollX, window.innerWidth - 158)}px`;
-  popup.style.top = `${rect.bottom + window.scrollY + 6}px`;
-
-  const closeFn = (ev) => {
-    if(!popup.contains(ev.target)) {
-      popup.remove();
-      document.removeEventListener('click', closeFn, true);
-    }
-  };
-  setTimeout(()=> document.addEventListener('click', closeFn, true), 10);
-}
-
-function saveCadenceSpec(spec){
-  try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
-}
-
-function restoreCadenceSpec(){
-  try {
-    const raw = localStorage.getItem('turnapp.cadenceSpec');
-    if(!raw) return;
-    cadenceSpec = JSON.parse(raw);
-    if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern) buildCadenceDataFromSpec();
-  } catch(e){ cadenceSpec = null; }
-}
-
-function buildCadenceDataFromSpec(){
-  if(!cadenceSpec || !cadenceSpec.startISO || !cadenceSpec.pattern) { cadenceData = []; return; }
-  cadenceData = [];
-  const start = new Date(cadenceSpec.startISO);
-  for(let i=0;i<10000;i++){
-    const d = new Date(start);
-    d.setDate(start.getDate() + i);
-    cadenceData.push({ date: d, type: cadenceSpec.pattern[i % cadenceSpec.pattern.length] });
-  }
-}
-
-function applyCadenceRender(month, year) {
-    document.querySelectorAll('.day-cell').forEach(cell => {
-        const day = parseInt(cell.querySelector('.day-label')?.textContent, 10);
-        if (isNaN(day)) return;
-
-        const cellDate = new Date(year, month, day);
-        const cd = cadenceData.find(c => c.date.toDateString() === cellDate.toDateString());
-
-        ['M', 'T', 'N'].forEach(shiftKey => {
-            const shiftEl = cell.querySelector(`.shift-${shiftKey.toLowerCase()}`);
-            if (!shiftEl) return;
-
-            const dk = `${year}-${String(month+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
-            const edited = manualEdits[dk]?.[shiftKey]?.text !== undefined;
-            const userColor = manualEdits[dk]?.[shiftKey]?.color !== undefined;
-
-            if (cd) {
-                const types = String(cd.type).split('/');
-                const isCadenceShift = types.includes(shiftKey) || (types.includes('MT') && (shiftKey==='M'||shiftKey==='T')) || (types.includes('M/N') && (shiftKey==='M'||shiftKey==='N'));
-                
-                if (isCadenceShift && !edited && !userColor) {
-                    shiftEl.style.backgroundColor = shiftKey === 'N' ? '#d87d00' : '#ffa94d';
-                    shiftEl.style.color = shiftKey === 'N' ? '#fff' : '#000';
-                    shiftEl.dataset.cadenceApplied = 'true';
-                }
-            } else if (shiftEl.dataset.cadenceApplied === 'true' && !edited && !userColor) {
-                // This logic is now handled inside createShiftElement by default
-                const isHoliday = cell.classList.contains('holiday') || cell.classList.contains('sunday');
-                const isSaturday = cell.classList.contains('saturday');
-                shiftEl.style.backgroundColor = isHoliday ? 'rgba(255,179,179,0.45)' : isSaturday ? 'rgba(163,193,255,0.65)' : '#e8f0ff';
-                shiftEl.style.color = '#000';
-                delete shiftEl.dataset.cadenceApplied;
+    function applyCellStyles() {
+        document.querySelectorAll('.day-content').forEach(cell => {
+            const text = cell.textContent.trim().toUpperCase();
+            cell.className = 'day-content'; // Reset classes
+            if (['AP', 'V', 'L'].includes(text)) {
+                 cell.classList.add(`turno-${text}`);
             }
         });
-    });
-}
+    }
 
-function openCadenceModal(){
-  const overlay = document.getElementById('cadence-modal-overlay');
-  const modal = document.getElementById('cadence-modal');
-  if(!overlay || !modal) return;
-  
-  // Reset UI
-  document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
-  ['v1-options', 'v2-options', 'custom-section'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.style.display = 'none';
-  });
-  const cp = document.getElementById('custom-pattern'); if(cp) cp.value = '';
-  const cs = document.getElementById('cadence-start'); if(cs) cs.value = '';
+    function calculateCadence() {
+        cadenceData = [];
+        if (!cadenceSpec) return;
 
-  // Populate from spec
-  if(cadenceSpec){
-    if(cs) cs.value = new Date(cadenceSpec.startISO).toLocaleDateString('es-ES', {year: 'numeric', month: '2-digit', day: '2-digit'});
-    const btn = document.querySelector(`.modal-type-btn[data-type="${cadenceSpec.type}"]`);
-    if(btn) {
-        btn.classList.add('active');
-        const sectionId = { 'V-1': 'v1-options', 'V-2': 'v2-options', 'Personalizada': 'custom-section' }[cadenceSpec.type];
-        const section = document.getElementById(sectionId);
-        if(section) section.style.display = 'block';
+        const { pattern, startDate } = cadenceSpec;
+        const [startDay, startMonth, startYear] = startDate.split('/').map(Number);
+        const firstOfMonth = new Date(currentYear, currentMonth, 1);
+        const lastOfMonth = new Date(currentYear, currentMonth + 1, 0);
 
-        if(cadenceSpec.type === 'V-1' && typeof cadenceSpec.v1Index !== 'undefined'){
-            const r = document.querySelector(`input[name="v1opt"][value="${cadenceSpec.v1Index}"]`);
-            if(r) r.checked = true;
-        } else if (cadenceSpec.type === 'Personalizada' && cadenceSpec.pattern && cp){
-            cp.value = cadenceSpec.pattern.join(',');
+        if (currentYear < startYear || (currentYear === startYear && currentMonth < startMonth - 1)) {
+            return;
+        }
+
+        for (let d = 1; d <= lastOfMonth.getDate(); d++) {
+            const currentDate = new Date(currentYear, currentMonth, d);
+            const startDateObj = new Date(startYear, startMonth - 1, startDay);
+            const diffTime = currentDate - startDateObj;
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays >= 0) {
+                const patternIndex = diffDays % pattern.length;
+                cadenceData[d - 1] = pattern[patternIndex];
+            }
         }
     }
-  }
-
-  // Bind buttons
-  document.querySelectorAll('.modal-type-btn').forEach(btn => {
-    btn.onclick = () => {
-      document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      const t = btn.dataset.type;
-      document.getElementById('v1-options').style.display = (t==='V-1') ? 'block' : 'none';
-      document.getElementById('v2-options').style.display = (t==='V-2') ? 'block' : 'none';
-      document.getElementById('custom-section').style.display = (t==='Personalizada') ? 'block' : 'none';
-    };
-  });
-  
-  document.getElementById('close-cadence').onclick = () => { overlay.style.display = 'none'; };
-  
-  document.getElementById('apply-cadence-confirm').onclick = () => {
-    const activeBtn = document.querySelector('.modal-type-btn.active');
-    if(!activeBtn) return alert('Seleccione un tipo de cadencia.');
-    const typ = activeBtn.dataset.type;
-    const startStr = document.getElementById('cadence-start').value;
-    if(!startStr) return alert('Introduce la fecha de inicio (DD/MM/AAAA).');
-    const parts = startStr.split('/');
-    if(parts.length !== 3) return alert('Formato de fecha incorrecto.');
-    const start = new Date(parts[2], parts[1]-1, parts[0]);
-    if(isNaN(start)) return alert('Fecha inválida.');
-
-    let pattern;
-    let spec = { type: typ, startISO: start.toISOString() };
-
-    if(typ === 'V-1'){
-      const r = document.querySelector('input[name="v1opt"]:checked');
-      if(!r) return alert('Selecciona una opción de V-1.');
-      const idx = parseInt(r.value,10);
-      const v1options = [['M/T', 'L', 'M/T', 'N', 'L', 'L', 'L', 'L'], ['M/T', 'M/T', 'N', 'L', 'L', 'L', 'L', 'L'], ['T', 'M/T', 'M/N', 'L', 'L', 'L', 'L', 'L'], ['M/T', 'N', 'L', 'L', 'L'], ['T', 'M/N', 'L', 'L', 'L']];
-      pattern = v1options[idx];
-      spec.v1Index = idx;
-    } else if(typ === 'V-2'){
-      pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
-    } else if(typ === 'Personalizada'){
-      pattern = document.getElementById('custom-pattern').value.split(',').map(s=>s.trim()).filter(Boolean);
-      if(pattern.length === 0) return alert('Patrón inválido.');
-    }
     
-    spec.pattern = pattern;
-    cadenceSpec = spec;
-    saveCadenceSpec(cadenceSpec);
-    buildCadenceDataFromSpec();
-    renderCalendar(currentMonth, currentYear);
-    overlay.style.display = 'none';
-  };
+    prevMonthBtn.addEventListener('click', () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        calculateCadence();
+        renderCalendar();
+    });
 
-  overlay.style.display = 'flex';
+    nextMonthBtn.addEventListener('click', () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        calculateCadence();
+        renderCalendar();
+    });
+
+    calendar.addEventListener('input', (e) => {
+        if (e.target.classList.contains('day-content')) {
+            const dayDiv = e.target.parentElement;
+            const date = dayDiv.dataset.date;
+            const content = e.target.textContent.trim();
+            if (content) {
+                manualEdits[date] = content;
+            } else {
+                delete manualEdits[date];
+            }
+            saveManualEdits();
+            applyCellStyles();
+        }
+    });
+
+    btnApplyCadence.addEventListener('click', () => {
+        cadenceModalOverlay.classList.remove('oculto');
+    });
+    
+    closeCadenceBtn.addEventListener('click', () => {
+        cadenceModalOverlay.classList.add('oculto');
+    });
+
+    document.querySelectorAll('.modal-type-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.modal-type-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            const type = btn.dataset.type;
+            v1Options.classList.toggle('oculto', type !== 'V-1');
+            v2Options.classList.toggle('oculto', type !== 'V-2');
+            customSection.classList.toggle('oculto', type !== 'Personalizada');
+        });
+    });
+
+    applyCadenceConfirmBtn.addEventListener('click', () => {
+        const startDate = cadenceStartInput.value;
+        if (!/^\d{1,2}\/\d{1,2}\/\d{4}$/.test(startDate)) {
+            alert("Por favor, introduce una fecha de inicio válida (DD/MM/AAAA).");
+            return;
+        }
+        
+        const activeBtn = document.querySelector('.modal-type-btn.active');
+        if (!activeBtn) {
+            alert("Por favor, selecciona un tipo de cadencia.");
+            return;
+        }
+
+        const type = activeBtn.dataset.type;
+        let pattern = [];
+
+        if (type === 'V-1') {
+            const selectedRadio = document.querySelector('input[name="v1opt"]:checked');
+            if (!selectedRadio) {
+                alert("Por favor, selecciona una opción para V-1.");
+                return;
+            }
+            pattern = cadencePatterns["V-1"][parseInt(selectedRadio.value)];
+        } else if (type === 'V-2') {
+            pattern = cadencePatterns["V-2"][0];
+        } else if (type === 'Personalizada') {
+            pattern = customPatternInput.value.split(',').map(s => s.trim()).filter(Boolean);
+            if (pattern.length === 0) {
+                alert("Por favor, introduce un patrón personalizado.");
+                return;
+            }
+        }
+        
+        cadenceSpec = { startDate, pattern };
+        saveCadenceSpec();
+        calculateCadence();
+        renderCalendar();
+        cadenceModalOverlay.classList.add('oculto');
+    });
+
+    btnClearCadence.addEventListener('click', () => {
+        if (confirm("¿Seguro que quieres borrar la cadencia actual y todas las ediciones manuales del calendario?")) {
+            cadenceSpec = null;
+            manualEdits = {};
+            localStorage.removeItem('turnapp.cadenceSpec');
+            localStorage.removeItem('turnapp.manualEdits');
+            calculateCadence();
+            renderCalendar();
+        }
+    });
+
+    // Carga inicial
+    calculateCadence();
+    renderCalendar();
 }
 
-function clearCadencePrompt(){
-  const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
-  if(!startDateStr) return;
-  const parts = startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
-  const startDate = new Date(parts[2], parts[1]-1, parts[0]);
-  if(isNaN(startDate)) return alert("Fecha inválida");
-
-  cadenceData = cadenceData.filter(cd => cd.date < startDate);
-  if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
-    cadenceSpec = null;
-    localStorage.removeItem('turnapp.cadenceSpec');
-  }
-  renderCalendar(currentMonth, currentYear);
-}
-
+// =========================================================================
+// SECCIÓN DE PETICIONES
+// =========================================================================
 function initPeticiones() {
-    const listaUsuario = document.getElementById('lista-peticiones-usuario');
-    const peticionTexto = document.getElementById('peticion-texto');
-    const enviarPeticionBtn = document.getElementById('enviar-peticion');
-    const btnPeticiones = document.getElementById("btn-peticiones");
-    const peticionesSection = document.getElementById("peticiones-section");
+    const btnPeticiones = document.getElementById('btn-peticiones');
+    const peticionesSection = document.getElementById('peticiones-section');
+    const inputPeticion = document.getElementById('peticion-texto');
+    const btnEnviarPeticion = document.getElementById('enviar-peticion');
+    const listaPeticiones = document.getElementById('lista-peticiones-usuario');
+    const PETICIONES_KEY = 'turnapp.peticiones.v1';
 
-    if (!listaUsuario || !peticionTexto || !enviarPeticionBtn || !btnPeticiones || !peticionesSection) return;
+    if (!btnPeticiones || !peticionesSection || !inputPeticion || !btnEnviarPeticion || !listaPeticiones) {
+        console.error("Faltan elementos de la sección de peticiones en el HTML.");
+        return;
+    }
 
-    const KEY_USER = 'peticionesUsuario';
-    const load = () => JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-    const save = (arr) => localStorage.setItem(KEY_USER, JSON.stringify(arr));
+    function loadPeticiones() {
+        return JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
+    }
 
-    function render() {
-        const user = load();
-        listaUsuario.innerHTML = '';
-        user.forEach((p, idx) => {
+    function savePeticiones(peticiones) {
+        localStorage.setItem(PETICIONES_KEY, JSON.stringify(peticiones));
+    }
+
+    function renderPeticiones() {
+        const peticiones = loadPeticiones();
+        listaPeticiones.innerHTML = '';
+        peticiones.forEach((p, index) => {
             const li = document.createElement('li');
             li.className = 'peticion-item';
-            const fechaHora = p.fecha ? `<div class="fecha-hora" style="font-size: 0.85em; opacity: 0.85;">${p.fecha}</div>` : '';
+            // Adaptado para que coincida con los estilos de la tabla
             li.innerHTML = `
-                <div class="peticion-left"><div>${p.texto}</div>${fechaHora}</div>
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="checkbox" class="peticion-visto" data-index="${idx}" ${p.visto ? 'checked' : ''} style="transform: scale(1.2);">
-                    <button class="peticion-delete modern-btn red" title="Eliminar" data-index="${idx}">🗑️</button>
-                </div>
+                <span>${p.text}</span>
+                <button class="delete-peticion modern-btn red" data-index="${index}">Borrar</button>
             `;
-            listaUsuario.appendChild(li);
+            listaPeticiones.appendChild(li);
         });
     }
 
-    btnPeticiones.addEventListener("click", (e) => {
-        e.preventDefault();
-        const esVisible = peticionesSection.style.display === "block";
-        peticionesSection.style.display = esVisible ? "none" : "block";
+    btnPeticiones.addEventListener('click', () => {
+        peticionesSection.classList.toggle('oculto');
     });
 
-    enviarPeticionBtn.addEventListener('click', () => {
-        agregarPeticion(peticionTexto.value);
-        peticionTexto.value = '';
-    });
-
-    listaUsuario.addEventListener('click', (e) => {
-        const target = e.target;
-        const index = target.closest('[data-index]')?.dataset.index;
-        if (index === undefined) return;
-
-        const u = load();
-        if (target.matches('input.peticion-visto')) {
-            u[index].visto = target.checked;
-        } else if (target.matches('.peticion-delete')) {
-            if (confirm(`¿Seguro que quieres eliminar esta petición?`)) {
-                u.splice(index, 1);
-            }
-        } else {
-            return; // No-op
+    btnEnviarPeticion.addEventListener('click', () => {
+        const text = inputPeticion.value.trim();
+        if (text) {
+            const peticiones = loadPeticiones();
+            peticiones.push({ text: text, date: new Date().toISOString() });
+            savePeticiones(peticiones);
+            renderPeticiones();
+            inputPeticion.value = '';
         }
-        save(u);
-        render();
+    });
+
+    listaPeticiones.addEventListener('click', (e) => {
+        if (e.target.classList.contains('delete-peticion')) {
+            const index = parseInt(e.target.dataset.index, 10);
+            if (confirm('¿Seguro que quieres borrar esta petición?')) {
+                let peticiones = loadPeticiones();
+                peticiones.splice(index, 1);
+                savePeticiones(peticiones);
+                renderPeticiones();
+            }
+        }
     });
     
-    function agregarPeticion(textoRaw) {
-        const texto = String(textoRaw || '').trim();
-        if (!texto) return;
-        const nueva = { texto, fecha: new Date().toLocaleString('es-ES'), visto: false };
-        const u = load();
-        u.unshift(nueva);
-        save(u);
-        render();
-    }
-    
-    render();
+    renderPeticiones();
 }
 
 // =========================================================================
-// ARRANQUE PRINCIPAL DE LA APLICACIÓN
+// PUNTO DE ENTRADA PRINCIPAL DEL SCRIPT
+// Se asegura que el DOM esté cargado y entonces inicia la autenticación.
 // =========================================================================
-document.addEventListener("DOMContentLoaded", () => {
-  // Al cargar la página, solo se inicializa el sistema de autenticación.
-  // El resto de la app (initializeMainApp) se llamará después de un login exitoso.
-  initAuth();
-});
-// ------------------ FIN app.js ------------------
+document.addEventListener('DOMContentLoaded', initAuth);

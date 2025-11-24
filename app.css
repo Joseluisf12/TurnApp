@@ -1719,85 +1719,81 @@ body[data-theme='dark'] #total-restan {
 
 
 /* ========================================================================= */
-/*     ESTILOS PARA LA NUEVA PANTALLA DE LOGIN                             */
+/* ESTILOS DE LOGIN                                                          */
 /* ========================================================================= */
 
 .login-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    width: 100vw;
     height: 100vh;
+    width: 100%;
     background-color: var(--bg-color);
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 20000; /* Asegura que esté por encima de todo */
+    transition: opacity 0.5s ease-in-out;
 }
 
 .login-box {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 30px;
     background-color: var(--panel-bg);
+    padding: 2rem 2.5rem;
     border-radius: 12px;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12);
+    text-align: center;
     width: 90%;
     max-width: 380px;
     border: 1px solid var(--border-color);
 }
 
-.login-logo {
-    width: 80px;
-    height: 80px;
-    margin-bottom: 15px;
-}
-
-#login-title {
-    margin: 0 0 25px 0;
-    font-size: 1.8em;
-    font-weight: 600;
+.login-box h1 {
+    margin: 0 0 1.5rem 0;
+    font-size: 2.2rem;
     color: var(--text-color);
 }
 
-#login-email,
-#login-password {
+/* Este es el grupo que faltaba para los inputs */
+.login-input-group {
+    margin-bottom: 1.2rem;
+}
+
+.login-box input[type="email"],
+.login-box input[type="password"] {
     width: 100%;
-    padding: 12px;
-    margin-bottom: 15px;
+    padding: 0.8rem;
     border: 1px solid var(--border-color);
-    border-radius: 6px;
-    background-color: var(--bg-color);
+    border-radius: 8px;
+    background-color: var(--input-bg);
     color: var(--text-color);
-    font-size: 1em;
+    font-size: 1rem;
+    box-sizing: border-box; /* Asegura que el padding no afecte el ancho total */
 }
 
-#login-email::placeholder,
-#login-password::placeholder {
-    color: #888;
-}
-
-#btn-login {
+.login-button {
     width: 100%;
-    padding: 12px;
+    padding: 0.85rem;
     border: none;
-    border-radius: 6px;
-    background-color: #0b5ed7; /* Un azul primario atractivo */
+    border-radius: 8px;
+    background-color: #0d6efd; /* Azul principal */
     color: white;
-    font-size: 1.1em;
-    font-weight: 500;
+    font-size: 1.1rem;
+    font-weight: bold;
     cursor: pointer;
-    transition: background-color 0.2s;
+    margin-top: 0.5rem; /* Pequeño espacio extra */
+    transition: background-color 0.3s ease;
 }
 
-#btn-login:hover {
-    background-color: #0a50c2;
+.login-button:hover {
+    background-color: #0b5ed7; /* Azul más oscuro al pasar el ratón */
 }
 
-#login-error-message {
-    margin-top: 15px;
-    color: #e53935; /* Un rojo claro para errores */
-    font-size: 0.9em;
-    text-align: center;
+.login-error {
+    color: #dc3545; /* Rojo para mensajes de error */
+    margin-top: 1rem;
+    font-weight: 500;
+    min-height: 1.2em; /* Evita que el layout "salte" si aparece un error */
+}
+
+/* Oculta un elemento de forma accesible y lo prepara para transiciones */
+.oculto {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
 }

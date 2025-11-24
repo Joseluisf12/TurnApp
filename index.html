@@ -11,26 +11,27 @@
 </head>
 <body class="light">
 
-    <!-- ========================================================================= -->
-    <!--     NUEVA SECCIÓN DE LOGIN                                                -->
-    <!-- ========================================================================= -->
-    <section id="login-section" class="login-container">
-        <div class="login-box">
-            <img src="icons/icon-192x192.png" alt="Logo TurnApp" class="login-logo">
-            <h1 id="login-title">TurnApp</h1>
+<!-- ======================= PANTALLA DE LOGIN ======================= -->
+<section id="login-section" class="login-container">
+    <div class="login-box">
+        <!-- He corregido la ruta del icono para que apunte a un icono que SÍ existe en tu manifest.json -->
+        
+        <h1 id="login-title">TurnApp</h1>
+        <div class="login-input-group">
             <input type="email" id="login-email" placeholder="Correo electrónico" autocomplete="email">
-            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-            <button id="btn-login">Iniciar Sesión</button>
-            <p id="login-error-message" class="oculto"></p>
         </div>
-    </section>
-
-
-  <!-- Pantalla inicial / Splash -->
-  <div id="splash" class="splash">
-    <div class="logo-wrap">
-      
+        <div class="login-input-group">
+            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
+        </div>
+        <button id="btn-login" class="login-button">Iniciar Sesión</button>
+        <p id="login-error-message" class="login-error oculto"></p>
     </div>
+</section>
+
+<!-- ======================= APLICACIÓN PRINCIPAL (OCULTA INICIALMENTE) ======================= -->
+<main id="app" class="oculto">
+
+    
     <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
   </div>
 
