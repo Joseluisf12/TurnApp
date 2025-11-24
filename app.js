@@ -1053,7 +1053,7 @@ function initApp(){
   const prevBtn = document.getElementById('prevMonth');
   const nextBtn = document.getElementById('nextMonth');
   // Usamos el panel principal como área de detección para el swipe
-  const calendarPanel = document.getElementById('content'); 
+  const calendarPanel = document.getElementById('calendar-panel'); 
 
   // --- Lógica de navegación encapsulada ---
   const goToNextMonth = () => {
@@ -1621,202 +1621,97 @@ function applyCadenceRender(month, year){
   });
 }
 
-// ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(){
-  const listaUsuario = document.getElementById('lista-peticiones-usuario');
-  const peticionTexto = document.getElementById('peticion-texto');
-  const enviarPeticionBtn = document.getElementById('enviar-peticion');
-  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
+// ------------------ MÓDULO PETICIONES (LÓGICA UNIFICADA) ------------------
+function initPeticiones() {
+    const listaUsuario = document.getElementById('lista-peticiones-usuario');
+    const peticionTexto = document.getElementById('peticion-texto');
+    const enviarPeticionBtn = document.getElementById('enviar-peticion');
+    const btnPeticiones = document.getElementById("btn-peticiones");
+    const peticionesSection = document.getElementById("peticiones-section");
 
+    if (!listaUsuario || !peticionTexto || !enviarPeticionBtn || !btnPeticiones || !peticionesSection) {
+        console.warn("initPeticiones: faltan elementos del DOM para el módulo de Peticiones.");
+        return;
+    }
 
-  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn){
-    console.warn("initPeticiones: faltan elementos del DOM.");
-    return;
-  }
+    const KEY_USER = 'peticionesUsuario';
+    const load = () => JSON.parse(localStorage.getItem(KEY_USER) || '[]');
+    const save = (arr) => localStorage.setItem(KEY_USER, JSON.stringify(arr));
 
-  const KEY_USER = 'peticionesUsuario';
+    function render() {
+        const user = load();
+        listaUsuario.innerHTML = '';
+        user.forEach((p, idx) => {
+            const li = document.createElement('li');
+            li.className = 'peticion-item';
+            const fechaHora = p.fecha ? `<div class="fecha-hora" style="font-size: 0.85em; opacity: 0.85;">${p.fecha}</div>` : '';
+            li.innerHTML = `
+                <div class="peticion-left">
+                    <div>${p.texto}</div>
+                    ${fechaHora}
+                </div>
+                <div style="display: flex; gap: 8px;">
+                    <input type="checkbox" class="peticion-visto" data-index="${idx}" ${p.visto ? 'checked' : ''}>
+                    <button class="peticion-delete" data-index="${idx}">🗑️</button>
+                </div>
+            `;
+            listaUsuario.appendChild(li);
+        });
+    }
 
-  function load(){
-    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-  }
-  function save(arr){
-    localStorage.setItem(KEY_USER, JSON.stringify(arr));
-  }
-
-  function render(){
-    const user = load();
-    listaUsuario.innerHTML = '';
-    user.forEach((p, idx) => {
-      const li = document.createElement('li');
-      li.className = 'peticion-item';
-
-      const left = document.createElement('div');
-      left.className = 'peticion-left';
-
-      const textoDiv = document.createElement('div');
-      textoDiv.textContent = p.texto;
-      left.appendChild(textoDiv);
-
-      if(p.fecha){
-        const fechaDiv = document.createElement('div');
-        fechaDiv.className = 'fecha-hora';
-        fechaDiv.textContent = p.fecha;
-        fechaDiv.style.fontSize = '0.85em';
-        fechaDiv.style.opacity = '0.85';
-        left.appendChild(fechaDiv);
-      }
-
-      const right = document.createElement('div');
-      right.style.display = 'flex';
-      right.style.gap = '8px';
-
-      const chk = document.createElement('input');
-      chk.type = 'checkbox';
-      chk.checked = !!p.visto;
-      chk.addEventListener('change', () => {
+    function agregarPeticion(textoRaw) {
+        const texto = String(textoRaw || '').trim();
+        if (!texto) return;
+        const nueva = { texto, fecha: new Date().toLocaleString(), visto: false };
         const u = load();
-        u[idx].visto = chk.checked;
+        u.unshift(nueva);
         save(u);
         render();
-      });
+    }
 
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '🗑️';
-      delBtn.addEventListener('click', ()=> {
-        const u = load();
-        u.splice(idx,1);
-        save(u);
-        render();
-      });
-
-      right.appendChild(chk);
-      right.appendChild(delBtn);
-
-      li.appendChild(left);
-      li.appendChild(right);
-      listaUsuario.appendChild(li);
+    // --- Vinculación de Eventos ---
+    
+    // Toggle para mostrar/ocultar el panel
+    btnPeticiones.addEventListener("click", (e) => {
+        e.preventDefault();
+        const esVisible = peticionesSection.style.display === "block";
+        peticionesSection.style.display = esVisible ? "none" : "block";
     });
-  }
 
-  function agregarPeticion(textoRaw){
-    const texto = String(textoRaw || '').trim();
-    if(!texto) return;
-    const nueva = { texto, fecha: new Date().toLocaleString(), visto: false };
-    const u = load();
-    u.unshift(nueva);
-    save(u);
+    // Enviar nueva petición
+    enviarPeticionBtn.addEventListener('click', () => {
+        agregarPeticion(peticionTexto.value);
+        peticionTexto.value = '';
+    });
+
+    // Eventos para marcar como visto o borrar (delegación de eventos)
+    listaUsuario.addEventListener('click', (e) => {
+        const target = e.target;
+        const index = target.dataset.index;
+        if (index === undefined) return;
+
+        const u = load();
+        if (target.classList.contains('peticion-visto')) {
+            u[index].visto = target.checked;
+        } else if (target.classList.contains('peticion-delete')) {
+            u.splice(index, 1);
+        }
+        save(u);
+        render();
+    });
+
+    // Carga inicial
     render();
-  }
-
-  enviarPeticionBtn.addEventListener('click', ()=> {
-    agregarPeticion(peticionTexto.value);
-    peticionTexto.value = '';
-  });
-
-  render();
 }
 
-// === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
+// =========================================================================
+//     ARRANQUE PRINCIPAL DE LA APLICACIÓN
+// =========================================================================
 document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
-
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
-
-  // Estado inicial: el cajón de peticiones oculto
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
-
-  // Función central: alternar sólo el cajón de peticiones
-  const togglePeticiones = () => {
-    const visible = !peticionesSection.classList.contains("oculto") && 
-                    peticionesSection.style.display !== "none";
-
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-      peticionesSection.removeAttribute("hidden");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    togglePeticiones();
-  });
-});
-// === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
-document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
-
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
-
-  // Estado inicial: peticiones ocultas
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-    }
-  });
+  // Al cargar la página, solo se inicializa el sistema de autenticación.
+  // El resto de la app (initializeMainApp) se llamará después de un login exitoso.
+  initAuth();
 });
 
-
-document.addEventListener("DOMContentLoaded", () => {
-  const splash = document.getElementById("splash");
-  const app = document.getElementById("app");
-  const logo = document.getElementById("splash-logo");
-
-  const calendarioSection = document.getElementById("calendar-panel");
-  const licenciasSection = document.getElementById("licencias-container");
-
-  // Estado inicial: solo splash visible
-  app.classList.add("oculto");
-  calendarioSection.classList.add("oculto");
-  licenciasSection.classList.add("oculto");
-
-logo.addEventListener("click", () => {
-    // Oculta splash y muestra app
-    splash.remove();
-    app.classList.remove("oculto");
-
-    // Mostrar solo el calendario
-    calendarioSection.classList.remove("oculto");
-    licenciasSection.classList.add("oculto");
-
-    // Animación
-    calendarioSection.classList.add("fade-in-up");
-
-    // ¡LA SOLUCIÓN! Desplazar suave al inicio de TODA LA APP
-    setTimeout(() => {
-      app.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50); // Un timeout más corto para que se sienta más instantáneo
-   });
-  });
 
   // ------------------ FIN app.js ------------------
