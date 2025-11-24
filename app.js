@@ -1,6 +1,9 @@
-// =================== app.js (Versión corregida y unificada) ===================
-// Versión 1.2.1 - Unificado, corregido (sin duplicados), mantiene la misma lógica
-// Mantén exactamente este archivo como reemplazo único para solucionar el error de sintaxis.
+// =========================================================================
+// TurnApp v4.0 - Versión Estable (Single-User)
+// =========================================================================
+// Esta versión incluye todas las funcionalidades para un solo usuario,
+// cálculo de festivos variables y correcciones de UI.
+// Sirve como base para el futuro desarrollo multi-usuario.
 
 /**
  * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
@@ -971,20 +974,67 @@ const colorPalette = [
   "rgba(232,240,255,1)","rgba(163,193,255,0.65)","rgba(255,179,179,0.45)"
 ];
 
-// ---------------- init / navegación ----------------
+// ---------------- init / navegación (con swipe) ----------------
 function initApp(){
   renderCalendar(currentMonth, currentYear);
 
-  const prev = document.getElementById('prevMonth');
-  const next = document.getElementById('nextMonth');
-  if(prev) prev.addEventListener('click', ()=> {
-    currentMonth--; if(currentMonth < 0){ currentMonth = 11; currentYear--; }
+  const prevBtn = document.getElementById('prevMonth');
+  const nextBtn = document.getElementById('nextMonth');
+  // Usamos el panel principal como área de detección para el swipe
+  const calendarPanel = document.getElementById('content'); 
+
+  // --- Lógica de navegación encapsulada ---
+  const goToNextMonth = () => {
+    currentMonth++;
+    if (currentMonth > 11) {
+        currentMonth = 0;
+        currentYear++;
+    }
     renderCalendar(currentMonth, currentYear);
-  });
-  if(next) next.addEventListener('click', ()=> {
-    currentMonth++; if(currentMonth > 11){ currentMonth = 0; currentYear++; }
+  };
+
+  const goToPrevMonth = () => {
+    currentMonth--;
+    if (currentMonth < 0) {
+        currentMonth = 11;
+        currentYear--;
+    }
     renderCalendar(currentMonth, currentYear);
-  });
+  };
+
+  // 1. Asignamos la lógica a los botones existentes
+  if(prevBtn) prevBtn.addEventListener('click', goToPrevMonth);
+  if(nextBtn) nextBtn.addEventListener('click', goToNextMonth);
+
+  // 2. Añadimos la nueva lógica para el swipe
+  if (calendarPanel) {
+    let touchStartX = 0;
+    let touchEndX = 0;
+
+    calendarPanel.addEventListener('touchstart', e => {
+        // Guardamos la coordenada X inicial del toque
+        touchStartX = e.changedTouches[0].screenX;
+    }, { passive: true }); // {passive: true} mejora el rendimiento del scroll
+
+    calendarPanel.addEventListener('touchend', e => {
+        // Guardamos la coordenada X final
+        touchEndX = e.changedTouches[0].screenX;
+        
+        const swipeDistance = touchEndX - touchStartX;
+        const swipeThreshold = 50; // Distancia mínima en píxeles para considerarlo un swipe
+
+        // Comprobamos si el deslizamiento fue lo suficientemente largo
+        if (Math.abs(swipeDistance) > swipeThreshold) {
+            if (swipeDistance < 0) {
+                // Si la distancia es negativa, el swipe fue hacia la izquierda (mes siguiente)
+                goToNextMonth();
+            } else {
+                // Si la distancia es positiva, el swipe fue hacia la derecha (mes anterior)
+                goToPrevMonth();
+            }
+        }
+    });
+  }
 }
 
 // =================================================================
