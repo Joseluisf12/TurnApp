@@ -40,6 +40,23 @@
     <section id="content" class="content panel">
       <div id="editable-title" contenteditable="true" spellcheck="false">Guardia 1 Teixeiro</div>
 
+<!-- Controles del Calendario y Cadencia -->
+<nav id="main-nav" style="margin-top: 1.5rem; margin-bottom: 1rem; display: flex; flex-wrap: wrap; gap: 10px;">
+    <button id="btn-apply-cadence" class="modern-btn">Aplicar Cadencia</button>
+    <button id="btn-clear-cadence" class="modern-btn">Limpiar Cadencia</button>
+</nav>
+
+<!-- Calendario -->
+<div class="calendar-header">
+    <button id="prevMonth" class="modern-btn">◄</button>
+    <h2 id="monthLabel"></h2>
+    <button id="nextMonth" class="modern-btn">►</button>
+</div>
+<div class="calendar-weekdays">
+    <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
+</div>
+<div id="calendar"></div>
+
 
       <div style="margin-top:12px; margin-bottom:25px; text-align:center;">
         <button id="btn-apply-cadence" class="modern-btn green">Aplicar cadencia</button>
