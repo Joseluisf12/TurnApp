@@ -11,80 +11,71 @@
 </head>
 <body class="light">
 
-<!-- ======================= PANTALLA DE LOGIN ======================= -->
-<section id="login-section" class="login-container">
-    <div class="login-box">
-        <!-- He corregido la ruta del icono para que apunte a un icono que SÍ existe en tu manifest.json -->
-        
-        <h1 id="login-title">TurnApp</h1>
-        <div class="login-input-group">
-            <input type="email" id="login-email" placeholder="Correo electrónico" autocomplete="email">
-        </div>
-        <div class="login-input-group">
-            <input type="password" id="login-password" placeholder="Contraseña" autocomplete="current-password">
-        </div>
-        <button id="btn-login" class="login-button">Iniciar Sesión</button>
-        <p id="login-error-message" class="login-error oculto"></p>
+  <!-- Pantalla inicial / Splash -->
+  <div id="splash" class="splash">
+    <div class="logo-wrap">
+      <img src="logo.svg" alt="TurnApp logo" class="logo-img" id="splash-logo">
     </div>
-</section>
+    <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
+  </div>
 
-<!-- ======================= APLICACIÓN PRINCIPAL (OCULTA INICIALMENTE) ======================= -->
+<!-- =================================================== -->
+<!--           PANTALLA DE AUTENTICACIÓN                 -->
+<!-- =================================================== -->
+<div id="auth-container" class="oculto">
+    <div id="login-card">
+        <img src="logo.svg" alt="TurnApp Logo" id="login-logo">
+        <h2>Iniciar Sesión</h2>
+        <p>Introduce tus credenciales para acceder a TurnApp.</p>
+        <div id="login-error" class="oculto"></div>
+        <form id="login-form">
+            <div class="input-group">
+                <label for="username">Usuario</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            <div class="input-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <div class="checkbox-group">
+                <input type="checkbox" id="remember-me" name="remember-me">
+                <label for="remember-me">Recordar sesión</label>
+            </div>
+            <button type="submit" id="login-button">Entrar</button>
+        </form>
+    </div>
+</div>
+
+  <!-- App principal -->
 <main id="app" class="oculto">
     <header class="app-header">
       <h2 id="app-title">TurnApp</h2>
       <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
-     <button id="btn-logout" title="Cerrar Sesión" class="icon-btn oculto" aria-label="Cerrar sesión">🚪</button>
     </header>
 
     <!-- ========= PANEL 1: TURNOS (Calendario y Licencias) ========= -->
     <section id="content" class="content panel">
-      <h1 id="editable-title" contenteditable="true" spellcheck="false">Turnos 2024</h1>
+      <div id="editable-title" contenteditable="true" spellcheck="false">Guardia 1 Teixeiro</div>
 
-<nav id="main-nav">
-    <button id="btn-apply-cadence" class="modern-btn">Aplicar Cadencia</button>
-    <button id="btn-clear-cadence" class="modern-btn">Limpiar Cadencia</button>
-</nav>
 
-<section id="calendar-panel" class="panel">
-    <div class="calendar-header">
-        <button id="prevMonth" class="modern-btn">◄</button>
-        <h2 id="monthLabel"></h2>
-        <button id="nextMonth" class="modern-btn">►</button>
-    </div>
-    <div class="calendar-weekdays">
-        <div>L</div><div>M</div><div>X</div><div>J</div><div>V</div><div>S</div><div>D</div>
-    </div>
-    <div id="calendar"></div>
-</section>
+      <div style="margin-top:12px; margin-bottom:25px; text-align:center;">
+        <button id="btn-apply-cadence" class="modern-btn green">Aplicar cadencia</button>
+        <button id="btn-clear-cadence" class="modern-btn red">Limpiar cadencia</button>
+      </div>
 
-<section id="licencias-container" class="panel">
-    <h2>Control de Licencias y Permisos</h2>
-    <div class="licencias-grid">
-        <div class="licencia-item header"><strong>Tipo</strong></div>
-        <div class="licencia-item header"><strong>Carga</strong></div>
-        <div class="licencia-item header"><strong>Consumidos</strong></div>
-        <div class="licencia-item header"><strong>Restan</strong></div>
-        <div class="licencia-item header"><strong>Color</strong></div>
+      <div class="calendar-controls">
+        <button id="prevMonth">◀ Anterior</button>
+        <span id="monthLabel"></span>
+        <button id="nextMonth">Siguiente ▶</button>
+      </div>
 
-        <div class="licencia-item" data-tipo="AP"><span>Días por Asuntos Particulares</span></div>
-        <div class="licencia-item"><input type="number" class="carga" value="6"></div>
-        <div class="licencia-item"><input type="number" class="consumidos" value="0"></div>
-        <div class="licencia-item"><input type="number" class="restan" readonly></div>
-        <div class="licencia-item"><button class="licencia-color-handle"></button></div>
-        
-        <div class="licencia-item" data-tipo="V"><span>Vacaciones</span></div>
-        <div class="licencia-item"><input type="number" class="carga" value="22"></div>
-        <div class="licencia-item"><input type="number" class="consumidos" value="0"></div>
-        <div class="licencia-item"><input type="number" class="restan" readonly></div>
-        <div class="licencia-item"><button class="licencia-color-handle"></button></div>
+      <div id="calendar-weekdays">
+        <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
+      </div>
 
-        <div class="licencia-item total"><span>TOTALES</span></div>
-        <div class="licencia-item total"><input type="number" id="total-carga" readonly></div>
-        <div class="licencia-item total"><input type="number" id="total-consumidos" readonly></div>
-        <div class="licencia-item total"><input type="number" id="total-restan" readonly></div>
-        <div class="licencia-item total"></div>
-    </div>
- </section>
+      <section id="calendar-panel">
+        <div id="calendar"></div>
+      </section>
 
        
 <!-- ========================================================================= -->
@@ -407,181 +398,156 @@
   <script src="app.js" defer></script>
 
 <script>
+// =========================================================================
+//         NUEVO SCRIPT DE ARRANQUE CENTRALIZADO (SPLASH -> LOGIN -> APP)
+// =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. ELEMENTOS Y PANELES (AÑADIDO EL TABLÓN) ---
-    const appContainer = document.getElementById('app');
-    const mainContent = document.getElementById('content');
-    const ajustesSection = document.getElementById('ajustes-section');
-    const tablonSection = document.getElementById('tablon-section');
-    const documentosSection = document.getElementById('documentos-section');
-    const licenciasContainer = document.getElementById('licencias-container');
-    const calendarPanel = document.getElementById('calendar-panel');
+
+    // --- 1. GESTIÓN DEL FLUJO DE INICIO ---
     
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
-    const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
-    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
-    const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
-    const btnCargaDias = document.getElementById('btn-carga-dias');
+    const splash = document.getElementById("splash");
+    const logo = document.getElementById("splash-logo");
 
-    // --- 2. LÓGICA DE NAVEGACIÓN (MODIFICADA PARA EL TABLÓN) ---
-    function switchPanel(targetSection) {
-        // Ocultamos todos los paneles principales
-        mainContent.classList.add('oculto');
-        ajustesSection.classList.add('oculto');
-        tablonSection.classList.add('oculto');
-        documentosSection.classList.add('oculto');
-
-        // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
-        licenciasContainer.classList.add('oculto');
-
-        // Mostramos el panel principal correcto
-        if (targetSection === 'turnos') {
-            mainContent.classList.remove('oculto');
-            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'peticiones') {
-            ajustesSection.classList.remove('oculto');
-            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'tablon') {
-            tablonSection.classList.remove('oculto');
-            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-         else if (targetSection === 'documentos') {
-            documentosSection.classList.remove('oculto');
-            documentosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // Actualizamos el botón activo
-        navButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.section === targetSection);
+    if (logo) {
+        logo.addEventListener("click", () => {
+            if (splash) {
+                splash.style.opacity = '0';
+                splash.addEventListener('transitionend', () => {
+                    splash.remove();
+                    initAuth(); // El click en el logo ahora inicia la autenticación
+                }, { once: true });
+            } else {
+                initAuth();
+            }
         });
     }
 
-    // Botón "Calendario / Turnos"
-    btnTurnos.addEventListener('click', () => {
-        switchPanel('turnos');
-    });
-
-    // Botón "Peticiones" (Mantiene su lógica original)
-    btnPeticiones.addEventListener('click', () => {
-        const isAjustesVisible = !ajustesSection.classList.contains('oculto');
-        if (isAjustesVisible) {
-            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
-        } else {
-            switchPanel('peticiones');
-        }
-    });
-
-    // Botón "Tablón" (NUEVO)
-    btnTablon.addEventListener('click', () => {
-        const isTablonVisible = !tablonSection.classList.contains('oculto');
-        if (isTablonVisible) {
-            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
-        } else {
-            switchPanel('tablon');
-        }
-    });
-
-    // Botón "Documentos" 
-btnDocumentos.addEventListener('click', () => {
-    const isDocumentosVisible = !documentosSection.classList.contains('oculto');
-    if (isDocumentosVisible) {
-        switchPanel('turnos'); // Si ya está visible, vuelve a turnos
-    } else {
-        switchPanel('documentos');
-    }
-});
-
-    // Botón "Carga Días" (Mantiene su lógica original)
-    btnCargaDias.addEventListener('click', () => {
-        if (mainContent.classList.contains('oculto')) {
-            switchPanel('turnos');
-        }
+    /**
+     * Inicia la lógica de la aplicación DESPUÉS de un login exitoso.
+     * Contiene toda la lógica de navegación que antes estaba dispersa.
+     */
+    function startApp() {
+        const appContainer = document.getElementById('app');
+        const mainContent = document.getElementById('content');
+        const ajustesSection = document.getElementById('ajustes-section');
+        const tablonSection = document.getElementById('tablon-section');
+        const documentosSection = document.getElementById('documentos-section');
+        const licenciasContainer = document.getElementById('licencias-container');
         
-        const isLicenciasHidden = licenciasContainer.classList.contains('oculto');
-        if (isLicenciasHidden) {
-            licenciasContainer.classList.remove('oculto');
-            licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else {
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
+        const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
+        const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
+        const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
+        const btnCargaDias = document.getElementById('btn-carga-dias');
+
+        function switchPanel(targetSection) {
+            mainContent.classList.add('oculto');
+            ajustesSection.classList.add('oculto');
+            tablonSection.classList.add('oculto');
+            documentosSection.classList.add('oculto');
             licenciasContainer.classList.add('oculto');
-            calendarPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-    });
 
-    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (INTACTA) ---
-    const totalLicenciasField = document.getElementById('total-licencias');
-    const cantidadInputs = Array.from(document.querySelectorAll('#licencias-container .cantidad-input'));
-    if (totalLicenciasField && cantidadInputs.length > 0) {
-      const recalculateTotal = () => {
-        let total = 0;
-        cantidadInputs.forEach(input => total += Number(input.value) || 0);
-        totalLicenciasField.value = total;
-      };
-      cantidadInputs.forEach(input => input.addEventListener('input', recalculateTotal));
-      recalculateTotal();
-    }
-
-    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (INTACTA) ---
-    const textoPeticionInput = document.getElementById('peticion-texto');
-    const enviarPeticionBtn = document.getElementById('enviar-peticion');
-    const listaPeticionesUsuario = document.getElementById('lista-peticiones-usuario');
-    if (textoPeticionInput && enviarPeticionBtn && listaPeticionesUsuario) {
-        const PETICIONES_KEY = 'turnapp.peticiones.usuario';
-        let peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
-        const esAdmin = true;
-        const saveAndRenderPeticiones = () => {
-            localStorage.setItem(PETICIONES_KEY, JSON.stringify(peticiones));
-            listaPeticionesUsuario.innerHTML = '';
-            peticiones.forEach((p, index) => {
-                const li = document.createElement('li');
-                li.className = 'peticion-item';
-                if (p.revisada) li.classList.add('revisada');
-                const fechaStr = p.fechaHora ? new Date(p.fechaHora).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
-                li.innerHTML = `<div class="peticion-contenido" style="flex: 1; text-align: left; word-break: break-word;"><span>${p.texto}</span><span class="fecha-hora" style="display: block; font-size: 0.8em; color: #555;">${fechaStr}</span></div><div class="peticion-acciones" style="display: flex; align-items: center; gap: 8px;"><input type="checkbox" title="Marcar como revisada" ${p.revisada ? 'checked' : ''}>${esAdmin ? '<button title="Eliminar" class="btn-eliminar" style="background: none; border: none; cursor: pointer; font-size: 1.1em; color: #c00;">❌</button>' : ''}</div>`;
-                li.querySelector('input[type="checkbox"]').addEventListener('change', (e) => { peticiones[index].revisada = e.target.checked; saveAndRenderPeticiones(); });
-                if (esAdmin) { li.querySelector('.btn-eliminar').addEventListener('click', () => { peticiones.splice(index, 1); saveAndRenderPeticiones(); }); }
-                listaPeticionesUsuario.appendChild(li);
+            if (targetSection === 'turnos') mainContent.classList.remove('oculto');
+            else if (targetSection === 'peticiones') ajustesSection.classList.remove('oculto');
+            else if (targetSection === 'tablon') tablonSection.classList.remove('oculto');
+            else if (targetSection === 'documentos') documentosSection.classList.remove('oculto');
+            
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.section === targetSection || btn.id === 'btn-carga-dias' && targetSection === 'turnos' );
             });
-        };
-        enviarPeticionBtn.addEventListener('click', () => { const texto = textoPeticionInput.value.trim(); if (!texto) return alert('Por favor, escribe una petición.'); peticiones.unshift({ texto, revisada: false, fechaHora: new Date().toISOString() }); textoPeticionInput.value = ''; saveAndRenderPeticiones(); });
-        const peticionesZona = listaPeticionesUsuario.closest('.peticiones-zona');
-        if (peticionesZona && esAdmin && !peticionesZona.querySelector('.btn-borrar-todo')) { const botonBorrarTodo = document.createElement('button'); botonBorrarTodo.textContent = '🧹 Borrar Todo'; botonBorrarTodo.className = 'btn-borrar-todo'; botonBorrarTodo.addEventListener('click', () => { if (confirm('¿Estás seguro de que quieres borrar TODAS las peticiones?')) { peticiones = []; saveAndRenderPeticiones(); } }); listaPeticionesUsuario.after(botonBorrarTodo); }
-        saveAndRenderPeticiones();
+        }
+
+        btnTurnos.addEventListener('click', () => switchPanel('turnos'));
+        btnPeticiones.addEventListener('click', () => !ajustesSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('peticiones'));
+        btnTablon.addEventListener('click', () => !tablonSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('tablon'));
+        btnDocumentos.addEventListener('click', () => !documentosSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('documentos'));
+        
+        btnCargaDias.addEventListener('click', () => {
+            if (mainContent.classList.contains('oculto')) {
+                switchPanel('turnos');
+            }
+            licenciasContainer.classList.toggle('oculto');
+            licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
+        // Muestra el panel inicial de Turnos
+        switchPanel('turnos');
     }
 
-    // --- 5. INICIALIZACIÓN DE LA VISTA (INTACTA) ---
-    switchPanel('turnos');
+    /**
+     * Muestra la aplicación principal y llama a la función que inicia la navegación.
+     */
+    function showApp() {
+        const authContainer = document.getElementById("auth-container");
+        const app = document.getElementById("app");
+        if (authContainer) authContainer.remove();
+        if (app) app.classList.remove("oculto");
+        startApp(); // Inicia la lógica de navegación y paneles.
+    }
 
-    // --- 6. LÓGICA DE INSTALACIÓN PWA (INTACTA) ---
+    /**
+     * Gestiona el formulario de login.
+     */
+    function initAuth() {
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const authContainer = document.getElementById('auth-container');
+        const rememberMe = document.getElementById('remember-me');
+
+        if (localStorage.getItem('turnapp_remembered_user') === 'true') {
+            showApp();
+            return;
+        }
+
+        if (authContainer) authContainer.classList.remove('oculto');
+
+        if (!loginForm) return;
+        loginForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            if (loginError) loginError.classList.add('oculto');
+
+            const VALID_USER = "admin"; // Usuario fijo
+            const VALID_PASS = "1234";  // Contraseña fija
+
+            const user = document.getElementById('username').value.trim();
+            const pass = document.getElementById('password').value.trim();
+
+            if (user === VALID_USER && pass === VALID_PASS) {
+                if (rememberMe.checked) {
+                    localStorage.setItem('turnapp_remembered_user', 'true');
+                }
+                showApp();
+            } else {
+                if (loginError) {
+                    loginError.textContent = 'Usuario o contraseña incorrectos.';
+                    loginError.classList.remove('oculto');
+                }
+            }
+        });
+    }
+
+    // --- 2. LÓGICA DE INSTALACIÓN PWA (SIN CAMBIOS) ---
     let deferredPrompt;
     const installButton = document.getElementById('btn-install-pwa');
-
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
-      if (installButton) {
-        installButton.style.display = 'block';
-      }
+      if (installButton) installButton.style.display = 'block';
     });
-
     if (installButton) {
       installButton.addEventListener('click', async () => {
         if (deferredPrompt) {
           deferredPrompt.prompt();
-          const { outcome } = await deferredPrompt.userChoice;
-          console.log(`Respuesta del usuario al diálogo de instalación: ${outcome}`);
+          await deferredPrompt.userChoice;
           deferredPrompt = null;
           installButton.style.display = 'none';
         }
       });
     }
-
     window.addEventListener('appinstalled', () => {
-      if (installButton) {
-        installButton.style.display = 'none';
-      }
+      if (installButton) installButton.style.display = 'none';
       deferredPrompt = null;
-      console.log('PWA fue instalada');
     });
 });
 </script>
