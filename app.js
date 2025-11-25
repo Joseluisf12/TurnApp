@@ -699,7 +699,7 @@ function initDocumentosPanel() {
 }
 
 // Init
-document.addEventListener('DOMContentLoaded', () => {
+function startTurnApp() {
 initApp();
 
   initThemeSwitcher();
@@ -720,7 +720,7 @@ initApp();
     initCoordinatorTable();
     initTablon();
     initDocumentosPanel();
-  });
+  }
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -1745,75 +1745,6 @@ logo.addEventListener("click", () => {
       app.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 50); // Un timeout más corto para que se sienta más instantáneo
    });
-  });
-
-// ===================================================
-//             NUEVA LÓGICA DE AUTENTICACIÓN
-// ===================================================
-
-/**
- * Muestra la aplicación principal y elimina la pantalla de login.
- * También dispara un evento para activar la navegación de los paneles.
- */
-function showApp() {
-    const authContainer = document.getElementById("auth-container");
-    const app = document.getElementById("app");
-    
-    if (authContainer) authContainer.remove(); // Eliminamos el login
-    app.classList.remove("oculto"); // Mostramos la app
-    
-    // Disparamos un evento personalizado que indica que la app está lista.
-    // Esto es crucial para que la lógica de navegación de los paneles se active.
-    document.dispatchEvent(new CustomEvent('appReady')); 
-}
-
-/**
- * Inicializa el formulario de login, comprueba si el usuario debe ser recordado,
- * y gestiona el envío del formulario.
- */
-function initAuth() {
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-    const authContainer = document.getElementById('auth-container');
-    const rememberMe = document.getElementById('remember-me');
-
-    // Comprobamos si el usuario ya tiene una sesión recordada.
-    if (localStorage.getItem('turnapp_remembered_user') === 'true') {
-        showApp(); // Si es así, saltamos el login y mostramos la app.
-        return;
-    }
-
-    // Si no hay sesión, mostramos la pantalla de login.
-    if (authContainer) authContainer.classList.remove('oculto');
-
-   if (!loginForm) return; //Salida segura si el formulario no existe
-
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        if (loginError) loginError.classList.add('oculto');
-
-        // Credenciales fijas. En el futuro, esto podría venir de una base de datos.
-        const VALID_USER = "admin";
-        const VALID_PASS = "1234";
-
-        const user = document.getElementById('username').value.trim();
-        const pass = document.getElementById('password').value.trim();
-
-        if (user === VALID_USER && pass === VALID_PASS) {
-            // Si el login es correcto:
-            if (rememberMe.checked) {
-                // Guardamos la preferencia si el usuario lo ha marcado.
-                localStorage.setItem('turnapp_remembered_user', 'true');
-            }
-            showApp(); // Mostramos la aplicación.
-        } else {
-            // Si el login falla:
-         if (loginError) {
-            loginError.textContent = 'Usuario o contraseña incorrectos.';
-            loginError.classList.remove('oculto');
-           }
-        }
-    });
-}
+});
 
   // ------------------ FIN app.js ------------------

@@ -7,6 +7,7 @@
   <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
+  <link rel="stylesheet" href="auth.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body class="light">
@@ -22,13 +23,13 @@
 <!-- =================================================== -->
 <!--           PANTALLA DE AUTENTICACIÓN                 -->
 <!-- =================================================== -->
-<div id="auth-container" class="oculto">
+<div id="auth-container">
     <div id="login-card">
         <img src="logo.svg" alt="TurnApp Logo" id="login-logo">
         <h2>Iniciar Sesión</h2>
-        <p>Introduce tus credenciales para acceder a TurnApp.</p>
-        <div id="login-error" class="oculto"></div>
-        <form id="login-form">
+        <p>Introduce tus credenciales para acceder.</p>
+        <div id="login-error"></div>
+        <form id="login-form" novalidate>
             <div class="input-group">
                 <label for="username">Usuario</label>
                 <input type="text" id="username" name="username" required>
@@ -396,145 +397,46 @@
   </div>
 
   <script src="app.js" defer></script>
+  <script src="auth.js" defer></script>
 
 <script>
-// =========================================================================
-//         NUEVO SCRIPT DE ARRANQUE CENTRALIZADO (SPLASH -> LOGIN -> APP)
-// =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-
-    // --- 1. GESTIÓN DEL FLUJO DE INICIO ---
-    
     const splash = document.getElementById("splash");
     const logo = document.getElementById("splash-logo");
+    const appContainer = document.getElementById('app');
 
-    if (logo) {
-        logo.addEventListener("click", () => {
-            if (splash) {
-                splash.style.opacity = '0';
-                splash.addEventListener('transitionend', () => {
-                    splash.remove();
-                    initAuth(); // El click en el logo ahora inicia la autenticación
-                }, { once: true });
-            } else {
-                initAuth();
-            }
-        });
-    }
-
-    /**
-     * Inicia la lógica de la aplicación DESPUÉS de un login exitoso.
-     * Contiene toda la lógica de navegación que antes estaba dispersa.
-     */
-    function startApp() {
-        const appContainer = document.getElementById('app');
-        const mainContent = document.getElementById('content');
-        const ajustesSection = document.getElementById('ajustes-section');
-        const tablonSection = document.getElementById('tablon-section');
-        const documentosSection = document.getElementById('documentos-section');
-        const licenciasContainer = document.getElementById('licencias-container');
-        
-        const navButtons = document.querySelectorAll('.nav-btn');
-        const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
-        const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
-        const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
-        const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
-        const btnCargaDias = document.getElementById('btn-carga-dias');
-
-        function switchPanel(targetSection) {
-            mainContent.classList.add('oculto');
-            ajustesSection.classList.add('oculto');
-            tablonSection.classList.add('oculto');
-            documentosSection.classList.add('oculto');
-            licenciasContainer.classList.add('oculto');
-
-            if (targetSection === 'turnos') mainContent.classList.remove('oculto');
-            else if (targetSection === 'peticiones') ajustesSection.classList.remove('oculto');
-            else if (targetSection === 'tablon') tablonSection.classList.remove('oculto');
-            else if (targetSection === 'documentos') documentosSection.classList.remove('oculto');
+    // 1. Lógica del Splash Screen
+    logo.addEventListener("click", () => {
+        splash.style.opacity = '0';
+        splash.addEventListener('transitionend', () => {
+            splash.remove();
             
-            navButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.section === targetSection || btn.id === 'btn-carga-dias' && targetSection === 'turnos' );
-            });
-        }
+            // 2. Inicia la autenticación DESPUÉS de que el splash desaparece.
+            // handleAuthentication() es la función de auth.js
+            handleAuthentication()
+                .then(() => {
+                    // 3. Cuando el login es exitoso (la promesa se resuelve):
+                    appContainer.classList.remove('oculto'); // Muestra el contenedor de la app
+                    startTurnApp(); // Llama a la función de app.js para iniciar la app
+                })
+                .catch(error => {
+                    console.error("Fallo en el flujo de autenticación:", error);
+                    document.body.innerHTML = '<p style="color:red; text-align:center; margin-top: 50px;">Error crítico al iniciar la aplicación.</p>';
+                });
 
-        btnTurnos.addEventListener('click', () => switchPanel('turnos'));
-        btnPeticiones.addEventListener('click', () => !ajustesSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('peticiones'));
-        btnTablon.addEventListener('click', () => !tablonSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('tablon'));
-        btnDocumentos.addEventListener('click', () => !documentosSection.classList.contains('oculto') ? switchPanel('turnos') : switchPanel('documentos'));
-        
-        btnCargaDias.addEventListener('click', () => {
-            if (mainContent.classList.contains('oculto')) {
-                switchPanel('turnos');
-            }
-            licenciasContainer.classList.toggle('oculto');
-            licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
+        }, { once: true });
+    });
 
-        // Muestra el panel inicial de Turnos
-        switchPanel('turnos');
-    }
-
-    /**
-     * Muestra la aplicación principal y llama a la función que inicia la navegación.
-     */
-    function showApp() {
-        const authContainer = document.getElementById("auth-container");
-        const app = document.getElementById("app");
-        if (authContainer) authContainer.remove();
-        if (app) app.classList.remove("oculto");
-        startApp(); // Inicia la lógica de navegación y paneles.
-    }
-
-    /**
-     * Gestiona el formulario de login.
-     */
-    function initAuth() {
-        const loginForm = document.getElementById('login-form');
-        const loginError = document.getElementById('login-error');
-        const authContainer = document.getElementById('auth-container');
-        const rememberMe = document.getElementById('remember-me');
-
-        if (localStorage.getItem('turnapp_remembered_user') === 'true') {
-            showApp();
-            return;
-        }
-
-        if (authContainer) authContainer.classList.remove('oculto');
-
-        if (!loginForm) return;
-        loginForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            if (loginError) loginError.classList.add('oculto');
-
-            const VALID_USER = "admin"; // Usuario fijo
-            const VALID_PASS = "1234";  // Contraseña fija
-
-            const user = document.getElementById('username').value.trim();
-            const pass = document.getElementById('password').value.trim();
-
-            if (user === VALID_USER && pass === VALID_PASS) {
-                if (rememberMe.checked) {
-                    localStorage.setItem('turnapp_remembered_user', 'true');
-                }
-                showApp();
-            } else {
-                if (loginError) {
-                    loginError.textContent = 'Usuario o contraseña incorrectos.';
-                    loginError.classList.remove('oculto');
-                }
-            }
-        });
-    }
-
-    // --- 2. LÓGICA DE INSTALACIÓN PWA (SIN CAMBIOS) ---
+    // 4. Lógica de instalación PWA (sin cambios, dentro del mismo listener)
     let deferredPrompt;
     const installButton = document.getElementById('btn-install-pwa');
+
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       if (installButton) installButton.style.display = 'block';
     });
+
     if (installButton) {
       installButton.addEventListener('click', async () => {
         if (deferredPrompt) {
@@ -545,12 +447,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       });
     }
+
     window.addEventListener('appinstalled', () => {
       if (installButton) installButton.style.display = 'none';
       deferredPrompt = null;
     });
 });
 </script>
+
 
 <!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
 <div id="image-modal" class="image-modal-overlay oculto">
