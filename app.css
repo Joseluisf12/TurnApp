@@ -1,7 +1,4 @@
-/* app.css - Versión 1.2.1 (base 1.2 con modal translúcido para cadencias)
-   Mantén este archivo tal cual; contiene los estilos de la app y del modal.
-*/
-
+/* app.css - Versión 4.0 
 /* ==========================================================================
    1. VARIABLES DE COLOR PARA LOS TEMAS
    ========================================================================== */
@@ -1589,6 +1586,7 @@ body[data-theme='dark'] #total-restan {
     font-weight: 600;
     border: 1px solid rgba(0,0,0,0.05);
     box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    position: relative;
     /* flex-grow: 1; -> Mantenemos esto para que ocupen todo el ancho disponible */
 }
 
@@ -1606,6 +1604,29 @@ body[data-theme='dark'] #total-restan {
         background-color: #d6e4ff; /* Un azul un poco más intenso al pasar el ratón */
         transform: translateY(-1px);
     }
+}
+
+/* ============================================================= */
+/*           ESTILOS PARA NOTIFICACIONES (PUNTO ROJO)            */
+/* ============================================================= */
+
+/* Estilo del punto de notificación */
+.notification-dot {
+    position: absolute;
+    top: 5px;
+    right: 15px;
+    width: 9px;
+    height: 9px;
+    background-color: #ff3b30; /* Rojo vivo de notificaciones iOS */
+    border-radius: 50%;
+    border: 2px solid var(--saturday-bg); /* Borde del color de fondo de la barra para crear un halo */
+    transform: scale(0); /* Oculto por defecto, pero animable */
+    transition: transform 0.2s ease-out;
+}
+
+/* Muestra el punto cuando el botón tiene la clase 'has-notification' */
+.nav-btn.has-notification .notification-dot {
+    transform: scale(1); /* Muestra el punto con una animación de zoom */
 }
 
 /* =================================================== */
