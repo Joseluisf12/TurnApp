@@ -1747,10 +1747,6 @@ logo.addEventListener("click", () => {
    });
   });
 
-/* ... Líneas anteriores ... */
-Line 1340:  });
-Line 1341:  // ------------------ FIN app.js ------------------
-
 /* ================================================================= */
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
 /* ================================================================= */
@@ -1766,113 +1762,128 @@ function initNotificationManager() {
 
     if (!navTablon || !navDocs) {
         console.error("NotificationManager: No se encontraron los botones de navegación para Tablón o Docs.");
-        return;
+        return; // Salida segura si los botones no existen
     }
 
-    // 2. --- FUNCIONES DE ESTADO ---
-
-    // Carga los IDs de los archivos ya vistos por el usuario
+    // 2. --- FUNCIONES DE ESTADO (MÁS SEGURAS) ---
     function getSeenFiles() {
         try {
-            return JSON.parse(localStorage.getItem(SEEN_FILES_KEY) || '[]');
+            const data = JSON.parse(localStorage.getItem(SEEN_FILES_KEY) || '[]');
+            return Array.isArray(data) ? data : [];
         } catch (e) {
-            return [];
+            console.error("Error al leer 'seenFiles' desde localStorage.", e);
+            return []; // Devuelve un array vacío en caso de error
         }
     }
 
-    // Guarda los IDs de los archivos vistos
     function saveSeenFiles(seenFiles) {
-        localStorage.setItem(SEEN_FILES_KEY, JSON.stringify(seenFiles));
-    }
-
-    // Genera un ID único para un archivo (nombre + fecha)
-    function getFileId(file) {
-        return `${file.name}|${file.date}`;
-    }
-
-    // 3. --- LÓGICA DE COMPROBACIÓN ---
-
-    // Comprueba si hay archivos nuevos sin ver en el Tablón
-    function hasUnseenTablonFiles() {
-        const tablonFiles = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        if (tablonFiles.length === 0) return false;
-
-        const seenFiles = getSeenFiles();
-        // Devuelve true si al menos un archivo del tablón no está en la lista de vistos
-        return tablonFiles.some(file => !seenFiles.includes(getFileId(file)));
-    }
-
-    // Comprueba si hay archivos nuevos sin ver en Documentos
-    function hasUnseenDocsFiles() {
-        const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-        const seenFiles = getSeenFiles();
-        
-        // Itera sobre todas las categorías de documentos
-        for (const category in docsData) {
-            const files = docsData[category];
-            if (Array.isArray(files) && files.some(file => !seenFiles.includes(getFileId(file)))) {
-                return true; // Si encuentra un archivo no visto, devuelve true y para.
-            }
+        try {
+            localStorage.setItem(SEEN_FILES_KEY, JSON.stringify(seenFiles));
+        } catch (e) {
+            console.error("Error al guardar 'seenFiles' en localStorage.", e);
         }
-        return false; // Si no encuentra ninguno, devuelve false.
+    }
+    
+    function getFileId(file) {
+        return (file && file.name && file.date) ? `${file.name}|${file.date}` : null;
+    }
+
+    // 3. --- LÓGICA DE COMPROBACIÓN (A PRUEBA DE ERRORES) ---
+    function hasUnseenTablonFiles() {
+        try {
+            const tablonFiles = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            if (!Array.isArray(tablonFiles) || tablonFiles.length === 0) return false;
+            
+            const seenFiles = getSeenFiles();
+            return tablonFiles.some(file => {
+                const fileId = getFileId(file);
+                return fileId && !seenFiles.includes(fileId);
+            });
+        } catch (e) {
+            console.error("Error comprobando archivos del Tablón:", e);
+            return false; // Falla de forma segura
+        }
+    }
+
+    function hasUnseenDocsFiles() {
+        try {
+            const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+            if (typeof docsData !== 'object' || docsData === null) return false;
+
+            const seenFiles = getSeenFiles();
+            for (const category in docsData) {
+                const files = docsData[category];
+                if (Array.isArray(files) && files.some(file => {
+                    const fileId = getFileId(file);
+                    return fileId && !seenFiles.includes(fileId);
+                })) {
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.error("Error comprobando archivos de Docs:", e);
+        }
+        return false; // Falla de forma segura
     }
 
     // 4. --- ACTUALIZACIÓN DE LA INTERFAZ ---
-    
-    // Función principal que actualiza los puntos rojos
     function checkAndDisplayNotifications() {
-        // Para Tablón
-        if (hasUnseenTablonFiles()) {
-            navTablon.classList.add('has-notification');
-        } else {
-            navTablon.classList.remove('has-notification');
-        }
-
-        // Para Docs
-        if (hasUnseenDocsFiles()) {
-            navDocs.classList.add('has-notification');
-        } else {
-            navDocs.classList.remove('has-notification');
-        }
+        navTablon.classList.toggle('has-notification', hasUnseenTablonFiles());
+        navDocs.classList.toggle('has-notification', hasUnseenDocsFiles());
     }
 
     // 5. --- EVENTOS Y EJECUCIÓN ---
-
-    // Marca todos los archivos de una sección como vistos
     function markSectionAsSeen(section) {
         let filesToMark = [];
-        if (section === 'tablon') {
-            filesToMark = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        } else if (section === 'documentos') {
-            const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-            filesToMark = Object.values(docsData).flat();
-        }
-
-        if (filesToMark.length > 0) {
-            const seenFiles = getSeenFiles();
-            const newSeenFiles = new Set(seenFiles); // Usamos un Set para evitar duplicados
-            filesToMark.forEach(file => newSeenFiles.add(getFileId(file)));
-            saveSeenFiles(Array.from(newSeenFiles));
+        try {
+            if (section === 'tablon') {
+                const data = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+                if(Array.isArray(data)) filesToMark = data;
+            } else if (section === 'documentos') {
+                const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+                if (typeof docsData === 'object' && docsData !== null) {
+                    filesToMark = Object.values(docsData).flat();
+                }
+            }
+        } catch(e) {
+            console.error("Error parseando datos para marcar como vistos:", e);
+            return; // No continuar si hay un error
         }
         
-        // Después de marcar, vuelve a comprobar para ocultar el punto rojo
+        if (filesToMark.length > 0) {
+            const seenFiles = getSeenFiles();
+            const newSeenFiles = new Set(seenFiles);
+            filesToMark.forEach(file => {
+                const fileId = getFileId(file);
+                if (fileId) newSeenFiles.add(fileId);
+            });
+            saveSeenFiles(Array.from(newSeenFiles));
+        }
         checkAndDisplayNotifications();
     }
 
-    // Cuando el usuario hace clic en el botón, marca la sección como vista
     navTablon.addEventListener('click', () => markSectionAsSeen('tablon'));
     navDocs.addEventListener('click', () => markSectionAsSeen('documentos'));
     
-    // Comprobación inicial al cargar la página
     checkAndDisplayNotifications();
 
-    // Re-comprueba cada vez que el storage cambie (esto es una escucha global)
-    window.addEventListener('storage', () => {
-         checkAndDisplayNotifications();
-    });
+    window.addEventListener('storage', checkAndDisplayNotifications);
+    
+    // Hacemos que la función esté disponible globalmente para poder llamarla desde otros módulos
+    window.TurnApp = window.TurnApp || {};
+    window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
+    window.TurnApp.markFileAsSeen = (file) => {
+        if (!file) return;
+        const fileId = getFileId(file);
+        if (!fileId) return;
+        const seenFiles = getSeenFiles();
+        if (!seenFiles.includes(fileId)) {
+            seenFiles.push(fileId);
+            saveSeenFiles(seenFiles);
+        }
+    };
 }
 
-// Finalmente, llamamos a esta nueva función en el evento DOMContentLoaded.
 document.addEventListener('DOMContentLoaded', initNotificationManager);
 
   // ------------------ FIN app.js ------------------
