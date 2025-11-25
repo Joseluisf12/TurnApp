@@ -1613,10 +1613,10 @@ body[data-theme='dark'] #total-restan {
 /* Estilo del punto de notificación */
 .notification-dot {
     position: absolute;
-    top: 5px;
-    right: 15px;
-    width: 9px;
-    height: 9px;
+    Line 1617:     top: 2px;
+    right: 5px;
+    width: 8px;
+    height: 8px;
     background-color: #ff3b30; /* Rojo vivo de notificaciones iOS */
     border-radius: 50%;
     border: 2px solid var(--saturday-bg); /* Borde del color de fondo de la barra para crear un halo */
