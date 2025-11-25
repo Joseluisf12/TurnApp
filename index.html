@@ -7,7 +7,7 @@
   <title>TurnApp — Gestión Inteligente de Turnos de Trabajo</title>
   <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="app.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
 </head>
 <body class="light">
 
@@ -19,16 +19,23 @@
     <h1 class="slogan">Gestión Inteligente de Turnos de Trabajo</h1>
   </div>
 
-  <!-- App principal (ahora visible por defecto tras el splash) -->
+  <!-- App principal -->
 <main id="app" class="oculto">
-
     <header class="app-header">
-      <h1 id="editable-title" contenteditable="true" spellcheck="false">Calendario de Turnos</h1>
-      <button id="theme-toggle" class="icon-btn" aria-label="Cambiar tema">🌓</button>
+      <h2 id="app-title">TurnApp</h2>
+      <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
     </header>
 
-    <!-- ========= PANEL 1: CALENDARIO ========= -->
-    <section id="content" class="panel">
+    <!-- ========= PANEL 1: TURNOS (Calendario y Licencias) ========= -->
+    <section id="content" class="content panel">
+      <div id="editable-title" contenteditable="true" spellcheck="false">Guardia 1 Teixeiro</div>
+
+
+      <div style="margin-top:12px; margin-bottom:25px; text-align:center;">
+        <button id="btn-apply-cadence" class="modern-btn green">Aplicar cadencia</button>
+        <button id="btn-clear-cadence" class="modern-btn red">Limpiar cadencia</button>
+      </div>
+
       <div class="calendar-controls">
         <button id="prevMonth">◀ Anterior</button>
         <span id="monthLabel"></span>
@@ -39,102 +46,522 @@
         <div>LUN</div><div>MAR</div><div>MIÉ</div><div>JUE</div><div>VIE</div><div>SÁB</div><div>DOM</div>
       </div>
 
-      <div id="calendar"></div>
-    </section>
+      <section id="calendar-panel">
+        <div id="calendar"></div>
+      </section>
 
-    <!-- ========= PANEL 2: CADENCIAS ========= -->
-    <section id="cadencias-section" class="panel oculto">
-      <h2>Definir Cadencia</h2>
-      <form id="cadence-form" class="form-layout">
-        <div class="form-group">
-          <label for="start-date">Fecha de Inicio:</label>
-          <input type="date" id="start-date" required>
+       
+<!-- ========================================================================= -->
+<!-- SECCIÓN DE CARGA DE DÍAS (LICENCIAS) - REEMPLAZAR POR COMPLETO ESTE BLOQUE -->
+<!-- ========================================================================= -->
+<div id="licencias-container" class="licencias oculto" aria-hidden="true" style="margin-top:20px;">
+    <h3>Gestión de Permisos y Licencias</h3>
+
+    <!-- CABECERA PARA LAS COLUMNAS DE DÍAS -->
+    <div class="licencia-header">
+        <div class="licencia-nombre-header">Tipo de Permiso</div>
+        <div class="licencia-valores-header">
+            <span>Carga</span>
+            <span>Consumidos</span>
+            <span>Restan</span>
         </div>
-        <div class="form-group">
-          <label for="cadence-pattern">Patrón de Cadencia:</label>
-          <input type="text" id="cadence-pattern" placeholder="Ej: M, T, N, L, L" required>
-          <small>Turnos separados por comas (M, T, N, L, etc.)</small>
+        <div class="licencia-color-header">Color</div>
+    </div>
+
+    <!-- LISTA DE ITEMS DE LICENCIA (MODIFICADOS) -->
+    <div class="licencia-item" data-tipo="vacaciones">
+        <div class="licencia-nombre">Vacaciones: V</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
         </div>
-        <div class="form-actions">
-          <button type="submit" class="modern-btn green">Aplicar</button>
-          <button type="button" id="clear-cadence" class="modern-btn red">Limpiar</button>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="compfest">
+        <div class="licencia-nombre">Compensación Festivos: CF</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
         </div>
-      </form>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="asuntos">
+        <div class="licencia-nombre">Asuntos Propios: AP</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="delegacion">
+        <div class="licencia-nombre">Delegación de Gobierno: DG</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="adicionales">
+        <div class="licencia-nombre">Días Adicionales: DA</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="acumuladas">
+        <div class="licencia-nombre">Jornadas Acumuladas: JA</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="otros">
+        <div class="licencia-nombre">Otros: O</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="baja_medica">
+        <div class="licencia-nombre">Baja Médica: BM</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="articulo_48">
+        <div class="licencia-nombre">Artículo 48: AR</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    <div class="licencia-item" data-tipo="deber_inexcusable">
+        <div class="licencia-nombre">Deber Inexcusable: DI</div>
+        <div class="licencia-valores">
+            <input type="number" class="licencia-input carga" min="0" max="99" value="0">
+            <input type="number" class="licencia-input consumidos" min="0" max="99" value="0">
+            <input type="number" class="licencia-input restan" readonly>
+        </div>
+        <button class="licencia-color licencia-color-handle" title="Elegir color">●</button>
+    </div>
+    
+    <hr>
+
+    <!-- TOTALIZADOR CON 3 COLUMNAS -->
+    <div class="licencia-total">
+        <div class="licencia-nombre"><strong>Total:</strong></div>
+        <div class="licencia-valores">
+            <input type="number" id="total-carga" class="licencia-input" readonly>
+            <input type="number" id="total-consumidos" class="licencia-input" readonly>
+            <input type="number" id="total-restan" class="licencia-input" readonly>
+        </div>
+        <div class="licencia-color-placeholder"></div> <!-- Espacio para alinear -->
+    </div>
+</div>
+
     </section>
 
-    <!-- ========= PANEL 3: PETICIONES ========= -->
-    <section id="peticiones-section" class="panel oculto">
-        <h2>Gestión de Peticiones</h2>
-        <p>Esta sección está en desarrollo y se implementará en futuras versiones.</p>
-    </section>
+    <!-- ========= PANEL 2: PETICIONES (Cajón y Tabla) ========= -->
+    <section id="ajustes-section" class="panel oculto">
+      <h2>Gestión de Peticiones</h2>
+      <div class="peticiones-zona">
+        <h3>Zona Usuario</h3>
+        <textarea id="peticion-texto" placeholder="Escribe aquí tu petición..."></textarea>
+        <div class="peticiones-controles">
+          <button id="enviar-peticion">Enviar petición</button>
+        </div>
+        <ul id="lista-peticiones-usuario" class="lista-peticiones"></ul>
+      </div>
+    
+      <table id="tabla-coordinador">
+        <colgroup><col><col><col><col><col><col><col><col></colgroup>
+        <thead>
+          <tr>
+            <th colspan="2">FUNCIONARIO/A</th>
+            <th colspan="5" contenteditable="true" class="titulo-ciclo" id="th-ciclo">CICLO</th>
+            <th colspan="true">OBSERVACIONES</th>
+          </tr>
+          <tr>
+            <tr><th>Nº</th><th>NOMBRE</th><th id="th-m1" contenteditable="true">M¹</th><th id="th-t1" contenteditable="true">T¹</th><th id="th-m2" contenteditable="true">M²</th><th id="th-t2" contenteditable="true">T²</th><th id="th-n" contenteditable="true">N</th><th id="th-cocina" contenteditable="true">COCINA</th></tr>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- 18 filas de la tabla -->
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+          <tr><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td><td contenteditable="true"></td></tr>
+        </tbody>
+      </table>
 
-    <!-- ========= PANEL 4: PERMISOS ========= -->
-    <section id="permisos-section" class="panel oculto">
-        <h2>Solicitar Permiso</h2>
-        <form id="permissions-form" class="form-layout">
-            <div class="form-group">
-                <label for="perm-start-date">Fecha de Inicio:</label>
-                <input type="date" id="perm-start-date" required>
-            </div>
-            <div class="form-group">
-                <label for="perm-end-date">Fecha de Fin:</label>
-                <input type="date" id="perm-end-date" required>
-            </div>
-            <div class="form-group">
-                 <label for="perm-reason">Motivo:</label>
-                 <textarea id="perm-reason" rows="3" placeholder="Describe brevemente el motivo..."></textarea>
-            </div>
-            <div class="form-group">
-                <strong>Total días laborables: <span id="perm-days-count">0 días</span></strong>
-            </div>
-            <div class="form-actions">
-                <button type="submit" class="modern-btn">Enviar Solicitud</button>
-            </div>
-        </form>
-    </section>
+      <!-- CONTROLES PARA AÑADIR/QUITAR FILAS -->
+      <div id="tabla-coordinador-controles" style="text-align: right; margin-top: 10px; margin-bottom: 15px;">
+  <button id="limpiar-tabla" class="modern-btn red">🧹 Limpiar tabla</button>
+  <button id="btn-add-row" class="modern-btn green">(+) Fila</button>
+  <button id="btn-remove-row" class="modern-btn red">(-) Fila</button>
+  <span style="margin-left: 15px;"></span> <!-- Separador visual -->
+  <button id="btn-add-col" class="modern-btn" title="Añadir columna de turno">(+) Col</button>
+  <button id="btn-remove-col" class="modern-btn red" title="Eliminar última columna de turno">(-) Col</button>
+</div>
+   </section>
 
-    <!-- ========= NAVEGACIÓN INFERIOR ========= -->
-    <nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
-      <button data-section="content" class="nav-btn active">Calendario</button>
-      <button data-section="cadencias-section" class="nav-btn">Cadencias</button>
-      <button data-section="peticiones-section" class="nav-btn">Peticiones</button>
-      <button data-section="permisos-section" class="nav-btn">Permisos</button>
-      <button id="install-button" class="nav-btn" style="display: none;">⬇️ Instalar</button>
-    </nav>
+<!-- ========= PANEL 3: TABLÓN DE ANUNCIOS ========= -->
+<section id="tablon-section" class="panel oculto">
+    <h2 style="text-align: center;">Tablón de Anuncios</h2>
 
-</main> <!-- Cierre del contenedor principal de la app -->
+    <!-- Contenedor para la previsualización del último archivo -->
+    <div id="tablon-preview-container" class="tablon-preview-container oculto">
+        <h3>Último archivo subido</h3>
+        <img id="tablon-preview-image" src="#" alt="Previsualización del archivo subido" />
+    </div>
 
-<script src="app.js" defer></script>
+    <!-- El input de archivo está oculto, lo disparamos con el botón -->
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
+
+    <button id="btn-upload-file" class="modern-btn">
+        <span class="icon-upload">+</span> Subir Archivo
+    </button>
+    <div id="tablon-lista"></div>
+</section>
+
+<!-- ========= PANEL 4: DOCUMENTOS (AHORA CON LISTAS) ========= -->
+<section id="documentos-section" class="panel oculto">
+    <h2 style="text-align: center;">Documentos</h2>
+
+    <!-- Input oculto para la subida de PDFs (sin cambios) -->
+    <input type="file" id="pdf-input" accept="application/pdf" style="display: none;">
+
+    <!-- Grid para los 4 mini-paneles (estructura interna modificada) -->
+    <div class="documentos-grid">
+
+        <!-- Card: Turnos por Mes -->
+        <div class="documento-card" data-category="mes">
+            <h3>Turnos por Mes</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="mes">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-mes"></div>
+        </div>
+
+        <!-- Card: Ciclos Especiales -->
+        <div class="documento-card" data-category="ciclos">
+            <h3>Ciclos Especiales</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="ciclos">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-ciclos"></div>
+        </div>
+
+        <!-- Card: Vacaciones -->
+        <div class="documento-card" data-category="vacaciones">
+            <h3>Vacaciones</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="vacaciones">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-vacaciones"></div>
+        </div>
+
+        <!-- Card: Rotación -->
+        <div class="documento-card" data-category="rotacion">
+            <h3>Rotación</h3>
+            <div class="documento-preview-container" title="Ver último PDF subido">
+                <div class="preview-overlay"><span class="preview-text">No hay PDFs</span></div>
+                <img class="documento-preview-img" alt="Previsualización del último PDF">
+            </div>
+            <button class="btn-upload-pdf modern-btn" data-category="rotacion">[+] Subir PDF</button>
+            <div class="documento-file-list" id="docs-list-rotacion"></div>
+        </div>
+
+    </div>
+</section>
+
+    <!-- ========= NAVEGACIÓN INFERIOR (CON NOMBRES CORREGIDOS) ========= -->
+<nav class="bottom-nav" role="navigation" aria-label="Navegación principal">
+  <button data-section="turnos" class="nav-btn active">Turnos</button>
+  <button data-section="peticiones" class="nav-btn">Petición</button>
+  <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Permisos</button>
+  <button data-section="documentos" class="nav-btn">Docs</button>
+  <button data-section="tablon" class="nav-btn">Tablón</button>
+  <button id="btn-install-pwa" class="nav-btn" style="display: none;">⬇️ Instalar</button>
+</nav>
+</main>
+
+
+  <!-- MODAL CADENCIAS (translúcido) -->
+  <div id="cadence-modal-overlay" class="modal-overlay" aria-hidden="true" style="display:none;">
+    <div id="cadence-modal" class="modal-card" role="dialog" aria-modal="true" aria-labelledby="cadence-title">
+      <h3 id="cadence-title">Seleccione la cadencia</h3>
+
+      <div class="modal-section">
+        <label class="modal-label">Tipo:</label>
+        <div class="modal-row">
+          <button data-type="V-1" class="modal-type-btn">V-1</button>
+          <button data-type="V-2" class="modal-type-btn">V-2</button>
+          <button data-type="Personalizada" class="modal-type-btn">Personalizada</button>
+        </div>
+      </div>
+
+      <div id="v1-options" class="modal-section" style="display:none;">
+        <label class="modal-label">Opciones V-1:</label>
+        <div class="modal-row radio-row">
+          <label><input type="radio" name="v1opt" value="0"> 1 — M/T, L, M/T, N, L, L, L, L</label>
+          <label><input type="radio" name="v1opt" value="1"> 2 — M/T, M/T, N, L, L, L, L, L</label>
+          <label><input type="radio" name="v1opt" value="2"> 3 — T, M/T, M/N, L, L, L, L, L</label>
+          <label><input type="radio" name="v1opt" value="3"> 4 — M/T, N, L, L, L</label>
+          <label><input type="radio" name="v1opt" value="4"> 5 — T, M/N, L, L, L</label>
+        </div>
+      </div>
+
+      <div id="v2-options" class="modal-section" style="display:none;">
+        <label class="modal-label">V-2: patrón fijo de 6 días (M/T, M/T, L, L, L, L)</label>
+      </div>
+
+      <div id="custom-section" class="modal-section" style="display:none;">
+        <label class="modal-label">Patrón personalizado (separado por comas):</label>
+        <input id="custom-pattern" type="text" placeholder="ej: M/T, L, M/T, N, L, L, L, L" style="width:100%;padding:8px;border-radius:6px;border:1px solid #ccc;">
+      </div>
+
+      <div class="modal-section">
+        <label class="modal-label">Fecha inicio (DD/MM/AAAA):</label>
+        <input id="cadence-start" type="text" placeholder="DD/MM/AAAA" style="width:140px;padding:8px;border-radius:6px;border:1px solid #ccc;">
+      </div>
+
+      <div class="modal-actions">
+        <button id="apply-cadence-confirm" class="modal-action primary">Aplicar</button>
+        <button id="close-cadence" class="modal-action">Cerrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js" defer></script>
 
 <script>
-  // Este script gestiona únicamente la transición del splash a la app.
-  document.addEventListener('DOMContentLoaded', () => {
-    const splash = document.getElementById("splash");
-    const logo = document.getElementById("splash-logo");
+document.addEventListener('DOMContentLoaded', () => {
+    // --- 1. ELEMENTOS Y PANELES (AÑADIDO EL TABLÓN) ---
     const appContainer = document.getElementById('app');
+    const mainContent = document.getElementById('content');
+    const ajustesSection = document.getElementById('ajustes-section');
+    const tablonSection = document.getElementById('tablon-section');
+    const documentosSection = document.getElementById('documentos-section');
+    const licenciasContainer = document.getElementById('licencias-container');
+    const calendarPanel = document.getElementById('calendar-panel');
+    
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
+    const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
+    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
+    const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
+    const btnCargaDias = document.getElementById('btn-carga-dias');
 
-    // Función para ocultar splash y mostrar la app
-    function showApp() {
-      if (!splash) return; // Si ya se ha quitado, no hacer nada
+    // --- 2. LÓGICA DE NAVEGACIÓN (MODIFICADA PARA EL TABLÓN) ---
+    function switchPanel(targetSection) {
+        // Ocultamos todos los paneles principales
+        mainContent.classList.add('oculto');
+        ajustesSection.classList.add('oculto');
+        tablonSection.classList.add('oculto');
+        documentosSection.classList.add('oculto');
 
-      splash.style.opacity = '0';
-      splash.addEventListener('transitionend', () => {
-        splash.remove();
-        if (appContainer) {
-          appContainer.classList.remove('oculto');
+        // También nos aseguramos de que los sub-paneles estén ocultos al cambiar
+        licenciasContainer.classList.add('oculto');
+
+        // Mostramos el panel principal correcto
+        if (targetSection === 'turnos') {
+            mainContent.classList.remove('oculto');
+            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (targetSection === 'peticiones') {
+            ajustesSection.classList.remove('oculto');
+            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else if (targetSection === 'tablon') {
+            tablonSection.classList.remove('oculto');
+            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
-      }, { once: true });
+         else if (targetSection === 'documentos') {
+            documentosSection.classList.remove('oculto');
+            documentosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        // Actualizamos el botón activo
+        navButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.section === targetSection);
+        });
     }
 
-    // Acelera la carga si el usuario hace clic en el logo
-    if (logo) {
-      logo.addEventListener("click", showApp, { once: true });
+    // Botón "Calendario / Turnos"
+    btnTurnos.addEventListener('click', () => {
+        switchPanel('turnos');
+    });
+
+    // Botón "Peticiones" (Mantiene su lógica original)
+    btnPeticiones.addEventListener('click', () => {
+        const isAjustesVisible = !ajustesSection.classList.contains('oculto');
+        if (isAjustesVisible) {
+            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
+        } else {
+            switchPanel('peticiones');
+        }
+    });
+
+    // Botón "Tablón" (NUEVO)
+    btnTablon.addEventListener('click', () => {
+        const isTablonVisible = !tablonSection.classList.contains('oculto');
+        if (isTablonVisible) {
+            switchPanel('turnos'); // Si ya está visible, vuelve a turnos
+        } else {
+            switchPanel('tablon');
+        }
+    });
+
+    // Botón "Documentos" 
+btnDocumentos.addEventListener('click', () => {
+    const isDocumentosVisible = !documentosSection.classList.contains('oculto');
+    if (isDocumentosVisible) {
+        switchPanel('turnos'); // Si ya está visible, vuelve a turnos
+    } else {
+        switchPanel('documentos');
+    }
+});
+
+    // Botón "Carga Días" (Mantiene su lógica original)
+    btnCargaDias.addEventListener('click', () => {
+        if (mainContent.classList.contains('oculto')) {
+            switchPanel('turnos');
+        }
+        
+        const isLicenciasHidden = licenciasContainer.classList.contains('oculto');
+        if (isLicenciasHidden) {
+            licenciasContainer.classList.remove('oculto');
+            licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        } else {
+            licenciasContainer.classList.add('oculto');
+            calendarPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    });
+
+    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (INTACTA) ---
+    const totalLicenciasField = document.getElementById('total-licencias');
+    const cantidadInputs = Array.from(document.querySelectorAll('#licencias-container .cantidad-input'));
+    if (totalLicenciasField && cantidadInputs.length > 0) {
+      const recalculateTotal = () => {
+        let total = 0;
+        cantidadInputs.forEach(input => total += Number(input.value) || 0);
+        totalLicenciasField.value = total;
+      };
+      cantidadInputs.forEach(input => input.addEventListener('input', recalculateTotal));
+      recalculateTotal();
     }
 
-    // Como alternativa, la app se muestra sola después de 3 segundos
-    setTimeout(showApp, 3000);
-  });
+    // --- 4. LÓGICA DE GESTIÓN DE PETICIONES (INTACTA) ---
+    const textoPeticionInput = document.getElementById('peticion-texto');
+    const enviarPeticionBtn = document.getElementById('enviar-peticion');
+    const listaPeticionesUsuario = document.getElementById('lista-peticiones-usuario');
+    if (textoPeticionInput && enviarPeticionBtn && listaPeticionesUsuario) {
+        const PETICIONES_KEY = 'turnapp.peticiones.usuario';
+        let peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
+        const esAdmin = true;
+        const saveAndRenderPeticiones = () => {
+            localStorage.setItem(PETICIONES_KEY, JSON.stringify(peticiones));
+            listaPeticionesUsuario.innerHTML = '';
+            peticiones.forEach((p, index) => {
+                const li = document.createElement('li');
+                li.className = 'peticion-item';
+                if (p.revisada) li.classList.add('revisada');
+                const fechaStr = p.fechaHora ? new Date(p.fechaHora).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+                li.innerHTML = `<div class="peticion-contenido" style="flex: 1; text-align: left; word-break: break-word;"><span>${p.texto}</span><span class="fecha-hora" style="display: block; font-size: 0.8em; color: #555;">${fechaStr}</span></div><div class="peticion-acciones" style="display: flex; align-items: center; gap: 8px;"><input type="checkbox" title="Marcar como revisada" ${p.revisada ? 'checked' : ''}>${esAdmin ? '<button title="Eliminar" class="btn-eliminar" style="background: none; border: none; cursor: pointer; font-size: 1.1em; color: #c00;">❌</button>' : ''}</div>`;
+                li.querySelector('input[type="checkbox"]').addEventListener('change', (e) => { peticiones[index].revisada = e.target.checked; saveAndRenderPeticiones(); });
+                if (esAdmin) { li.querySelector('.btn-eliminar').addEventListener('click', () => { peticiones.splice(index, 1); saveAndRenderPeticiones(); }); }
+                listaPeticionesUsuario.appendChild(li);
+            });
+        };
+        enviarPeticionBtn.addEventListener('click', () => { const texto = textoPeticionInput.value.trim(); if (!texto) return alert('Por favor, escribe una petición.'); peticiones.unshift({ texto, revisada: false, fechaHora: new Date().toISOString() }); textoPeticionInput.value = ''; saveAndRenderPeticiones(); });
+        const peticionesZona = listaPeticionesUsuario.closest('.peticiones-zona');
+        if (peticionesZona && esAdmin && !peticionesZona.querySelector('.btn-borrar-todo')) { const botonBorrarTodo = document.createElement('button'); botonBorrarTodo.textContent = '🧹 Borrar Todo'; botonBorrarTodo.className = 'btn-borrar-todo'; botonBorrarTodo.addEventListener('click', () => { if (confirm('¿Estás seguro de que quieres borrar TODAS las peticiones?')) { peticiones = []; saveAndRenderPeticiones(); } }); listaPeticionesUsuario.after(botonBorrarTodo); }
+        saveAndRenderPeticiones();
+    }
+
+    // --- 5. INICIALIZACIÓN DE LA VISTA (INTACTA) ---
+    switchPanel('turnos');
+
+    // --- 6. LÓGICA DE INSTALACIÓN PWA (INTACTA) ---
+    let deferredPrompt;
+    const installButton = document.getElementById('btn-install-pwa');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      if (installButton) {
+        installButton.style.display = 'block';
+      }
+    });
+
+    if (installButton) {
+      installButton.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          console.log(`Respuesta del usuario al diálogo de instalación: ${outcome}`);
+          deferredPrompt = null;
+          installButton.style.display = 'none';
+        }
+      });
+    }
+
+    window.addEventListener('appinstalled', () => {
+      if (installButton) {
+        installButton.style.display = 'none';
+      }
+      deferredPrompt = null;
+      console.log('PWA fue instalada');
+    });
+});
 </script>
+
+<!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
+<div id="image-modal" class="image-modal-overlay oculto">
+  <span class="image-modal-close">&times;</span>
+  <img class="image-modal-content" id="modal-image-content">
+</div>
+
+<!-- Contenedor Modal para la visualización de PDFs a pantalla completa -->
+<div id="pdf-modal" class="image-modal-overlay oculto">
+  <span class="image-modal-close">&times;</span>
+  <iframe class="pdf-modal-content" id="modal-pdf-content"></iframe>
+</div>
+
 
 </body>
 </html>
