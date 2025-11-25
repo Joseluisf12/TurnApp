@@ -801,6 +801,21 @@ body {
   text-align: left;
 }
 
+/* Estilo para la fila seleccionada, para saber cuál se va a borrar o dónde se va a insertar */
+tbody tr.seleccionada > td {
+    /* Un fondo más notorio que funciona en ambos temas. !important para asegurar que sobreescribe otros estilos */
+    background-color: var(--selected-row-bg) !important;
+}
+
+/* Añadimos un borde sutil a la izquierda y derecha de la fila para marcarla mejor */
+tbody tr.seleccionada > td:first-child {
+    border-left: 3px solid var(--primary-color);
+}
+
+tbody tr.seleccionada > td:last-child {
+    border-right: 3px solid var(--primary-color);
+}
+
 /* ==========================================================================
    ESTILOS DE LA PALETA DE COLORES
    ========================================================================== */
