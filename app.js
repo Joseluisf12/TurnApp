@@ -1634,6 +1634,10 @@ function initPeticiones(){
     u.unshift(nueva);
     save(u);
     render();
+   // ¡Llamamos al sistema de notificaciones!
+             if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) { // <-- AÑADIR ESTE BLOQUE
+                 window.TurnApp.checkAndDisplayNotifications();
+             }
   }
 
   enviarPeticionBtn.addEventListener('click', ()=> {
@@ -1752,17 +1756,19 @@ logo.addEventListener("click", () => {
 /* ================================================================= */
 
 function initNotificationManager() {
-    // 1. --- CLAVES y SELECTORES ---
+    // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
     const SEEN_FILES_KEY = 'turnapp.seenFiles.v1';
     const TABLON_KEY = 'turnapp.tablon.files';
     const DOCS_KEY = 'turnapp.documentos.v3';
+    const PETICIONES_KEY = 'peticionesUsuario'; // Clave existente de peticiones
 
     const navTablon = document.querySelector('.nav-btn[data-section="tablon"]');
     const navDocs = document.querySelector('.nav-btn[data-section="documentos"]');
+    const navPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]'); // <-- NUEVO
 
-    if (!navTablon || !navDocs) {
-        console.error("NotificationManager: No se encontraron los botones de navegación para Tablón o Docs.");
-        return; // Salida segura si los botones no existen
+    if (!navTablon || !navDocs || !navPeticiones) {
+        console.error("NotificationManager: No se encontraron los botones de navegación.");
+        return;
     }
 
     // 2. --- FUNCIONES DE ESTADO (MÁS SEGURAS) ---
@@ -1770,118 +1776,108 @@ function initNotificationManager() {
         try {
             const data = JSON.parse(localStorage.getItem(SEEN_FILES_KEY) || '[]');
             return Array.isArray(data) ? data : [];
-        } catch (e) {
-            console.error("Error al leer 'seenFiles' desde localStorage.", e);
-            return []; // Devuelve un array vacío en caso de error
-        }
+        } catch (e) { return []; }
     }
 
     function saveSeenFiles(seenFiles) {
         try {
             localStorage.setItem(SEEN_FILES_KEY, JSON.stringify(seenFiles));
-        } catch (e) {
-            console.error("Error al guardar 'seenFiles' en localStorage.", e);
-        }
+        } catch (e) { console.error("Error al guardar 'seenFiles'", e); }
     }
     
     function getFileId(file) {
         return (file && file.name && file.date) ? `${file.name}|${file.date}` : null;
     }
 
-    // 3. --- LÓGICA DE COMPROBACIÓN (A PRUEBA DE ERRORES) ---
+    // 3. --- LÓGICA DE COMPROBACIÓN (CON PETICIONES) ---
     function hasUnseenTablonFiles() {
         try {
-            const tablonFiles = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            if (!Array.isArray(tablonFiles) || tablonFiles.length === 0) return false;
-            
-            const seenFiles = getSeenFiles();
-            return tablonFiles.some(file => {
-                const fileId = getFileId(file);
-                return fileId && !seenFiles.includes(fileId);
-            });
-        } catch (e) {
-            console.error("Error comprobando archivos del Tablón:", e);
-            return false; // Falla de forma segura
-        }
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            if (!Array.isArray(files) || files.length === 0) return false;
+            const seen = getSeenFiles();
+            return files.some(f => { const id = getFileId(f); return id && !seen.includes(id); });
+        } catch (e) { return false; }
     }
 
     function hasUnseenDocsFiles() {
         try {
-            const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-            if (typeof docsData !== 'object' || docsData === null) return false;
-
-            const seenFiles = getSeenFiles();
-            for (const category in docsData) {
-                const files = docsData[category];
-                if (Array.isArray(files) && files.some(file => {
-                    const fileId = getFileId(file);
-                    return fileId && !seenFiles.includes(fileId);
-                })) {
+            const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+            if (typeof data !== 'object' || data === null) return false;
+            const seen = getSeenFiles();
+            for (const category in data) {
+                const files = data[category];
+                if (Array.isArray(files) && files.some(f => { const id = getFileId(f); return id && !seen.includes(id); })) {
                     return true;
                 }
             }
-        } catch (e) {
-            console.error("Error comprobando archivos de Docs:", e);
-        }
-        return false; // Falla de forma segura
+        } catch (e) { return false; }
+        return false;
     }
 
-    // 4. --- ACTUALIZACIÓN DE LA INTERFAZ ---
+    // ¡NUEVA FUNCIÓN PARA PETICIONES!
+    function hasUnseenPeticiones() {
+        try {
+            const peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
+            if (!Array.isArray(peticiones)) return false;
+            // Comprueba si alguna petición tiene el flag 'visto' en false.
+            return peticiones.some(p => p.visto === false);
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // 4. --- ACTUALIZACIÓN DE LA INTERFAZ (CON PETICIONES) ---
     function checkAndDisplayNotifications() {
         navTablon.classList.toggle('has-notification', hasUnseenTablonFiles());
         navDocs.classList.toggle('has-notification', hasUnseenDocsFiles());
+        navPeticiones.classList.toggle('has-notification', hasUnseenPeticiones()); // <-- NUEVO
     }
 
-    // 5. --- EVENTOS Y EJECUCIÓN ---
+    // 5. --- EVENTOS Y EJECUCIÓN (CON PETICIONES) ---
     function markSectionAsSeen(section) {
-        let filesToMark = [];
-        try {
-            if (section === 'tablon') {
-                const data = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-                if(Array.isArray(data)) filesToMark = data;
-            } else if (section === 'documentos') {
-                const docsData = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-                if (typeof docsData === 'object' && docsData !== null) {
-                    filesToMark = Object.values(docsData).flat();
+        if (section === 'tablon' || section === 'documentos') {
+            let filesToMark = [];
+            try {
+                if (section === 'tablon') {
+                    const data = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+                    if(Array.isArray(data)) filesToMark = data;
+                } else {
+                    const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+                    if (typeof data === 'object' && data !== null) filesToMark = Object.values(data).flat();
                 }
+            } catch(e) { return; }
+            
+            if (filesToMark.length > 0) {
+                const seen = getSeenFiles();
+                const newSeen = new Set(seen);
+                filesToMark.forEach(f => { const id = getFileId(f); if (id) newSeen.add(id); });
+                saveSeenFiles(Array.from(newSeen));
             }
-        } catch(e) {
-            console.error("Error parseando datos para marcar como vistos:", e);
-            return; // No continuar si hay un error
-        }
-        
-        if (filesToMark.length > 0) {
-            const seenFiles = getSeenFiles();
-            const newSeenFiles = new Set(seenFiles);
-            filesToMark.forEach(file => {
-                const fileId = getFileId(file);
-                if (fileId) newSeenFiles.add(fileId);
-            });
-            saveSeenFiles(Array.from(newSeenFiles));
+        } else if (section === 'peticiones') { // <-- ¡NUEVA LÓGICA!
+             try {
+                let peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
+                if (Array.isArray(peticiones)) {
+                    // Marcamos todas como vistas
+                    peticiones.forEach(p => p.visto = true);
+                    localStorage.setItem(PETICIONES_KEY, JSON.stringify(peticiones));
+                }
+            } catch (e) { console.error("Error marcando peticiones como vistas", e); }
         }
         checkAndDisplayNotifications();
     }
 
     navTablon.addEventListener('click', () => markSectionAsSeen('tablon'));
     navDocs.addEventListener('click', () => markSectionAsSeen('documentos'));
+    navPeticiones.addEventListener('click', () => markSectionAsSeen('peticiones')); // <-- NUEVO
     
     checkAndDisplayNotifications();
 
-    window.addEventListener('storage', checkAndDisplayNotifications);
-    
-    // Hacemos que la función esté disponible globalmente para poder llamarla desde otros módulos
+    // Hacemos la función de chequeo global para poder llamarla desde otros módulos
     window.TurnApp = window.TurnApp || {};
     window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
-    window.TurnApp.markFileAsSeen = (file) => {
-        if (!file) return;
-        const fileId = getFileId(file);
-        if (!fileId) return;
-        const seenFiles = getSeenFiles();
-        if (!seenFiles.includes(fileId)) {
-            seenFiles.push(fileId);
-            saveSeenFiles(seenFiles);
-        }
-    };
+
+    // Escucha global para cambios en otras pestañas (útil si la app crece)
+    window.addEventListener('storage', checkAndDisplayNotifications);
 }
 
 document.addEventListener('DOMContentLoaded', initNotificationManager);
