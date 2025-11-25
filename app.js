@@ -1562,7 +1562,7 @@ function initPeticiones(){
     return;
   }
 
-  const KEY_USER = 'peticionesUsuario';
+  const KEY_USER = 'turnapp.peticiones.usuario';
 
   function load(){
     return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
@@ -1760,7 +1760,7 @@ function initNotificationManager() {
     const SEEN_FILES_KEY = 'turnapp.seenFiles.v1';
     const TABLON_KEY = 'turnapp.tablon.files';
     const DOCS_KEY = 'turnapp.documentos.v3';
-    const PETICIONES_KEY = 'peticionesUsuario'; // Clave existente de peticiones
+    const PETICIONES_KEY = 'turnapp.peticiones.usuario'; // Clave existente de peticiones
 
     const navTablon = document.querySelector('.nav-btn[data-section="tablon"]');
     const navDocs = document.querySelector('.nav-btn[data-section="documentos"]');
