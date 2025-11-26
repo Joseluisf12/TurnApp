@@ -1327,7 +1327,7 @@ body[data-theme='dark'] #total-restan {
     height: 26px;
     cursor: pointer;
     border: 1px solid var(--panel-border);
-    opacity: 0.1; /* <--- VALOR AÑADIDO PARA DIFUMINAR EL HANDLE */
+    opacity: 0.4; /* <--- VALOR AÑADIDO PARA DIFUMINAR EL HANDLE */
     /* Se elimina la opacidad para que el color de fondo se vea siempre sólido */
 }
 
