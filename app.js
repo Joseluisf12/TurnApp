@@ -1540,8 +1540,8 @@ function initPeticiones(){
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
   // Ajustamos el tamaño de la fuente para mejorar la legibilidad al escribir
-  peticionTexto.style.fontSize = '1.5em';
-  peticionTexto.style.lineHeight = '1.5';
+  peticionTexto.style.fontSize = '1.4em';
+  peticionTexto.style.lineHeight = '1.4';
   const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
 
 
