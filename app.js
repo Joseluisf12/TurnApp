@@ -1550,9 +1550,7 @@ function initPeticiones(){
   const KEY_USER = 'turnapp.peticiones.usuario';
 
   function load(){
-  const dataCruda = localStorage.getItem(KEY_USER);
-  console.log('DATOS CRUDOS AL CARGAR PETICIONES:', dataCruda);
-  return JSON.parse(dataCruda || '[]');
+  return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
 }
 
   function save(arr){
@@ -1573,10 +1571,10 @@ function initPeticiones(){
       textoDiv.textContent = p.texto;
       left.appendChild(textoDiv);
 
-      if(p.fecha){
+      if(p.fechaHora){
         const fechaDiv = document.createElement('div');
         fechaDiv.className = 'fecha-hora';
-        fechaDiv.textContent = p.fecha;
+        fechaDiv.textContent = new Date(p.fechaHora).toLocaleString('es-ES');
         fechaDiv.style.fontSize = '0.85em';
         fechaDiv.style.opacity = '0.85';
         left.appendChild(fechaDiv);
@@ -1588,10 +1586,10 @@ function initPeticiones(){
 
       const chk = document.createElement('input');
       chk.type = 'checkbox';
-      chk.checked = !!p.visto;
+      chk.checked = !!p.revisada;
       chk.addEventListener('change', () => {
         const u = load();
-        u[idx].visto = chk.checked;
+        u[idx].revisada = chk.checked;
         save(u);
         render();
 
@@ -1622,7 +1620,7 @@ function initPeticiones(){
   function agregarPeticion(textoRaw){
     const texto = String(textoRaw || '').trim();
     if(!texto) return;
-    const nueva = { texto, fecha: new Date().toLocaleString(), visto: false };
+    const nueva = { texto, fechaHora: new Date().toISOString(), revisada: false };
     const u = load();
     u.unshift(nueva);
     save(u);
