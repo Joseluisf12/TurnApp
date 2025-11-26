@@ -1617,7 +1617,12 @@ function initPeticiones(){
         u[idx].visto = chk.checked;
         save(u);
         render();
-      });
+
+    // ¡Llamamos al sistema de notificaciones para que se actualice!
+    if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
+    window.TurnApp.checkAndDisplayNotifications();
+}
+   });
 
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
@@ -1864,16 +1869,11 @@ function initNotificationManager() {
                 filesToMark.forEach(f => { const id = getFileId(f); if (id) newSeen.add(id); });
                 saveSeenFiles(Array.from(newSeen));
             }
-        } else if (section === 'peticiones') { // <-- ¡NUEVA LÓGICA!
-             try {
-                let peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
-                if (Array.isArray(peticiones)) {
-                    // Marcamos todas como vistas
-                    peticiones.forEach(p => p.visto = true);
-                    localStorage.setItem(PETICIONES_KEY, JSON.stringify(peticiones));
-                }
-            } catch (e) { console.error("Error marcando peticiones como vistas", e); }
-        }
+        } else if (section === 'peticiones') {
+    // --- ANULADO ---
+    // Ya no marcamos todas las peticiones como vistas al entrar.
+    // El estado 'visto' ahora solo se controla manualmente con el checkbox.
+}
         checkAndDisplayNotifications();
     }
 
