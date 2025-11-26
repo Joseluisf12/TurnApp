@@ -1325,13 +1325,34 @@ body[data-theme='dark'] #total-restan {
     border-radius: 6px;
     width: 26px;
     height: 26px;
-    cursor: pointer;
     border: 1px solid var(--panel-border);
     /* Se elimina la opacidad para que el color de fondo se vea siempre sólido */
 }
 
 .licencia-color-handle:hover {
     transform: scale(1.1); /* Efecto visual alternativo en hover */
+}
+
+/* Estilo para el "punto" sutil que ahora vive DENTRO de la casilla de color */
+.licencia-inner-handle {
+    position: absolute;
+    inset: 0; /* Ocupa todo el espacio de su padre (la casilla) */
+    background: transparent;
+    border: none;
+    border-radius: 6px; /* Para que coincida con la forma de la casilla */
+    color: rgba(0, 0, 0, 0.5); /* Color del punto '●' */
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.1; /* Hacemos el punto casi invisible por defecto */
+    transition: opacity 0.2s ease;
+}
+
+/* Al pasar el ratón sobre la casilla, el punto se hace visible */
+.licencia-color-handle:hover .licencia-inner-handle {
+    opacity: 0.9;
 }
 
 /* Placeholder para alinear la fila de TOTAL */

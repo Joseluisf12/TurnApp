@@ -852,29 +852,35 @@ function initLicenciasPanel() {
                 saveState();
             });
         });
+const colorCell = item.querySelector('.licencia-color-handle'); // Esta es la casilla de color
+if (colorCell) {
+    // Hacemos que la casilla sea un contenedor para nuestro "punto"
+    colorCell.style.position = 'relative'; 
+    colorCell.innerHTML = ''; // Limpiamos la casilla por si acaso
 
-        const colorHandle = item.querySelector('.licencia-color-handle');
-        if (colorHandle) {
-            // Prevenimos múltiples listeners
-            const newHandle = colorHandle.cloneNode(true);
-            colorHandle.parentNode.replaceChild(newHandle, colorHandle);
+    // Creamos el "punto" (handle) que irá dentro
+    const innerHandle = document.createElement('button');
+    innerHandle.type = 'button';
+    innerHandle.title = 'Elegir color';
+    innerHandle.innerHTML = '●'; // El carácter del punto
+    innerHandle.className = 'licencia-inner-handle'; // Le damos una clase para los estilos
 
-newHandle.addEventListener('click', (ev) => {
-    ev.stopPropagation();
-    openColorPicker(newHandle, (color) => {
-        if (color === 'initial') {
-            // Si se restaura, quitamos el color de fondo para volver al estado por defecto
-            newHandle.style.backgroundColor = '';
-        } else {
-            // Si se elige un color, lo aplicamos
-            newHandle.style.backgroundColor = color;
-        }
-        // En ambos casos, guardamos el nuevo estado (con o sin color)
-        saveState();
-    }, colorPalette);
-});
-        }
+    // Le asignamos el evento de clic al "punto"
+    innerHandle.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        // La paleta se abre anclada al "punto", pero cambia el color de la casilla contenedora
+        openColorPicker(innerHandle, (color) => {
+            const newColor = (color === 'initial') ? '' : color;
+            colorCell.style.backgroundColor = newColor; // Aplicamos el color a la casilla
+            saveState(); // Guardamos el estado (la función saveState() ya sabe leer este valor)
+        }, colorPalette);
     });
+    
+    // Añadimos el "punto" dentro de la casilla de color
+    colorCell.appendChild(innerHandle);
+}
+
+            });
 
     // Carga inicial
     loadState();
