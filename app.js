@@ -1539,6 +1539,9 @@ function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
+  // Ajustamos el tamaño de la fuente para mejorar la legibilidad al escribir
+  peticionTexto.style.fontSize = '1.1em';
+  peticionTexto.style.lineHeight = '1.5';
   const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
 
 
@@ -1569,6 +1572,9 @@ function initPeticiones(){
 
       const textoDiv = document.createElement('div');
       textoDiv.textContent = p.texto;
+      // Aumentamos el tamaño de la fuente para las peticiones en la lista
+      textoDiv.style.fontSize = '1.1em';
+      textoDiv.style.lineHeight = '1.4';
       left.appendChild(textoDiv);
 
       if(p.fechaHora){
