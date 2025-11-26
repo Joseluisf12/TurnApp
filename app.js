@@ -1550,8 +1550,11 @@ function initPeticiones(){
   const KEY_USER = 'turnapp.peticiones.usuario';
 
   function load(){
-    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-  }
+  const dataCruda = localStorage.getItem(KEY_USER);
+  console.log('DATOS CRUDOS AL CARGAR PETICIONES:', dataCruda);
+  return JSON.parse(dataCruda || '[]');
+}
+
   function save(arr){
     localStorage.setItem(KEY_USER, JSON.stringify(arr));
   }
