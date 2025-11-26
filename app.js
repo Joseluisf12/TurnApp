@@ -1224,32 +1224,6 @@ function saveShiftText(year, month, day, shiftKey, text){
   saveManualEdits();
 }
 
-// ---------------- paleta ----------------
-function bindLicenciaHandles(){
-  const licenciaHandles = document.querySelectorAll('.licencia-color-handle');
-  licenciaHandles.forEach(handle => {
-    handle.addEventListener('click', (ev) => {
-      ev.stopPropagation();
-      const item = handle.closest('.licencia-item');
-      if(!item) return;
-      openColorPicker(handle, (color) => {
-        handle.style.backgroundColor = color;
-        const tipo = item.dataset.tipo;
-        const value = (item.querySelector('.cantidad-input')||{value:0}).value;
-        saveLicenciaValue(tipo, value, color);
-      }, colorPalette);
-    });
-  });
-
-  const inputs = Array.from(document.querySelectorAll('.cantidad-input'));
-  inputs.forEach(i=>i.addEventListener('input', ()=> {
-    const item = i.closest('.licencia-item');
-    const tipo = item.dataset.tipo;
-    const colorBtn = item.querySelector('.licencia-color');
-    saveLicenciaValue(tipo, i.value, colorBtn && colorBtn.style.backgroundColor);
-    recalcLicenciasTotal();
-  }));
-}
 
 // =========================================================================
 // PEGADO COMPLETO PARA REEMPLAZAR openColorPicker (LÍNEAS 683-725)
