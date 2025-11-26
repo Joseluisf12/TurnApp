@@ -724,7 +724,7 @@ initApp();
   restoreManualEdits();
   restoreCadenceSpec();
 
-    initPeticiones();
+    initPeticiones(AppState);
     initCoordinatorTable(AppState);
     initTablon();
     initDocumentosPanel();
@@ -1461,7 +1461,7 @@ function clearCadencePrompt(){
 
   if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
     cadenceSpec = null;
-    try { localStorage.removeItem('turnapp.cadenceSpec'); } catch(e){}
+        try { localStorage.removeItem(`turnapp.user.${AppState.userId}.cadenceSpec`); } catch(e){}
   }
   renderCalendar(currentMonth, currentYear);
 }
@@ -1546,7 +1546,7 @@ function applyCadenceRender(month, year){
 }
 
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(){
+function initPeticiones(AppState){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
