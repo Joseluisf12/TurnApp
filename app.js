@@ -46,7 +46,8 @@ function initThemeSwitcher() {
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
 // =================================================================
-function initCoordinatorTable() {
+function initCoordinatorTable(AppState) {
+
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
@@ -69,7 +70,7 @@ function initCoordinatorTable() {
     let tableState = {};
     let selectedRowIndex = -1; // ¡NUEVO! Para guardar la fila seleccionada
 
-    function syncStateFromStorage() {
+        function syncStateFromStorage(AppState) {
         let turnColumns;
         try {
             turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
@@ -188,7 +189,7 @@ function initCoordinatorTable() {
     }
 
     function fullTableRedraw() {
-        syncStateFromStorage();
+        syncStateFromStorage(AppState);
         renderColgroup();
         renderHeaders();
         renderBody();
@@ -225,7 +226,7 @@ function initCoordinatorTable() {
     }
 
     // 4. VINCULACIÓN DE EVENTOS (MODIFICADA)
-    function bindEvents() {
+        function bindEvents(AppState) {
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
@@ -330,7 +331,7 @@ function initCoordinatorTable() {
     
         // 5. INICIALIZACIÓN
         fullTableRedraw();
-        bindEvents();      
+        bindEvents(AppState);      
     }
     
 
@@ -724,7 +725,7 @@ initApp();
   restoreCadenceSpec();
 
     initPeticiones();
-    initCoordinatorTable();
+    initCoordinatorTable(AppState);
     initTablon();
     initDocumentosPanel();
   });
