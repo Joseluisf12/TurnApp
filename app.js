@@ -712,9 +712,8 @@ initApp();
 
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
-  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
-
+  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
 
    initLicenciasPanel();
 
@@ -763,7 +762,7 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // =========================================================================
 
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
-function restoreManualEdits(AppState){
+function restoreManualEdits(){
   try {
     const raw = localStorage.getItem('turnapp.manualEdits');
     if (raw) manualEdits = JSON.parse(raw);
@@ -772,7 +771,7 @@ function restoreManualEdits(AppState){
   }
 }
 
-function saveManualEdits(AppState){
+function saveManualEdits(){
   try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
 }
 
@@ -1293,10 +1292,10 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
 }
 
 // ---------------- persistencia/CADENCIA spec ----------------
-function saveCadenceSpec(spec, AppState){
+function saveCadenceSpec(spec){
   try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
 }
-function restoreCadenceSpec(AppState){
+function restoreCadenceSpec(){
   try {
     const raw = localStorage.getItem('turnapp.cadenceSpec');
     if(!raw) return;
@@ -1316,7 +1315,7 @@ function restoreCadenceSpec(AppState){
 }
 
 // ------------------ CADENCIAS (modal) ------------------
-function openCadenceModal(AppState){
+function openCadenceModal(){
   const overlay = document.getElementById('cadence-modal-overlay');
   const modal = document.getElementById('cadence-modal');
   if(!overlay || !modal) return;
@@ -1438,7 +1437,7 @@ function buildCadenceDataFromSpec(){
 }
 
 // Limpieza de cadencia desde fecha
-function clearCadencePrompt(AppState){
+function clearCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
