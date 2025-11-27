@@ -338,7 +338,7 @@ function initCoordinatorTable(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
 // =================================================================
-function initTablon(AppState) {
+function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -501,7 +501,7 @@ function initTablon(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
-function initDocumentosPanel(AppState) {
+function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
@@ -706,85 +706,29 @@ function initDocumentosPanel(AppState) {
     renderDocs();
 }
 
-// =========================================================================
-// ARRANQUE UNIFICADO DE LA APLICACIÓN
-// =========================================================================
+// Init
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. Definición del Estado Esencial ---
-    // Se define aquí para que esté disponible para todas las funciones que lo necesiten.
-    const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
+initApp();
 
-    // --- 2. Inicialización de Módulos Globales (Sin Dependencias) ---
-    initThemeSwitcher();
-    initApp(); // Navegación del calendario y swipe
+  initThemeSwitcher();
+  initEditableTitle();
 
-    // --- 3. Inicialización de Módulos Dependientes del Estado ---
-    // Módulos que necesitan AppState para construir sus claves de localStorage.
+  const applyBtn = document.getElementById('btn-apply-cadence');
+  const clearBtn = document.getElementById('btn-clear-cadence');
+  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+
+   initLicenciasPanel();
+
+  // restaurar persistencia de manualEdits y cadenceSpec
+  restoreManualEdits();
+  restoreCadenceSpec();
+
+    initPeticiones();
     initCoordinatorTable(AppState);
-    initTablon(AppState);
-    initDocumentosPanel(AppState);
-    initPeticiones(AppState);
-    initEditableTitle(AppState);
-    initLicenciasPanel(AppState);
-    restoreManualEdits(AppState);
-    restoreCadenceSpec(AppState);
-    initNotificationManager(AppState);
-
-    // --- 4. Configuración de Eventos de la Interfaz ---
-    // Lógica que antes estaba en otros DOMContentLoaded, ahora unificada aquí.
-
-    // Botones de Cadencia
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
-
-    // Botón de Peticiones
-    const btnPeticiones = document.getElementById("btn-peticiones");
-    const peticionesSection = document.getElementById("peticiones-section");
-    if (btnPeticiones && peticionesSection) {
-        peticionesSection.classList.add("oculto");
-        peticionesSection.style.display = "none";
-        btnPeticiones.addEventListener("click", (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-            if (visible) {
-                peticionesSection.classList.add("oculto");
-                peticionesSection.style.display = "none";
-            } else {
-                peticionesSection.classList.remove("oculto");
-                peticionesSection.style.display = "block";
-            }
-        });
-    }
-
-    // Pantalla de Splash
-    const splash = document.getElementById("splash");
-    const app = document.getElementById("app");
-    const logo = document.getElementById("splash-logo");
-    const calendarioSection = document.getElementById("calendar-panel");
-    const licenciasSection = document.getElementById("licencias-container");
-    if (splash && app && logo && calendarioSection && licenciasSection) {
-        app.classList.add("oculto");
-        calendarioSection.classList.add("oculto");
-        licenciasSection.classList.add("oculto");
-        logo.addEventListener("click", () => {
-            splash.remove();
-            app.classList.remove("oculto");
-            calendarioSection.classList.remove("oculto");
-            licenciasSection.classList.add("oculto");
-            calendarioSection.classList.add("fade-in-up");
-            setTimeout(() => {
-                app.scrollIntoView({ behavior: "smooth", block: "start" });
-            }, 50);
-        });
-    }
-});
-
+    initTablon();
+    initDocumentosPanel();
+  });
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -792,8 +736,12 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+// ¡NUEVO! Objeto de Estado Global (simula sesión de usuario)
+const AppState = {
+    groupId: 'equipo_alpha', // El grupo al que pertenece el usuario
+    userId: 'user_123_test'     // El ID único de este usuario
+};
 
- 
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -823,7 +771,7 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // =========================================================================
 
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
-function restoreManualEdits(AppState){
+function restoreManualEdits(){
   try {
         const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
 
@@ -833,12 +781,12 @@ function restoreManualEdits(AppState){
   }
 }
 
-function saveManualEdits(AppState){
+function saveManualEdits(){
     try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
-function initLicenciasPanel(AppState) {
+function initLicenciasPanel() {
     const licenciasContainer = document.getElementById('licencias-container');
     if (!licenciasContainer) {
         console.error("Error: Contenedor de licencias no encontrado.");
@@ -956,7 +904,7 @@ if (colorCell) {
 // =========================================================================
 // LÓGICA PARA EL TÍTULO EDITABLE
 // =========================================================================
-function initEditableTitle(AppState) {
+function initEditableTitle() {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
@@ -1269,7 +1217,7 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
       manualEdits[dk][shiftKey].color = color;
       manualEdits[dk][shiftKey].userColor = true;
-      saveManualEdits(AppState);
+      saveManualEdits();
     }, colorPalette);
   });
 
@@ -1284,7 +1232,7 @@ function saveShiftText(year, month, day, shiftKey, text){
   if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
   manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
   manualEdits[dk][shiftKey].text = text;
-  saveManualEdits(AppState);
+  saveManualEdits();
 }
 
 
@@ -1355,10 +1303,10 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
 }
 
 // ---------------- persistencia/CADENCIA spec ----------------
-function saveCadenceSpec(spec, AppState){
+function saveCadenceSpec(spec){
     try { localStorage.setItem(`turnapp.user.${AppState.userId}.cadenceSpec`, JSON.stringify(spec)); } catch(e){}
 }
-function restoreCadenceSpec(AppState){
+function restoreCadenceSpec(){
   try {
         const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.cadenceSpec`);
     if(!raw) return;
@@ -1378,7 +1326,7 @@ function restoreCadenceSpec(AppState){
 }
 
 // ------------------ CADENCIAS (modal) ------------------
-function openCadenceModal(AppState){
+function openCadenceModal(){
   const overlay = document.getElementById('cadence-modal-overlay');
   const modal = document.getElementById('cadence-modal');
   if(!overlay || !modal) return;
@@ -1460,13 +1408,13 @@ function openCadenceModal(AppState){
       ];
       const pattern = v1options[idx];
       cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'V-2'){
       const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
       cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'Personalizada'){
@@ -1475,7 +1423,7 @@ function openCadenceModal(AppState){
       const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
       if(pattern.length === 0) return alert('Patrón inválido.');
       cadenceSpec = { type: 'Personalizada', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     }
@@ -1500,7 +1448,7 @@ function buildCadenceDataFromSpec(){
 }
 
 // Limpieza de cadencia desde fecha
-function clearCadencePrompt(AppState){
+function clearCadencePrompt(){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
@@ -1513,7 +1461,7 @@ function clearCadencePrompt(AppState){
 
   if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
     cadenceSpec = null;
-        try { localStorage.removeItem(`turnapp.user.${AppState.userId}.cadenceSpec`); } catch(e){}
+    try { localStorage.removeItem('turnapp.cadenceSpec'); } catch(e){}
   }
   renderCalendar(currentMonth, currentYear);
 }
@@ -1598,7 +1546,7 @@ function applyCadenceRender(month, year){
 }
 
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(AppState){
+function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
@@ -1815,7 +1763,7 @@ logo.addEventListener("click", () => {
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
 /* ================================================================= */
 
-function initNotificationManager(AppState) {
+function initNotificationManager() {
     // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
         // ¡Clave personal del usuario para saber qué ha visto!
     const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
