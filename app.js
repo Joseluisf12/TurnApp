@@ -713,7 +713,8 @@ initApp();
   const applyBtn = document.getElementById('btn-apply-cadence');
   const clearBtn = document.getElementById('btn-clear-cadence');
   if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
+
 
    initLicenciasPanel();
 
