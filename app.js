@@ -46,20 +46,22 @@ function initThemeSwitcher() {
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
 // =================================================================
-function initCoordinatorTable() {
+function initCoordinatorTable(AppState) {
+
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
 
     // 1. ESTADO Y CLAVES
-    const KEYS = {
-        TEXT: "tablaCoordinadorTextos",
-        COLORS: "tablaCoordinadorColores",
-        ROWS: "tablaCoordinadorFilas",
-        COLS: "tablaCoordinadorColumnas",
-        HEADERS: "tablaCoordinadorHeaders"
+     const KEYS = {
+        TEXT: `turnapp.group.${AppState.groupId}.coordTable.texts`,
+        COLORS: `turnapp.group.${AppState.groupId}.coordTable.colors`,
+        ROWS: `turnapp.group.${AppState.groupId}.coordTable.rows`,
+        COLS: `turnapp.group.${AppState.groupId}.coordTable.cols`,
+        HEADERS: `turnapp.group.${AppState.groupId}.coordTable.headers`
     };
+
     const DEFAULT_TURN_COLUMNS = [
         { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
         { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
@@ -68,7 +70,7 @@ function initCoordinatorTable() {
     let tableState = {};
     let selectedRowIndex = -1; // ¡NUEVO! Para guardar la fila seleccionada
 
-    function syncStateFromStorage() {
+        function syncStateFromStorage(AppState) {
         let turnColumns;
         try {
             turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
@@ -187,7 +189,7 @@ function initCoordinatorTable() {
     }
 
     function fullTableRedraw() {
-        syncStateFromStorage();
+        syncStateFromStorage(AppState);
         renderColgroup();
         renderHeaders();
         renderBody();
@@ -224,7 +226,7 @@ function initCoordinatorTable() {
     }
 
     // 4. VINCULACIÓN DE EVENTOS (MODIFICADA)
-    function bindEvents() {
+        function bindEvents(AppState) {
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
@@ -329,7 +331,7 @@ function initCoordinatorTable() {
     
         // 5. INICIALIZACIÓN
         fullTableRedraw();
-        bindEvents();      
+        bindEvents(AppState);      
     }
     
 
@@ -351,7 +353,7 @@ function initTablon() {
         return;
     }
 
-    const TABLON_KEY = 'turnapp.tablon.files';
+       const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
 
     function renderFiles() {
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
@@ -513,7 +515,8 @@ function initDocumentosPanel() {
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
-    const DOCS_KEY = 'turnapp.documentos.v3'; 
+    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
+ 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
@@ -722,7 +725,7 @@ initApp();
   restoreCadenceSpec();
 
     initPeticiones();
-    initCoordinatorTable();
+    initCoordinatorTable(AppState);
     initTablon();
     initDocumentosPanel();
   });
@@ -733,6 +736,12 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+// ¡NUEVO! Objeto de Estado Global (simula sesión de usuario)
+const AppState = {
+    groupId: 'equipo_alpha', // El grupo al que pertenece el usuario
+    userId: 'user_123_test'     // El ID único de este usuario
+};
+
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -764,7 +773,8 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
 function restoreManualEdits(){
   try {
-    const raw = localStorage.getItem('turnapp.manualEdits');
+        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
+
     if (raw) manualEdits = JSON.parse(raw);
   } catch(e){
     manualEdits = {};
@@ -772,7 +782,7 @@ function restoreManualEdits(){
 }
 
 function saveManualEdits(){
-  try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
+    try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
@@ -787,7 +797,8 @@ function initLicenciasPanel() {
     const totalCargaEl = document.getElementById('total-carga');
     const totalConsumidosEl = document.getElementById('total-consumidos');
     const totalRestanEl = document.getElementById('total-restan');
-    const LICENCIAS_KEY = 'turnapp.licenciasData.v3'; // Clave actualizada
+    const LICENCIAS_KEY = `turnapp.user.${AppState.userId}.licenciasData.v3`;
+
 
     // Calcula y actualiza todos los valores derivados (restan, totales)
     function updateCalculations() {
@@ -897,7 +908,7 @@ function initEditableTitle() {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
-    const EDITABLE_TITLE_KEY = 'turnapp.editableTitle';
+    const EDITABLE_TITLE_KEY = `turnapp.group.${AppState.groupId}.editableTitle`;
 
     // 1. Cargar el texto guardado al iniciar
     const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
@@ -1293,11 +1304,11 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
 
 // ---------------- persistencia/CADENCIA spec ----------------
 function saveCadenceSpec(spec){
-  try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
+    try { localStorage.setItem(`turnapp.user.${AppState.userId}.cadenceSpec`, JSON.stringify(spec)); } catch(e){}
 }
 function restoreCadenceSpec(){
   try {
-    const raw = localStorage.getItem('turnapp.cadenceSpec');
+        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.cadenceSpec`);
     if(!raw) return;
     cadenceSpec = JSON.parse(raw);
     if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern){
@@ -1550,7 +1561,7 @@ function initPeticiones(){
     return;
   }
 
-  const KEY_USER = 'turnapp.peticiones.usuario';
+    const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
 
   function load(){
   return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
@@ -1754,10 +1765,13 @@ logo.addEventListener("click", () => {
 
 function initNotificationManager() {
     // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
-    const SEEN_FILES_KEY = 'turnapp.seenFiles.v1';
-    const TABLON_KEY = 'turnapp.tablon.files';
-    const DOCS_KEY = 'turnapp.documentos.v3';
-    const PETICIONES_KEY = 'turnapp.peticiones.usuario'; // Clave existente de peticiones
+        // ¡Clave personal del usuario para saber qué ha visto!
+    const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
+    // Claves de grupo que necesita leer
+    const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
+    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
+    const PETICIONES_KEY = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
+
 
     const navTablon = document.querySelector('.nav-btn[data-section="tablon"]');
     const navDocs = document.querySelector('.nav-btn[data-section="documentos"]');
