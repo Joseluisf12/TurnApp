@@ -753,10 +753,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Aquí simulamos la carga del estado. En el futuro, esto podría venir
     // de una pantalla de login o una llamada a un servidor.
-    const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
+   
     
     // Una vez tenemos el estado, arrancamos el resto de la app.
     startApp(AppState);
@@ -769,6 +766,11 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+
+ const AppState = {
+        groupId: 'equipo_alpha',
+        userId: 'user_123_test'
+    };
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
