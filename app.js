@@ -728,8 +728,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Configuración de Eventos de la UI
     const applyBtn = document.getElementById('btn-apply-cadence');
     const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal); // Llamada limpia
-    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt); // Llamada limpia
+    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
+    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
+
     
     // El resto de la lógica de UI que ya estaba unificada (botones de peticiones, splash...)
     // ... (El código de los botones de peticiones y splash se queda como está)
