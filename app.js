@@ -707,45 +707,34 @@ function initDocumentosPanel(AppState) {
 }
 
 // =========================================================================
-// ARRANQUE DE LA APLICACIÓN
+// ARRANQUE UNIFICADO Y SIMPLIFICADO
 // =========================================================================
-
-/**
- * Función que inicializa los módulos que NO dependen del estado del usuario/grupo.
- * Se ejecuta tan pronto como el DOM está listo.
- */
-function initGlobalModules() {
+document.addEventListener('DOMContentLoaded', () => {
+    // Inicialización Global
     initThemeSwitcher();
-    initApp(); // Para la navegación y el swipe
-}
+    initApp();
 
-/**
- * Función que inicializa todos los módulos que SÍ dependen del estado
- * del usuario/grupo (AppState).
- * @param {object} AppState - El objeto con userId y groupId.
- */
-function startApp(AppState) {
-    // Módulos de Grupo
-    initCoordinatorTable(AppState);
-    initTablon(AppState);
-    initDocumentosPanel(AppState);
-    initPeticiones(AppState);
-    initEditableTitle(AppState);
-    
-    // Módulos de Usuario
-    initLicenciasPanel(AppState);
-    restoreManualEdits(AppState);
-    restoreCadenceSpec(AppState);
+    // Inicialización de Módulos (ahora todos usan el AppState global)
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones();
+    initEditableTitle();
+    initLicenciasPanel();
+    restoreManualEdits();
+    restoreCadenceSpec();
+    initNotificationManager();
 
-    // Módulos que leen datos de ambos (pero se inicializan con AppState)
-    initNotificationManager(AppState);
-
-    // Configuración de botones que dependen de módulos ya iniciados
+    // Configuración de Eventos de la UI
     const applyBtn = document.getElementById('btn-apply-cadence');
     const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
-}
+    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal); // Llamada limpia
+    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt); // Llamada limpia
+    
+    // El resto de la lógica de UI que ya estaba unificada (botones de peticiones, splash...)
+    // ... (El código de los botones de peticiones y splash se queda como está)
+});
+
 
 // --- Arranque Principal ---
 document.addEventListener('DOMContentLoaded', () => {
