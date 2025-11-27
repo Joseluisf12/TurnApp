@@ -707,49 +707,82 @@ function initDocumentosPanel(AppState) {
 }
 
 // =========================================================================
-// ARRANQUE UNIFICADO Y SIMPLIFICADO
+// ARRANQUE UNIFICADO DE LA APLICACIÓN
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
-    // Inicialización Global
+    // --- 1. Definición del Estado Esencial ---
+    // Se define aquí para que esté disponible para todas las funciones que lo necesiten.
+    const AppState = {
+        groupId: 'equipo_alpha',
+        userId: 'user_123_test'
+    };
+
+    // --- 2. Inicialización de Módulos Globales (Sin Dependencias) ---
     initThemeSwitcher();
-    initApp();
+    initApp(); // Navegación del calendario y swipe
 
-    // Inicialización de Módulos (ahora todos usan el AppState global)
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones();
-    initEditableTitle();
-    initLicenciasPanel();
-    restoreManualEdits();
-    restoreCadenceSpec();
-    initNotificationManager();
+    // --- 3. Inicialización de Módulos Dependientes del Estado ---
+    // Módulos que necesitan AppState para construir sus claves de localStorage.
+    initCoordinatorTable(AppState);
+    initTablon(AppState);
+    initDocumentosPanel(AppState);
+    initPeticiones(AppState);
+    initEditableTitle(AppState);
+    initLicenciasPanel(AppState);
+    restoreManualEdits(AppState);
+    restoreCadenceSpec(AppState);
+    initNotificationManager(AppState);
 
-    // Configuración de Eventos de la UI
+    // --- 4. Configuración de Eventos de la Interfaz ---
+    // Lógica que antes estaba en otros DOMContentLoaded, ahora unificada aquí.
+
+    // Botones de Cadencia
     const applyBtn = document.getElementById('btn-apply-cadence');
     const clearBtn = document.getElementById('btn-clear-cadence');
     if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
     if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
 
-    
-    // El resto de la lógica de UI que ya estaba unificada (botones de peticiones, splash...)
-    // ... (El código de los botones de peticiones y splash se queda como está)
-});
+    // Botón de Peticiones
+    const btnPeticiones = document.getElementById("btn-peticiones");
+    const peticionesSection = document.getElementById("peticiones-section");
+    if (btnPeticiones && peticionesSection) {
+        peticionesSection.classList.add("oculto");
+        peticionesSection.style.display = "none";
+        btnPeticiones.addEventListener("click", (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
+            if (visible) {
+                peticionesSection.classList.add("oculto");
+                peticionesSection.style.display = "none";
+            } else {
+                peticionesSection.classList.remove("oculto");
+                peticionesSection.style.display = "block";
+            }
+        });
+    }
 
-
-// --- Arranque Principal ---
-document.addEventListener('DOMContentLoaded', () => {
-    initGlobalModules();
-
-    // Aquí simulamos la carga del estado. En el futuro, esto podría venir
-    // de una pantalla de login o una llamada a un servidor.
-   const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
-    
-    // Una vez tenemos el estado, arrancamos el resto de la app.
-    startApp(AppState);
+    // Pantalla de Splash
+    const splash = document.getElementById("splash");
+    const app = document.getElementById("app");
+    const logo = document.getElementById("splash-logo");
+    const calendarioSection = document.getElementById("calendar-panel");
+    const licenciasSection = document.getElementById("licencias-container");
+    if (splash && app && logo && calendarioSection && licenciasSection) {
+        app.classList.add("oculto");
+        calendarioSection.classList.add("oculto");
+        licenciasSection.classList.add("oculto");
+        logo.addEventListener("click", () => {
+            splash.remove();
+            app.classList.remove("oculto");
+            calendarioSection.classList.remove("oculto");
+            licenciasSection.classList.add("oculto");
+            calendarioSection.classList.add("fade-in-up");
+            setTimeout(() => {
+                app.scrollIntoView({ behavior: "smooth", block: "start" });
+            }, 50);
+        });
+    }
 });
 
 
