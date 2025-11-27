@@ -46,22 +46,20 @@ function initThemeSwitcher() {
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
 // =================================================================
-function initCoordinatorTable(AppState) {
-
+function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
 
     // 1. ESTADO Y CLAVES
-     const KEYS = {
-        TEXT: `turnapp.group.${AppState.groupId}.coordTable.texts`,
-        COLORS: `turnapp.group.${AppState.groupId}.coordTable.colors`,
-        ROWS: `turnapp.group.${AppState.groupId}.coordTable.rows`,
-        COLS: `turnapp.group.${AppState.groupId}.coordTable.cols`,
-        HEADERS: `turnapp.group.${AppState.groupId}.coordTable.headers`
+    const KEYS = {
+        TEXT: "tablaCoordinadorTextos",
+        COLORS: "tablaCoordinadorColores",
+        ROWS: "tablaCoordinadorFilas",
+        COLS: "tablaCoordinadorColumnas",
+        HEADERS: "tablaCoordinadorHeaders"
     };
-
     const DEFAULT_TURN_COLUMNS = [
         { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
         { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
@@ -70,7 +68,7 @@ function initCoordinatorTable(AppState) {
     let tableState = {};
     let selectedRowIndex = -1; // ¡NUEVO! Para guardar la fila seleccionada
 
-        function syncStateFromStorage(AppState) {
+    function syncStateFromStorage() {
         let turnColumns;
         try {
             turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
@@ -189,7 +187,7 @@ function initCoordinatorTable(AppState) {
     }
 
     function fullTableRedraw() {
-        syncStateFromStorage(AppState);
+        syncStateFromStorage();
         renderColgroup();
         renderHeaders();
         renderBody();
@@ -226,7 +224,7 @@ function initCoordinatorTable(AppState) {
     }
 
     // 4. VINCULACIÓN DE EVENTOS (MODIFICADA)
-        function bindEvents(AppState) {
+    function bindEvents() {
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
@@ -331,14 +329,14 @@ function initCoordinatorTable(AppState) {
     
         // 5. INICIALIZACIÓN
         fullTableRedraw();
-        bindEvents(AppState);      
+        bindEvents();      
     }
     
 
 // =================================================================
 //    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
 // =================================================================
-function initTablon(AppState) {
+function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -353,7 +351,7 @@ function initTablon(AppState) {
         return;
     }
 
-       const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
+    const TABLON_KEY = 'turnapp.tablon.files';
 
     function renderFiles() {
         const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
@@ -501,7 +499,7 @@ function initTablon(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
-function initDocumentosPanel(AppState) {
+function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
@@ -515,8 +513,7 @@ function initDocumentosPanel(AppState) {
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
-    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
- 
+    const DOCS_KEY = 'turnapp.documentos.v3'; 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
@@ -706,62 +703,29 @@ function initDocumentosPanel(AppState) {
     renderDocs();
 }
 
-// =========================================================================
-// ARRANQUE DE LA APLICACIÓN
-// =========================================================================
-
-/**
- * Función que inicializa los módulos que NO dependen del estado del usuario/grupo.
- * Se ejecuta tan pronto como el DOM está listo.
- */
-function initGlobalModules() {
-    initThemeSwitcher();
-    initApp(); // Para la navegación y el swipe
-}
-
-/**
- * Función que inicializa todos los módulos que SÍ dependen del estado
- * del usuario/grupo (AppState).
- * @param {object} AppState - El objeto con userId y groupId.
- */
-function startApp(AppState) {
-    // Módulos de Grupo
-    initCoordinatorTable(AppState);
-    initTablon(AppState);
-    initDocumentosPanel(AppState);
-    initPeticiones(AppState);
-    initEditableTitle(AppState);
-    
-    // Módulos de Usuario
-    initLicenciasPanel(AppState);
-    restoreManualEdits(AppState);
-    restoreCadenceSpec(AppState);
-
-    // Módulos que leen datos de ambos (pero se inicializan con AppState)
-    initNotificationManager(AppState);
-
-    // Configuración de botones que dependen de módulos ya iniciados
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
-}
-
-// --- Arranque Principal ---
+// Init
 document.addEventListener('DOMContentLoaded', () => {
-    initGlobalModules();
+initApp();
 
-    // Aquí simulamos la carga del estado. En el futuro, esto podría venir
-    // de una pantalla de login o una llamada a un servidor.
-    const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
-    
-    // Una vez tenemos el estado, arrancamos el resto de la app.
-    startApp(AppState);
-});
+  initThemeSwitcher();
+  initEditableTitle();
 
+  const applyBtn = document.getElementById('btn-apply-cadence');
+  const clearBtn = document.getElementById('btn-clear-cadence');
+  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal(AppState));
+  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
+
+   initLicenciasPanel();
+
+  // restaurar persistencia de manualEdits y cadenceSpec
+  restoreManualEdits();
+  restoreCadenceSpec();
+
+    initPeticiones();
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+  });
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -798,22 +762,21 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // =========================================================================
 
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
-function restoreManualEdits(){
+function restoreManualEdits(AppState){
   try {
-        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
-
+    const raw = localStorage.getItem('turnapp.manualEdits');
     if (raw) manualEdits = JSON.parse(raw);
   } catch(e){
     manualEdits = {};
   }
 }
 
-function saveManualEdits(){
-    try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
+function saveManualEdits(AppState){
+  try { localStorage.setItem('turnapp.manualEdits', JSON.stringify(manualEdits)); } catch(e){}
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
-function initLicenciasPanel(AppState) {
+function initLicenciasPanel() {
     const licenciasContainer = document.getElementById('licencias-container');
     if (!licenciasContainer) {
         console.error("Error: Contenedor de licencias no encontrado.");
@@ -824,8 +787,7 @@ function initLicenciasPanel(AppState) {
     const totalCargaEl = document.getElementById('total-carga');
     const totalConsumidosEl = document.getElementById('total-consumidos');
     const totalRestanEl = document.getElementById('total-restan');
-    const LICENCIAS_KEY = `turnapp.user.${AppState.userId}.licenciasData.v3`;
-
+    const LICENCIAS_KEY = 'turnapp.licenciasData.v3'; // Clave actualizada
 
     // Calcula y actualiza todos los valores derivados (restan, totales)
     function updateCalculations() {
@@ -931,11 +893,11 @@ if (colorCell) {
 // =========================================================================
 // LÓGICA PARA EL TÍTULO EDITABLE
 // =========================================================================
-function initEditableTitle(AppState) {
+function initEditableTitle() {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
-    const EDITABLE_TITLE_KEY = `turnapp.group.${AppState.groupId}.editableTitle`;
+    const EDITABLE_TITLE_KEY = 'turnapp.editableTitle';
 
     // 1. Cargar el texto guardado al iniciar
     const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
@@ -1244,7 +1206,7 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
       manualEdits[dk][shiftKey].color = color;
       manualEdits[dk][shiftKey].userColor = true;
-      saveManualEdits(AppState);
+      saveManualEdits();
     }, colorPalette);
   });
 
@@ -1259,7 +1221,7 @@ function saveShiftText(year, month, day, shiftKey, text){
   if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
   manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
   manualEdits[dk][shiftKey].text = text;
-  saveManualEdits(AppState);
+  saveManualEdits();
 }
 
 
@@ -1330,12 +1292,12 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
 }
 
 // ---------------- persistencia/CADENCIA spec ----------------
-function saveCadenceSpec(spec){
-    try { localStorage.setItem(`turnapp.user.${AppState.userId}.cadenceSpec`, JSON.stringify(spec)); } catch(e){}
+function saveCadenceSpec(spec, AppState){
+  try { localStorage.setItem('turnapp.cadenceSpec', JSON.stringify(spec)); } catch(e){}
 }
-function restoreCadenceSpec(){
+function restoreCadenceSpec(AppState){
   try {
-        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.cadenceSpec`);
+    const raw = localStorage.getItem('turnapp.cadenceSpec');
     if(!raw) return;
     cadenceSpec = JSON.parse(raw);
     if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern){
@@ -1353,7 +1315,7 @@ function restoreCadenceSpec(){
 }
 
 // ------------------ CADENCIAS (modal) ------------------
-function openCadenceModal(){
+function openCadenceModal(AppState){
   const overlay = document.getElementById('cadence-modal-overlay');
   const modal = document.getElementById('cadence-modal');
   if(!overlay || !modal) return;
@@ -1435,13 +1397,13 @@ function openCadenceModal(){
       ];
       const pattern = v1options[idx];
       cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'V-2'){
       const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
       cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'Personalizada'){
@@ -1450,7 +1412,7 @@ function openCadenceModal(){
       const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
       if(pattern.length === 0) return alert('Patrón inválido.');
       cadenceSpec = { type: 'Personalizada', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     }
@@ -1475,7 +1437,7 @@ function buildCadenceDataFromSpec(){
 }
 
 // Limpieza de cadencia desde fecha
-function clearCadencePrompt(){
+function clearCadencePrompt(AppState){
   const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
   if(!startDateStr) return;
   const parts = startDateStr.split('/');
@@ -1488,7 +1450,7 @@ function clearCadencePrompt(){
 
   if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
     cadenceSpec = null;
-        try { localStorage.removeItem(`turnapp.user.${AppState.userId}.cadenceSpec`); } catch(e){}
+    try { localStorage.removeItem('turnapp.cadenceSpec'); } catch(e){}
   }
   renderCalendar(currentMonth, currentYear);
 }
@@ -1573,7 +1535,7 @@ function applyCadenceRender(month, year){
 }
 
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(AppState){
+function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
@@ -1588,7 +1550,7 @@ function initPeticiones(AppState){
     return;
   }
 
-    const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
+  const KEY_USER = 'turnapp.peticiones.usuario';
 
   function load(){
   return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
@@ -1790,15 +1752,12 @@ logo.addEventListener("click", () => {
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
 /* ================================================================= */
 
-function initNotificationManager(AppState) {
+function initNotificationManager() {
     // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
-        // ¡Clave personal del usuario para saber qué ha visto!
-    const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
-    // Claves de grupo que necesita leer
-    const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
-    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
-    const PETICIONES_KEY = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
-
+    const SEEN_FILES_KEY = 'turnapp.seenFiles.v1';
+    const TABLON_KEY = 'turnapp.tablon.files';
+    const DOCS_KEY = 'turnapp.documentos.v3';
+    const PETICIONES_KEY = 'turnapp.peticiones.usuario'; // Clave existente de peticiones
 
     const navTablon = document.querySelector('.nav-btn[data-section="tablon"]');
     const navDocs = document.querySelector('.nav-btn[data-section="documentos"]');
