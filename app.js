@@ -338,7 +338,7 @@ function initCoordinatorTable(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
 // =================================================================
-function initTablon() {
+function initTablon(AppState) {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -501,7 +501,7 @@ function initTablon() {
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
-function initDocumentosPanel() {
+function initDocumentosPanel(AppState) {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
@@ -706,29 +706,62 @@ function initDocumentosPanel() {
     renderDocs();
 }
 
-// Init
-document.addEventListener('DOMContentLoaded', () => {
-initApp();
+// =========================================================================
+// ARRANQUE DE LA APLICACIÓN
+// =========================================================================
 
-  initThemeSwitcher();
-  initEditableTitle();
+/**
+ * Función que inicializa los módulos que NO dependen del estado del usuario/grupo.
+ * Se ejecuta tan pronto como el DOM está listo.
+ */
+function initGlobalModules() {
+    initThemeSwitcher();
+    initApp(); // Para la navegación y el swipe
+}
 
-  const applyBtn = document.getElementById('btn-apply-cadence');
-  const clearBtn = document.getElementById('btn-clear-cadence');
-  if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-  if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt());
-
-   initLicenciasPanel();
-
-  // restaurar persistencia de manualEdits y cadenceSpec
-  restoreManualEdits();
-  restoreCadenceSpec();
-
-    initPeticiones(AppState);
+/**
+ * Función que inicializa todos los módulos que SÍ dependen del estado
+ * del usuario/grupo (AppState).
+ * @param {object} AppState - El objeto con userId y groupId.
+ */
+function startApp(AppState) {
+    // Módulos de Grupo
     initCoordinatorTable(AppState);
-    initTablon();
-    initDocumentosPanel();
-  });
+    initTablon(AppState);
+    initDocumentosPanel(AppState);
+    initPeticiones(AppState);
+    initEditableTitle(AppState);
+    
+    // Módulos de Usuario
+    initLicenciasPanel(AppState);
+    restoreManualEdits(AppState);
+    restoreCadenceSpec(AppState);
+
+    // Módulos que leen datos de ambos (pero se inicializan con AppState)
+    initNotificationManager(AppState);
+
+    // Configuración de botones que dependen de módulos ya iniciados
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
+    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
+}
+
+// --- Arranque Principal ---
+document.addEventListener('DOMContentLoaded', () => {
+    initGlobalModules();
+
+    // Aquí simulamos la carga del estado. En el futuro, esto podría venir
+    // de una pantalla de login o una llamada a un servidor.
+    const AppState = {
+        groupId: 'equipo_alpha',
+        userId: 'user_123_test'
+    };
+    
+    // Una vez tenemos el estado, arrancamos el resto de la app.
+    startApp(AppState);
+});
+
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
@@ -736,12 +769,6 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
-// ¡NUEVO! Objeto de Estado Global (simula sesión de usuario)
-const AppState = {
-    groupId: 'equipo_alpha', // El grupo al que pertenece el usuario
-    userId: 'user_123_test'     // El ID único de este usuario
-};
-
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -786,7 +813,7 @@ function saveManualEdits(){
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
-function initLicenciasPanel() {
+function initLicenciasPanel(AppState) {
     const licenciasContainer = document.getElementById('licencias-container');
     if (!licenciasContainer) {
         console.error("Error: Contenedor de licencias no encontrado.");
@@ -904,7 +931,7 @@ if (colorCell) {
 // =========================================================================
 // LÓGICA PARA EL TÍTULO EDITABLE
 // =========================================================================
-function initEditableTitle() {
+function initEditableTitle(AppState) {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
@@ -1217,7 +1244,7 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
       manualEdits[dk][shiftKey].color = color;
       manualEdits[dk][shiftKey].userColor = true;
-      saveManualEdits();
+      saveManualEdits(AppState);
     }, colorPalette);
   });
 
@@ -1232,7 +1259,7 @@ function saveShiftText(year, month, day, shiftKey, text){
   if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
   manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
   manualEdits[dk][shiftKey].text = text;
-  saveManualEdits();
+  saveManualEdits(AppState);
 }
 
 
@@ -1408,13 +1435,13 @@ function openCadenceModal(){
       ];
       const pattern = v1options[idx];
       cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
-      saveCadenceSpec(cadenceSpec);
+      saveCadenceSpec(cadenceSpec, AppState);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'V-2'){
       const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
       cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec);
+      saveCadenceSpec(cadenceSpec, AppState);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'Personalizada'){
@@ -1423,7 +1450,7 @@ function openCadenceModal(){
       const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
       if(pattern.length === 0) return alert('Patrón inválido.');
       cadenceSpec = { type: 'Personalizada', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec);
+      saveCadenceSpec(cadenceSpec, AppState);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     }
@@ -1763,7 +1790,7 @@ logo.addEventListener("click", () => {
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
 /* ================================================================= */
 
-function initNotificationManager() {
+function initNotificationManager(AppState) {
     // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
         // ¡Clave personal del usuario para saber qué ha visto!
     const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
