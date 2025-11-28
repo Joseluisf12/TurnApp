@@ -707,59 +707,69 @@ function initDocumentosPanel(AppState) {
 }
 
 // =========================================================================
-// ARRANQUE DE LA APLICACIÓN
+// ARRANQUE UNIFICADO DE LA APLICACIÓN
 // =========================================================================
+document.addEventListener('DOMContentLoaded', () => {
 
-/**
- * Función que inicializa los módulos que NO dependen del estado del usuario/grupo.
- * Se ejecuta tan pronto como el DOM está listo.
- */
-function initGlobalModules() {
+    // 1. Módulos que NO dependen del estado
     initThemeSwitcher();
-    initApp(); // Para la navegación y el swipe
-}
+    initApp();
 
-/**
- * Función que inicializa todos los módulos que SÍ dependen del estado
- * del usuario/grupo (AppState).
- * @param {object} AppState - El objeto con userId y groupId.
- */
-function startApp(AppState) {
-    // Módulos de Grupo
-    initCoordinatorTable(AppState);
-    initTablon(AppState);
-    initDocumentosPanel(AppState);
-    initPeticiones(AppState);
-    initEditableTitle(AppState);
-    
-    // Módulos de Usuario
-    initLicenciasPanel(AppState);
-    restoreManualEdits(AppState);
-    restoreCadenceSpec(AppState);
+    // 2. Módulos que SÍ dependen del AppState global
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones();
+    initEditableTitle();
+    initLicenciasPanel();
+    restoreManualEdits();
+    restoreCadenceSpec();
+    initNotificationManager(); // Ahora se llama aquí, de forma segura
 
-    // Módulos que leen datos de ambos (pero se inicializan con AppState)
-    initNotificationManager(AppState);
-
-    // Configuración de botones que dependen de módulos ya iniciados
+    // 3. OYENTES de eventos
     const applyBtn = document.getElementById('btn-apply-cadence');
     const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', () => openCadenceModal());
-    if (clearBtn) clearBtn.addEventListener('click', () => clearCadencePrompt(AppState));
-}
+    // Llamadas limpias, que ahora funcionarán gracias al AppState global
+    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
+    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
 
-// --- Arranque Principal ---
-document.addEventListener('DOMContentLoaded', () => {
-    initGlobalModules();
+    // 4. Lógica de UI que estaba en otros listeners, ahora unificada aquí
+    const btnPeticiones = document.getElementById("btn-peticiones");
+    const peticionesSection = document.getElementById("peticiones-section");
+    if (btnPeticiones && peticionesSection) {
+        peticionesSection.classList.add("oculto");
+        peticionesSection.style.display = "none";
+        btnPeticiones.addEventListener("click", (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
+            if (visible) {
+                peticionesSection.classList.add("oculto");
+                peticionesSection.style.display = "none";
+            } else {
+                peticionesSection.classList.remove("oculto");
+                peticionesSection.style.display = "block";
+            }
+        });
+    }
 
-    // Aquí simulamos la carga del estado. En el futuro, esto podría venir
-    // de una pantalla de login o una llamada a un servidor.
-    const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
-    
-    // Una vez tenemos el estado, arrancamos el resto de la app.
-    startApp(AppState);
+    const splash = document.getElementById("splash");
+    const app = document.getElementById("app");
+    const logo = document.getElementById("splash-logo");
+    const calendarioSection = document.getElementById("calendar-panel");
+    const licenciasSection = document.getElementById("licencias-container");
+    if (splash && logo) {
+        app.classList.add("oculto");
+        calendarioSection.classList.add("oculto");
+        licenciasSection.classList.add("oculto");
+        logo.addEventListener("click", () => {
+            splash.remove();
+            app.classList.remove("oculto");
+            calendarioSection.classList.remove("oculto");
+            licenciasSection.classList.add("oculto");
+            calendarioSection.classList.add("fade-in-up");
+            setTimeout(() => { app.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+        });
+    }
 });
 
 
@@ -769,6 +779,11 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+
+const AppState = {
+        groupId: 'equipo_alpha',
+        userId: 'user_123_test'
+    };
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -1683,108 +1698,6 @@ function initPeticiones(AppState){
   render();
 }
 
-// === CONTROL FINAL DE BOTÓN DE PETICIONES (versión calendario siempre visible) ===
-document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
-
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
-
-  // Estado inicial: el cajón de peticiones oculto
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
-
-  // Función central: alternar sólo el cajón de peticiones
-  const togglePeticiones = () => {
-    const visible = !peticionesSection.classList.contains("oculto") && 
-                    peticionesSection.style.display !== "none";
-
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-      peticionesSection.removeAttribute("hidden");
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
-  };
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    togglePeticiones();
-  });
-});
-// === CONTROL FINAL Y DEFINITIVO DE BOTÓN "PETICIONES" ===
-document.addEventListener("DOMContentLoaded", () => {
-  const btnPeticiones = document.getElementById("btn-peticiones");
-  const peticionesSection = document.getElementById("peticiones-section");
-
-  if (!btnPeticiones || !peticionesSection) {
-    console.warn("No se encuentran los elementos necesarios para el control de Peticiones.");
-    return;
-  }
-
-  // Estado inicial: peticiones ocultas
-  peticionesSection.classList.add("oculto");
-  peticionesSection.style.display = "none";
-
-  btnPeticiones.addEventListener("click", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-
-    if (visible) {
-      // 🔹 Oculta el cajón de peticiones
-      peticionesSection.classList.add("oculto");
-      peticionesSection.style.display = "none";
-    } else {
-      // 🔹 Muestra el cajón de peticiones
-      peticionesSection.classList.remove("oculto");
-      peticionesSection.style.display = "block";
-    }
-  });
-});
-
-
-document.addEventListener("DOMContentLoaded", () => {
-  const splash = document.getElementById("splash");
-  const app = document.getElementById("app");
-  const logo = document.getElementById("splash-logo");
-
-  const calendarioSection = document.getElementById("calendar-panel");
-  const licenciasSection = document.getElementById("licencias-container");
-
-  // Estado inicial: solo splash visible
-  app.classList.add("oculto");
-  calendarioSection.classList.add("oculto");
-  licenciasSection.classList.add("oculto");
-
-logo.addEventListener("click", () => {
-    // Oculta splash y muestra app
-    splash.remove();
-    app.classList.remove("oculto");
-
-    // Mostrar solo el calendario
-    calendarioSection.classList.remove("oculto");
-    licenciasSection.classList.add("oculto");
-
-    // Animación
-    calendarioSection.classList.add("fade-in-up");
-
-    // ¡LA SOLUCIÓN! Desplazar suave al inicio de TODA LA APP
-    setTimeout(() => {
-      app.scrollIntoView({ behavior: "smooth", block: "start" });
-    }, 50); // Un timeout más corto para que se sienta más instantáneo
-   });
-  });
 
 /* ================================================================= */
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
@@ -1913,6 +1826,5 @@ function initNotificationManager(AppState) {
     window.addEventListener('storage', checkAndDisplayNotifications);
 }
 
-document.addEventListener('DOMContentLoaded', initNotificationManager);
 
   // ------------------ FIN app.js ------------------
