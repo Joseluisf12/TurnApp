@@ -707,15 +707,15 @@ function initDocumentosPanel(AppState) {
 }
 
 // =========================================================================
-// ARRANQUE UNIFICADO DE LA APLICACIÓN
+// ARRANQUE UNIFICADO Y CORREGIDO
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Módulos que NO dependen del estado
+    // 1. Módulos que no dependen del estado
     initThemeSwitcher();
     initApp();
 
-    // 2. Módulos que SÍ dependen del AppState global
+    // 2. Módulos que dependen del AppState global
     initCoordinatorTable();
     initTablon();
     initDocumentosPanel();
@@ -724,16 +724,17 @@ document.addEventListener('DOMContentLoaded', () => {
     initLicenciasPanel();
     restoreManualEdits();
     restoreCadenceSpec();
-    initNotificationManager(); // Ahora se llama aquí, de forma segura
+    initNotificationManager();
 
-    // 3. OYENTES de eventos
+    // 3. OYENTES DE EVENTOS Y LÓGICA DE UI
+    
+    // Botones de Cadencia
     const applyBtn = document.getElementById('btn-apply-cadence');
     const clearBtn = document.getElementById('btn-clear-cadence');
-    // Llamadas limpias, que ahora funcionarán gracias al AppState global
     if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
     if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
 
-    // 4. Lógica de UI que estaba en otros listeners, ahora unificada aquí
+    // Botón de Peticiones
     const btnPeticiones = document.getElementById("btn-peticiones");
     const peticionesSection = document.getElementById("peticiones-section");
     if (btnPeticiones && peticionesSection) {
@@ -752,15 +753,19 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // Pantalla de Splash (AHORA CON LA COMPROBACIÓN CORRECTA)
     const splash = document.getElementById("splash");
     const app = document.getElementById("app");
     const logo = document.getElementById("splash-logo");
     const calendarioSection = document.getElementById("calendar-panel");
     const licenciasSection = document.getElementById("licencias-container");
-    if (splash && logo) {
+
+    // ¡LA CORRECCIÓN! Comprobamos que TODOS los elementos existen antes de usarlos.
+    if (splash && app && logo && calendarioSection && licenciasSection) {
         app.classList.add("oculto");
         calendarioSection.classList.add("oculto");
         licenciasSection.classList.add("oculto");
+        
         logo.addEventListener("click", () => {
             splash.remove();
             app.classList.remove("oculto");
@@ -771,7 +776,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
-
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
