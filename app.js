@@ -719,7 +719,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCoordinatorTable();
     initTablon();
     initDocumentosPanel();
-    
+    initPeticiones();
     initEditableTitle();
     initLicenciasPanel();
     restoreManualEdits();
@@ -769,7 +769,6 @@ document.addEventListener('DOMContentLoaded', () => {
         logo.addEventListener("click", () => {
             splash.remove();
             app.classList.remove("oculto");
-            initPeticiones();
             calendarioSection.classList.remove("oculto");
             licenciasSection.classList.add("oculto");
             calendarioSection.classList.add("fade-in-up");
@@ -1697,8 +1696,7 @@ function initPeticiones() {
     peticionTexto.value = '';
   });
 
-  // Esta es la llamada que fallaba y que ahora debe funcionar.
-  render();
+  setTimeout(render, 100);
 }
 
 
