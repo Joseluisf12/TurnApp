@@ -1592,32 +1592,33 @@ function applyCadenceRender(month, year){
 }
 
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(){
+function initPeticiones() {
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
-  // Ajustamos el tamaño de la fuente para mejorar la legibilidad al escribir
-  peticionTexto.style.fontSize = '1.3em';
-  peticionTexto.style.lineHeight = '1.4';
   const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
 
-
-  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn){
+  // 1. PRIMERO comprobamos que los elementos existen.
+  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn) {
     console.warn("initPeticiones: faltan elementos del DOM.");
-    return;
+    return; // Si algo falta, la función termina aquí y no crashea.
   }
 
-    const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
+  // 2. AHORA, que ya sabemos que existen, modificamos su estilo.
+  peticionTexto.style.fontSize = '1.3em';
+  peticionTexto.style.lineHeight = '1.4';
 
-  function load(){
-  return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-}
+  const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
 
-  function save(arr){
+  function load() {
+    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
+  }
+
+  function save(arr) {
     localStorage.setItem(KEY_USER, JSON.stringify(arr));
   }
 
-  function render(){
+  function render() {
     const user = load();
     listaUsuario.innerHTML = '';
     user.forEach((p, idx) => {
@@ -1629,12 +1630,11 @@ function initPeticiones(){
 
       const textoDiv = document.createElement('div');
       textoDiv.textContent = p.texto;
-      // Aumentamos el tamaño de la fuente para las peticiones en la lista
       textoDiv.style.fontSize = '1.1em';
       textoDiv.style.lineHeight = '1.4';
       left.appendChild(textoDiv);
 
-      if(p.fechaHora){
+      if (p.fechaHora) {
         const fechaDiv = document.createElement('div');
         fechaDiv.className = 'fecha-hora';
         fechaDiv.textContent = new Date(p.fechaHora).toLocaleString('es-ES');
@@ -1655,18 +1655,16 @@ function initPeticiones(){
         u[idx].revisada = chk.checked;
         save(u);
         render();
-
-    // ¡Llamamos al sistema de notificaciones para que se actualice!
-    if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
-    window.TurnApp.checkAndDisplayNotifications();
-}
-   });
+        if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
+          window.TurnApp.checkAndDisplayNotifications();
+        }
+      });
 
       const delBtn = document.createElement('button');
       delBtn.textContent = '🗑️';
-      delBtn.addEventListener('click', ()=> {
+      delBtn.addEventListener('click', () => {
         const u = load();
-        u.splice(idx,1);
+        u.splice(idx, 1);
         save(u);
         render();
       });
@@ -1680,25 +1678,25 @@ function initPeticiones(){
     });
   }
 
-  function agregarPeticion(textoRaw){
+  function agregarPeticion(textoRaw) {
     const texto = String(textoRaw || '').trim();
-    if(!texto) return;
+    if (!texto) return;
     const nueva = { texto, fechaHora: new Date().toISOString(), revisada: false };
     const u = load();
     u.unshift(nueva);
     save(u);
     render();
-   // ¡Llamamos al sistema de notificaciones!
-             if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) { // <-- AÑADIR ESTE BLOQUE
-                 window.TurnApp.checkAndDisplayNotifications();
-             }
+    if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
+      window.TurnApp.checkAndDisplayNotifications();
+    }
   }
 
-  enviarPeticionBtn.addEventListener('click', ()=> {
+  enviarPeticionBtn.addEventListener('click', () => {
     agregarPeticion(peticionTexto.value);
     peticionTexto.value = '';
   });
 
+  // Esta es la llamada que fallaba y que ahora debe funcionar.
   render();
 }
 
