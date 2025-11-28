@@ -1,5 +1,5 @@
 // =========================================================================
-// TurnApp v4.0 - Versión Estable (Single-User)
+// TurnApp v6.0 - Versión Estable
 // =========================================================================
 // Esta versión incluye todas las funcionalidades para un solo usuario,
 // cálculo de festivos variables y correcciones de UI.
