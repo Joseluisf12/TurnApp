@@ -769,6 +769,11 @@ document.addEventListener('DOMContentLoaded', () => {
         logo.addEventListener("click", () => {
             splash.remove();
             app.classList.remove("oculto");
+
+   // JUSTO AQUÍ: Ahora que la app es visible, mandamos renderizar las peticiones.
+        if (window.TurnApp && window.TurnApp.renderPeticiones) {
+            window.TurnApp.renderPeticiones();
+        }
             calendarioSection.classList.remove("oculto");
             licenciasSection.classList.add("oculto");
             calendarioSection.classList.add("fade-in-up");
@@ -1696,7 +1701,9 @@ function initPeticiones() {
     peticionTexto.value = '';
   });
 
-  setTimeout(render, 100);
+      // En lugar de intentar renderizar ahora, exponemos la función para llamarla más tarde.
+    window.TurnApp = window.TurnApp || {};
+    window.TurnApp.renderPeticiones = render;
 }
 
 
