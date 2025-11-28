@@ -46,7 +46,7 @@ function initThemeSwitcher() {
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
 // =================================================================
-function initCoordinatorTable(AppState) {
+function initCoordinatorTable() {
 
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
@@ -338,7 +338,7 @@ function initCoordinatorTable(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
 // =================================================================
-function initTablon(AppState) {
+function initTablon() {
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -501,7 +501,7 @@ function initTablon(AppState) {
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
-function initDocumentosPanel(AppState) {
+function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
@@ -832,7 +832,7 @@ function saveManualEdits(){
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
-function initLicenciasPanel(AppState) {
+function initLicenciasPanel() {
     const licenciasContainer = document.getElementById('licencias-container');
     if (!licenciasContainer) {
         console.error("Error: Contenedor de licencias no encontrado.");
@@ -950,7 +950,7 @@ if (colorCell) {
 // =========================================================================
 // LÓGICA PARA EL TÍTULO EDITABLE
 // =========================================================================
-function initEditableTitle(AppState) {
+function initEditableTitle() {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
@@ -1263,7 +1263,7 @@ function createShiftElement(year, month, day, shiftKey, isHoliday){
       manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
       manualEdits[dk][shiftKey].color = color;
       manualEdits[dk][shiftKey].userColor = true;
-      saveManualEdits(AppState);
+      saveManualEdits();
     }, colorPalette);
   });
 
@@ -1278,7 +1278,7 @@ function saveShiftText(year, month, day, shiftKey, text){
   if(!manualEdits[dk]) manualEdits[dk] = { M:{}, T:{}, N:{} };
   manualEdits[dk][shiftKey] = manualEdits[dk][shiftKey] || {};
   manualEdits[dk][shiftKey].text = text;
-  saveManualEdits(AppState);
+  saveManualEdits();
 }
 
 
@@ -1454,13 +1454,13 @@ function openCadenceModal(){
       ];
       const pattern = v1options[idx];
       cadenceSpec = { type: 'V-1', startISO: start.toISOString(), pattern: pattern, v1Index: idx };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'V-2'){
       const pattern = ['M/T', 'M/T', 'L', 'L', 'L', 'L'];
       cadenceSpec = { type: 'V-2', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     } else if(typ === 'Personalizada'){
@@ -1469,7 +1469,7 @@ function openCadenceModal(){
       const pattern = raw.split(',').map(s=>s.trim()).filter(Boolean);
       if(pattern.length === 0) return alert('Patrón inválido.');
       cadenceSpec = { type: 'Personalizada', startISO: start.toISOString(), pattern: pattern };
-      saveCadenceSpec(cadenceSpec, AppState);
+      saveCadenceSpec(cadenceSpec);
       buildCadenceDataFromSpec();
       renderCalendar(currentMonth, currentYear);
     }
@@ -1592,7 +1592,7 @@ function applyCadenceRender(month, year){
 }
 
 // ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
-function initPeticiones(AppState){
+function initPeticiones(){
   const listaUsuario = document.getElementById('lista-peticiones-usuario');
   const peticionTexto = document.getElementById('peticion-texto');
   const enviarPeticionBtn = document.getElementById('enviar-peticion');
@@ -1707,7 +1707,7 @@ function initPeticiones(AppState){
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
 /* ================================================================= */
 
-function initNotificationManager(AppState) {
+function initNotificationManager() {
     // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
         // ¡Clave personal del usuario para saber qué ha visto!
     const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
