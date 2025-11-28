@@ -707,26 +707,30 @@ function initDocumentosPanel() {
 }
 
 // =========================================================================
-// ARRANQUE UNIFICADO Y CORREGIDO
+// ARRANQUE CORREGIDO Y ORDENADO
 // =========================================================================
 document.addEventListener('DOMContentLoaded', () => {
 
-    // 1. Módulos que no dependen del estado
-    initThemeSwitcher();
-    initApp();
+    // 1. Cargar el estado de DATOS PRIMERO. Esto es crítico.
+    // Estas funciones llenan las variables globales (manualEdits, cadenceSpec)
+    // con la información guardada por el usuario.
+    restoreManualEdits();
+    restoreCadenceSpec();
 
-    // 2. Módulos que dependen del AppState global
+    // 2. Ahora, inicializar todos los MÓDULOS DE LA INTERFAZ.
+    // Estas funciones ahora encontrarán los datos listos para ser usados.
+    initThemeSwitcher();
+    initApp(); // Contiene renderCalendar, que depende de los datos cargados.
     initCoordinatorTable();
     initTablon();
     initDocumentosPanel();
-    initPeticiones();
+    initPeticiones(); // Esta función ahora se ejecuta en un estado consistente.
     initEditableTitle();
     initLicenciasPanel();
-    restoreManualEdits();
-    restoreCadenceSpec();
     initNotificationManager();
 
-    // 3. OYENTES DE EVENTOS Y LÓGICA DE UI
+    // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
+    // Esto se hace al final para asegurar que todos los módulos estén listos.
     
     // Botones de Cadencia
     const applyBtn = document.getElementById('btn-apply-cadence');
@@ -753,14 +757,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Pantalla de Splash (AHORA CON LA COMPROBACIÓN CORRECTA)
+    // Pantalla de Splash
     const splash = document.getElementById("splash");
     const app = document.getElementById("app");
     const logo = document.getElementById("splash-logo");
     const calendarioSection = document.getElementById("calendar-panel");
     const licenciasSection = document.getElementById("licencias-container");
 
-    // ¡LA CORRECCIÓN! Comprobamos que TODOS los elementos existen antes de usarlos.
     if (splash && app && logo && calendarioSection && licenciasSection) {
         app.classList.add("oculto");
         calendarioSection.classList.add("oculto");
@@ -769,11 +772,6 @@ document.addEventListener('DOMContentLoaded', () => {
         logo.addEventListener("click", () => {
             splash.remove();
             app.classList.remove("oculto");
-
-   // JUSTO AQUÍ: Ahora que la app es visible, mandamos renderizar las peticiones.
-        if (window.TurnApp && window.TurnApp.renderPeticiones) {
-            window.TurnApp.renderPeticiones();
-        }
             calendarioSection.classList.remove("oculto");
             licenciasSection.classList.add("oculto");
             calendarioSection.classList.add("fade-in-up");
@@ -781,6 +779,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 });
+
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
