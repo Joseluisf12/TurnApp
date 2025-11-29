@@ -417,15 +417,21 @@
   <script src="app.js" defer></script>
 
 <script>
-document.addEventListener('DOMContentLoaded', () => {
+// Usamos 'load' en lugar de 'DOMContentLoaded' para asegurarnos de que todos los
+// scripts externos (como los de Firebase) se hayan cargado y ejecutado.
+// Esta es la corrección clave para que el botón de login funcione.
+window.addEventListener('load', () => {
+
     // =========================================================================
     // PUNTO DE ARRANQUE ÚNICO Y DEFINITIVO
     // =========================================================================
 
-    // 1. Inicializamos Firebase.
+    let appInitialized = false;
+
+    // 1. Inicializamos Firebase. En este punto, es 100% seguro hacerlo.
     firebase.initializeApp(firebaseConfig);
 
-    // 2. Definimos nuestras funciones de control.
+    // 2. Definimos las funciones de control.
 
     function mostrarPantalla(pantalla) {
         const authContainer = document.getElementById('auth-container');
@@ -434,13 +440,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if(splashScreen) splashScreen.style.display = 'none';
         if(authContainer) authContainer.style.display = 'none';
-        if(mainApp) mainApp.classList.add('oculto');
+        if(mainApp) mainApp.style.display = 'none'; // Usamos display para evitar conflictos con 'oculto'
         
         if (pantalla === 'auth') {
             if(authContainer) authContainer.style.display = 'flex';
         } else if (pantalla === 'app') {
+            if(mainApp) mainApp.style.display = 'block';
             if(splashScreen) splashScreen.style.display = 'flex';
-            if(mainApp) mainApp.classList.remove('oculto');
         }
     }
 
@@ -458,7 +464,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        // --- Lógica de inicialización CONSOLIDADA desde app.js ---
+        // --- Lógica de inicialización CONSOLIDADA (antes en app.js) ---
 
         // 1. Cargar datos guardados
         if(typeof restoreManualEdits === 'function') restoreManualEdits();
@@ -475,21 +481,19 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // 3. Añadir Listeners de UI que estaban en app.js
+        // 3. Añadir Listeners de UI (antes en app.js)
         const applyCadenceBtn = document.getElementById('btn-apply-cadence');
         const clearCadenceBtn = document.getElementById('btn-clear-cadence');
         if (applyCadenceBtn && typeof openCadenceModal === 'function') applyCadenceBtn.addEventListener('click', openCadenceModal);
         if (clearCadenceBtn && typeof clearCadencePrompt === 'function') clearCadenceBtn.addEventListener('click', clearCadencePrompt);
 
-        // 4. Lógica original y correcta de la pantalla de Splash
+        // 4. Lógica original de la pantalla de Splash
         const splash = document.getElementById("splash");
         const app = document.getElementById("app");
         const logo = document.getElementById("splash-logo");
         if (splash && app && logo) {
             logo.addEventListener("click", () => {
-                splash.remove();
-                app.classList.remove("oculto");
-                app.scrollIntoView({ behavior: "smooth", block: "start" });
+                splash.style.display = 'none'; // Ocultamos el splash
             });
         }
         
@@ -520,11 +524,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
         
-        switchPanel('turnos'); // Empezamos en la vista de turnos
+        mostrarPantalla('app');
+        switchPanel('turnos');
     }
 
     function initAuthForm() {
-        // ... (esta función se queda exactamente igual, no necesita cambios)
         const emailInput = document.getElementById('auth-email');
         const passwordInput = document.getElementById('auth-password');
         const submitBtn = document.getElementById('auth-submit-btn');
@@ -546,7 +550,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             errorContainer.textContent = '';
-if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; }
+            if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; }
             if (isLoginMode) {
                 firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
             } else {
@@ -556,15 +560,14 @@ if (!email || !password) { errorContainer.textContent = 'Por favor, introduce em
     }
 
     // 3. Observador de autenticación.
-    let appInitialized = false;
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            if (!appInitialized) { // Solo arranca la app si no se ha hecho ya
+            if (!appInitialized) {
                 appInitialized = true;
                 arrancarAplicacion();
             }
         } else {
-            appInitialized = false; // Permite reiniciar la app si se cierra sesión y se vuelve a entrar
+            appInitialized = false;
             const logoutBtn = document.getElementById('btn-logout');
             if(logoutBtn) logoutBtn.style.display = 'none';
             mostrarPantalla('auth');
