@@ -715,9 +715,12 @@ let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pa
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
 
 const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
+    groupId: 'equipo_alpha',
+    // El userId se establecerá dinámicamente después del login.
+    // Lo inicializamos a null para evitar usar datos de prueba.
+    userId: null 
+};
+
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
