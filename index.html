@@ -417,37 +417,36 @@
   <script src="app.js" defer></script>
 
 <script>
-// La clave es usar 'DOMContentLoaded'. Esto asegura que el HTML está listo y
-// que todos los scripts con 'defer' (como los de Firebase) se han ejecutado.
 document.addEventListener('DOMContentLoaded', () => {
+    // --- Referencias a los elementos principales de la UI ---
+    const splashScreen = document.getElementById('splash');
+    const mainApp = document.getElementById('app');
+    const authContainer = document.getElementById('auth-container');
+    const splashLogo = document.getElementById('splash-logo');
+    const logoutBtn = document.getElementById('btn-logout');
 
-    // =========================================================================
-    // PUNTO DE ARRANQUE ÚNICO Y DEFINITIVO
-    // =========================================================================
-
+    // Bandera para asegurar que la app solo se inicializa una vez por sesión
     let appInitialized = false;
 
-    // 1. Inicializar Firebase. Es seguro hacerlo aquí.
-    firebase.initializeApp(firebaseConfig);
-
-    // 2. Definir la función que ARRANCA la aplicación principal
+    // --- FUNCIÓN DE ARRANQUE DE LA APP (cuando el usuario está autenticado) ---
     function arrancarAplicacion() {
-        if (appInitialized) return; // Si ya ha arrancado, no hacer nada más.
+        if (appInitialized) return; // Si ya arrancó, no hacer nada.
         appInitialized = true;
-        console.log("Arrancando la aplicación...");
+        console.log("Usuario autenticado. Arrancando la aplicación principal...");
 
-        // Muestra el botón de logout y le da su funcionalidad
-        const logoutBtn = document.getElementById('btn-logout');
-        if (logoutBtn) {
-            logoutBtn.style.display = 'block';
-            logoutBtn.addEventListener('click', () => {
-                if (confirm('¿Seguro que quieres cerrar la sesión?')) {
-                    firebase.auth().signOut();
-                }
-            });
-        }
+        // 1. Mostramos la app principal, pero la cubrimos con el splash.
+        authContainer.style.display = 'none';
+        mainApp.style.display = 'block';
+        splashScreen.style.display = 'flex';
         
-        // --- Lógica de inicialización CONSOLIDADA (todo lo que antes hacía app.js por su cuenta) ---
+        // 2. RESTAURAMOS LA LÓGICA DEL SPLASH: Al hacer clic en el logo, se oculta el splash.
+        if (splashLogo) {
+            splashLogo.onclick = () => {
+                splashScreen.style.display = 'none';
+            };
+        }
+
+        // 3. Inicializamos todos los módulos de la app (el código de app.js).
         if(typeof restoreManualEdits === 'function') restoreManualEdits();
         if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
         if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
@@ -460,98 +459,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // --- Lógica de navegación ---
-        const navButtons = document.querySelectorAll('.nav-btn[data-section]');
-        const panels = { turnos: document.getElementById('content'), peticiones: document.getElementById('ajustes-section'), tablon: document.getElementById('tablon-section'), documentos: document.getElementById('documentos-section') };
-        function switchPanel(targetSection) {
-            Object.values(panels).forEach(panel => panel && panel.classList.add('oculto'));
-            if (panels[targetSection]) {
-                panels[targetSection].classList.remove('oculto');
-                panels[targetSection].scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-            navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.section === targetSection));
-        }
-        navButtons.forEach(btn => btn.addEventListener('click', (e) => {
-            const target = e.currentTarget.dataset.section;
-            if (target) switchPanel(target);
-        }));
-        
-        const btnCargaDias = document.getElementById('btn-carga-dias');
-        const licenciasContainer = document.getElementById('licencias-container');
-        if (btnCargaDias && licenciasContainer) {
-            btnCargaDias.addEventListener('click', () => {
-                licenciasContainer.classList.toggle('oculto');
-                if (!licenciasContainer.classList.contains('oculto')) {
-                    licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // 4. Mostramos y configuramos el botón de "Cerrar Sesión".
+        if (logoutBtn) {
+            logoutBtn.style.display = 'block';
+            logoutBtn.onclick = () => {
+                if (confirm('¿Seguro que quieres cerrar la sesión?')) {
+                    firebase.auth().signOut();
                 }
-            });
+            };
         }
-        
-        // Muestra la app y empieza en la sección de turnos
-        document.getElementById('auth-container').style.display = 'none';
-        document.getElementById('app').classList.remove('oculto');
-        document.getElementById('splash').style.display = 'flex'; // Aseguramos que el splash se ve
-        switchPanel('turnos');
     }
 
-    // 3. Definir la función que muestra la pantalla de Login
+    // --- FUNCIÓN PARA MOSTRAR EL LOGIN (cuando no hay usuario) ---
     function mostrarPantallaDeLogin() {
-        appInitialized = false; // Resetea la bandera por si se cierra sesión
-        const logoutBtn = document.getElementById('btn-logout');
-        if(logoutBtn) logoutBtn.style.display = 'none';
+        appInitialized = false; // Reseteamos la bandera
         
-        document.getElementById('app').classList.add('oculto');
-        document.getElementById('splash').style.display = 'none';
-        document.getElementById('auth-container').style.display = 'flex';
+        // Ocultamos todo y mostramos ÚNICAMENTE el formulario de autenticación.
+        splashScreen.style.display = 'none';
+        mainApp.style.display = 'none';
+        authContainer.style.display = 'flex';
+        
+        if(logoutBtn) logoutBtn.style.display = 'none';
     }
 
-    // 4. Definir la función que inicializa el formulario de Login
+    // --- FUNCIÓN QUE CONFIGURA LOS BOTONES DEL FORMULARIO DE LOGIN/REGISTRO ---
     function initAuthForm() {
-        const emailInput = document.getElementById('auth-email');
-        const passwordInput = document.getElementById('auth-password');
-        const submitBtn = document.getElementById('auth-submit-btn');
-        const toggleLink = document.getElementById('auth-toggle-link');
-        const authTitle = document.getElementById('auth-title');
-        const errorContainer = document.getElementById('auth-error');
+        const emailInput = document.getElementById('auth-email'), passwordInput = document.getElementById('auth-password'), submitBtn = document.getElementById('auth-submit-btn'), toggleLink = document.getElementById('auth-toggle-link'), authTitle = document.getElementById('auth-title'), errorContainer = document.getElementById('auth-error');
         if (!submitBtn) return;
         let isLoginMode = true;
-
-        toggleLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            isLoginMode = !isLoginMode;
-            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
-            submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse';
-            toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? ';
-            toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
-            errorContainer.textContent = '';
-        });
-
-        submitBtn.addEventListener('click', () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            errorContainer.textContent = '';
-            if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; }
-            
-            if (isLoginMode) {
-                firebase.auth().signInWithEmailAndPassword(email, password)
-                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
-            } else {
-                firebase.auth().createUserWithEmailAndPassword(email, password)
-                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
-            }
-        });
+        toggleLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; errorContainer.textContent = ''; });
+        submitBtn.addEventListener('click', () => { const email = emailInput.value, password = passwordInput.value; errorContainer.textContent = ''; if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; } if (isLoginMode) { firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } else { firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } });
     }
 
-    // --- Punto de Control Principal ---
-    initAuthForm(); // Prepara los botones de login
-    firebase.auth().onAuthStateChanged(user => {
-        if (user) {
-            arrancarAplicacion(); // Si hay usuario, arranca la app
-        } else {
-            mostrarPantallaDeLogin(); // Si no, muestra el login
+    // =============================================================
+    //                PUNTO DE CONTROL PRINCIPAL
+    // =============================================================
+    try {
+        // Inicializamos Firebase.
+        firebase.initializeApp(firebaseConfig);
+        // Preparamos el formulario de login.
+        initAuthForm();
+        // Escuchamos los cambios de estado de autenticación para decidir qué mostrar.
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                arrancarAplicacion();
+            } else {
+                mostrarPantallaDeLogin();
+            }
+        });
+    } catch (e) {
+        console.error("ERROR FATAL AL INICIAR FIREBASE:", e);
+        if(splashScreen) {
+            splashScreen.innerHTML = `<div style="padding: 20px; text-align: center; color: red;"><h3>Error Crítico</h3><p>No se pudo iniciar la aplicación. Es posible que la configuración de Firebase (firebase-config.js) no sea correcta o que haya un problema de red.</p><p>Detalle: ${e.message}</p></div>`;
+            splashScreen.style.display = 'flex';
         }
-    });
-
+    }
 });
 </script>
 
