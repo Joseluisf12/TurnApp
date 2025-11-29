@@ -1773,3 +1773,95 @@ body[data-theme='dark'] #total-restan {
 .tablon-item-actions .green:hover { background-color: var(--green-color-dark); }
 .tablon-item-actions .red { background-color: var(--red-color); }
 .tablon-item-actions .red:hover { background-color: var(--red-color-dark); }
+
+/* ========================================================================= */
+/* ESTILOS DEL PANEL DE AUTENTICACIÓN (LOGIN)                                */
+/* ========================================================================= */
+.auth-container {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: var(--color-background); /* Usa el color de fondo del tema */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  transition: opacity 0.3s ease;
+}
+
+.auth-card {
+  background-color: var(--color-panel);
+  padding: 2rem 2.5rem;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  text-align: center;
+  width: 90%;
+  max-width: 400px;
+  border: 1px solid var(--color-border);
+}
+
+.auth-logo {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 1rem;
+}
+
+#auth-title {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  color: var(--color-text-primary);
+}
+
+.auth-form input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background-color: var(--color-background);
+  color: var(--color-text-primary);
+  font-size: 1rem;
+}
+
+.auth-button {
+  width: 100%;
+  padding: 12px;
+  background-color: #0b5ed7; /* Azul principal */
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-button:hover {
+  background-color: #0a58ca;
+}
+
+.auth-error {
+  color: #dc3545; /* Rojo de error */
+  min-height: 20px;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.auth-toggle-text {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  color: var(--color-text-secondary);
+}
+
+.auth-toggle-text a {
+  color: #0b5ed7;
+  text-decoration: none;
+  font-weight: bold;
+}
+
+.auth-toggle-text a:hover {
+  text-decoration: underline;
+}
+
