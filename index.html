@@ -415,220 +415,153 @@
   <script src="app.js" defer></script>
 
 <script>
-// =========================================================================
-// INICIALIZACIÓN DE LA APP Y LÓGICA DE AUTENTICACIÓN
-// =========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+    // =========================================================================
+    // PUNTO DE ARRANQUE SEGURO: Se ejecuta cuando todo está cargado.
+    // =========================================================================
 
-// ¡CORRECCIÓN! Inicializamos Firebase aquí, al principio de todo.
-// Esto asegura que la conexión está lista ANTES de que cualquier otra
-// función de autenticación (como initAuthForm) intente usarla.
-firebase.initializeApp(firebaseConfig);
+    // 1. Inicializamos Firebase. Ahora es 100% seguro hacerlo.
+    firebase.initializeApp(firebaseConfig);
 
-// Esta función se encarga de mostrar la app y ocultar el login, o viceversa.
-function mostrarPantalla(pantalla) {
-    const authContainer = document.getElementById('auth-container');
-    const mainApp = document.getElementById('app');
-
-    // Ocultamos todo primero para evitar solapamientos
-    if (authContainer) authContainer.style.display = 'none';
-    if (mainApp) mainApp.classList.add('oculto');
-    
-    if (pantalla === 'auth') {
-        if (authContainer) authContainer.style.display = 'flex';
-    } else if (pantalla === 'app') {
-        // La lógica del splash screen original se moverá aquí
+    // 2. Definimos nuestras funciones de control.
+    function mostrarPantalla(pantalla) {
+        const authContainer = document.getElementById('auth-container');
+        const mainApp = document.getElementById('app');
+        if (authContainer) authContainer.style.display = 'none';
+        if (mainApp) mainApp.classList.add('oculto');
+        
+        if (pantalla === 'auth') {
+            if (authContainer) authContainer.style.display = 'flex';
+        } else if (pantalla === 'app') {
+            if (mainApp) mainApp.classList.remove('oculto');
+        }
     }
-}
 
-// Función que contiene TODO el código de arranque original de la app
-function arrancarAplicacion() {
-    // --- 1. ELEMENTOS Y PANELES (AÑADIDO EL TABLÓN) ---
-    const appContainer = document.getElementById('app');
-    const mainContent = document.getElementById('content');
-    const ajustesSection = document.getElementById('ajustes-section');
-    const tablonSection = document.getElementById('tablon-section');
-    const documentosSection = document.getElementById('documentos-section');
-    const licenciasContainer = document.getElementById('licencias-container');
-    const calendarPanel = document.getElementById('calendar-panel');
-    
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const btnTurnos = document.querySelector('.nav-btn[data-section="turnos"]');
-    const btnPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]');
-    const btnTablon = document.querySelector('.nav-btn[data-section="tablon"]');
-    const btnDocumentos = document.querySelector('.nav-btn[data-section="documentos"]');
-    const btnCargaDias = document.getElementById('btn-carga-dias');
+    function arrancarAplicacion() {
+        const authContainer = document.getElementById('auth-container');
+        const splashScreen = document.getElementById('splash');
+        const mainApp = document.getElementById('app');
 
-    // --- 2. LÓGICA DE NAVEGACIÓN (MODIFICADA PARA EL TABLÓN) ---
-    function switchPanel(targetSection) {
-        mainContent.classList.add('oculto');
-        ajustesSection.classList.add('oculto');
-        tablonSection.classList.add('oculto');
-        documentosSection.classList.add('oculto');
-        licenciasContainer.classList.add('oculto');
-
-        if (targetSection === 'turnos') {
-            mainContent.classList.remove('oculto');
-            appContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'peticiones') {
-            ajustesSection.classList.remove('oculto');
-            ajustesSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        } else if (targetSection === 'tablon') {
-            tablonSection.classList.remove('oculto');
-            tablonSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        if (authContainer) authContainer.style.display = 'none';
+        if (splashScreen) {
+             // La lógica original del splash screen se gestionará aquí cuando el usuario haga click.
+             mainApp.classList.add("oculto"); // App oculta al inicio
+             splashScreen.style.display = 'flex';
+             splashScreen.querySelector('#splash-logo').addEventListener('click', () => {
+                splashScreen.remove();
+                mainApp.classList.remove("oculto");
+                mainApp.scrollIntoView({ behavior: "smooth", block: "start" });
+             });
         }
-         else if (targetSection === 'documentos') {
-            documentosSection.classList.remove('oculto');
-            documentosSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        mainApp.classList.remove('oculto');
+
+        // Llamamos a las funciones de inicialización de app.js
+        if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
+        if(typeof initApp === 'function') initApp();
+        if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
+        if(typeof initTablon === 'function') initTablon();
+        if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
+        if(typeof initPeticiones === 'function') initPeticiones();
+        if(typeof initEditableTitle === 'function') initEditableTitle();
+        if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
+        if(typeof initNotificationManager === 'function') initNotificationManager();
+
+        // Lógica de navegación que estaba en el script original
+        const navButtons = document.querySelectorAll('.nav-btn');
+        const mainContent = document.getElementById('content');
+        const ajustesSection = document.getElementById('ajustes-section');
+        const tablonSection = document.getElementById('tablon-section');
+        const documentosSection = document.getElementById('documentos-section');
+
+        function switchPanel(targetSection) {
+            mainContent.classList.add('oculto');
+            ajustesSection.classList.add('oculto');
+            tablonSection.classList.add('oculto');
+            documentosSection.classList.add('oculto');
+
+            const sectionMap = {
+                'turnos': mainContent,
+                'peticiones': ajustesSection,
+                'tablon': tablonSection,
+                'documentos': documentosSection
+            };
+
+            const sectionToShow = sectionMap[targetSection];
+            if (sectionToShow) {
+                sectionToShow.classList.remove('oculto');
+                sectionToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.section === targetSection));
         }
+
         navButtons.forEach(btn => {
-            btn.classList.toggle('active', btn.dataset.section === targetSection);
+            btn.addEventListener('click', () => {
+                const target = btn.dataset.section;
+                if(target) switchPanel(target);
+            });
+        });
+        
+        // Manejo especial para el botón de Permisos que no es un panel principal
+        const btnCargaDias = document.getElementById('btn-carga-dias');
+        const licenciasContainer = document.getElementById('licencias-container');
+        if(btnCargaDias) {
+            btnCargaDias.addEventListener('click', () => {
+                licenciasContainer.classList.toggle('oculto');
+            });
+        }
+    }
+
+    function initAuthForm() {
+        const emailInput = document.getElementById('auth-email');
+        const passwordInput = document.getElementById('auth-password');
+        const submitBtn = document.getElementById('auth-submit-btn');
+        const toggleLink = document.getElementById('auth-toggle-link');
+        const authTitle = document.getElementById('auth-title');
+        const errorContainer = document.getElementById('auth-error');
+
+        if (!submitBtn) return;
+
+        let isLoginMode = true;
+
+        toggleLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
+            submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse';
+            toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? ';
+            toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
+            errorContainer.textContent = '';
+        });
+
+        submitBtn.addEventListener('click', () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            errorContainer.textContent = '';
+            if (!email || !password) {
+                errorContainer.textContent = 'Por favor, introduce email y contraseña.';
+                return;
+            }
+            if (isLoginMode) {
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+            } else {
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+            }
         });
     }
-    btnTurnos.addEventListener('click', () => { switchPanel('turnos'); });
-    btnPeticiones.addEventListener('click', () => { switchPanel(ajustesSection.classList.contains('oculto') ? 'peticiones' : 'turnos'); });
-    btnTablon.addEventListener('click', () => { switchPanel(tablonSection.classList.contains('oculto') ? 'tablon' : 'turnos'); });
-    btnDocumentos.addEventListener('click', () => { switchPanel(documentosSection.classList.contains('oculto') ? 'documentos' : 'turnos'); });
-    btnCargaDias.addEventListener('click', () => {
-        if (mainContent.classList.contains('oculto')) { switchPanel('turnos'); }
-        if (licenciasContainer.classList.contains('oculto')) {
-            licenciasContainer.classList.remove('oculto');
-            licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    // 3. Establecemos el observador y llamamos a la lógica del formulario.
+    firebase.auth().onAuthStateChanged(user => {
+        if (user) {
+            arrancarAplicacion();
         } else {
-            licenciasContainer.classList.add('oculto');
-            calendarPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            mostrarPantalla('auth');
         }
     });
 
-    // --- 3. LÓGICA DE CÁLCULO DE LICENCIAS (INTACTA) ---
-    // Esta lógica la moveremos a app.js más adelante, por ahora se queda.
-    
-    // --- 4. LÓGICA PWA (INTACTA) ---
-    let deferredPrompt;
-    const installButton = document.getElementById('btn-install-pwa');
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      if (installButton) { installButton.style.display = 'block'; }
-    });
-    if (installButton) {
-      installButton.addEventListener('click', async () => {
-        if (deferredPrompt) {
-          deferredPrompt.prompt();
-          await deferredPrompt.userChoice;
-          deferredPrompt = null;
-          installButton.style.display = 'none';
-        }
-      });
-    }
-    window.addEventListener('appinstalled', () => {
-      if (installButton) { installButton.style.display = 'none'; }
-      deferredPrompt = null;
-    });
-
-    // --- PUNTO DE ARRANQUE VISUAL ---
-    // Quitamos la pantalla de login/registro y mostramos la app principal (con el splash)
-    const authContainer = document.getElementById('auth-container');
-    const splashScreen = document.getElementById('splash');
-    const mainApp = document.getElementById('app');
-
-    if (authContainer) authContainer.style.display = 'none';
-    if (splashScreen) splashScreen.style.display = 'block';
-    if (mainApp) mainApp.classList.remove('oculto'); // Mostramos el contenedor de la app
-
-    // Volvemos a poner en marcha la lógica del splash screen que estaba en app.js
-    const logo = document.getElementById("splash-logo");
-    const calendarioSection = document.getElementById("calendar-panel");
-    const licenciasSection = document.getElementById("licencias-container");
-
-    if (splashScreen && mainApp && logo && calendarioSection && licenciasSection) {
-        mainApp.classList.add("oculto"); // Ocultamos la app principal al inicio
-        calendarioSection.classList.add("oculto");
-        licenciasSection.classList.add("oculto");
-        
-        // El splash se muestra por defecto, no hace falta tocarlo.
-        
-        logo.addEventListener("click", () => {
-            splashScreen.remove();
-            mainApp.classList.remove("oculto");
-            calendarioSection.classList.remove("oculto");
-            licenciasSection.classList.add("oculto");
-            calendarioSection.classList.add("fade-in-up");
-            setTimeout(() => { mainApp.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
-        });
-    }
-
-    // Finalmente, inicializamos todos los módulos de app.js
-    // ¡IMPORTANTE! Nos aseguramos de que estas funciones existan antes de llamarlas.
-    if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
-    if(typeof initApp === 'function') initApp();
-    if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
-    if(typeof initTablon === 'function') initTablon();
-    if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
-    if(typeof initPeticiones === 'function') initPeticiones();
-    if(typeof initEditableTitle === 'function') initEditableTitle();
-    if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
-    if(typeof initNotificationManager === 'function') initNotificationManager();
-
-    switchPanel('turnos'); // Empezamos en la vista de turnos
-}
-
-// Observador del estado de autenticación de Firebase
-firebase.auth().onAuthStateChanged(user => {
-    if (user) {
-        // --- Usuario AUTENTICADO ---
-        console.log('Usuario autenticado:', user.email);
-        arrancarAplicacion(); // Llamamos a la función que pone en marcha toda la app
-    } else {
-        // --- Usuario NO AUTENTICADO ---
-        console.log('No hay usuario autenticado.');
-        mostrarPantalla('auth'); // Mostramos la pantalla de login/registro
-    }
+    initAuthForm();
 });
-
-// Función para inicializar los listeners del formulario de login/registro
-function initAuthForm() {
-    const emailInput = document.getElementById('auth-email');
-    const passwordInput = document.getElementById('auth-password');
-    const submitBtn = document.getElementById('auth-submit-btn');
-    const toggleLink = document.getElementById('auth-toggle-link');
-    const authTitle = document.getElementById('auth-title');
-    const errorContainer = document.getElementById('auth-error');
-
-    if (!submitBtn) return; // Si no existe el formulario, no hacemos nada
-
-    let isLoginMode = true;
-
-    toggleLink.addEventListener('click', (e) => {
-        e.preventDefault();
-        isLoginMode = !isLoginMode;
-        authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta';
-        submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse';
-        toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? ';
-        toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
-        errorContainer.textContent = '';
-    });
-
-    submitBtn.addEventListener('click', () => {
-        const email = emailInput.value;
-        const password = passwordInput.value;
-        errorContainer.textContent = '';
-        if (!email || !password) {
-            errorContainer.textContent = 'Por favor, introduce email y contraseña.';
-            return;
-        }
-        if (isLoginMode) {
-            firebase.auth().signInWithEmailAndPassword(email, password)
-                .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
-        } else {
-            firebase.auth().createUserWithEmailAndPassword(email, password)
-                .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
-        }
-    });
-}
-
-// Llamamos a la función para que el formulario de login esté activo desde el principio.
-initAuthForm();
-
 </script>
 
 
