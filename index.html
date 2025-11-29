@@ -320,7 +320,7 @@
              Petición
              <div class="notification-dot"></div>
            </button>
-  <button id="btn-carga-dias" data-section="ajustes" class="nav-btn">Permisos</button>
+  <button id="btn-carga-dias" class="nav-btn">Permisos</button>
   <button data-section="documentos" class="nav-btn">
                Docs
                <div class="notification-dot"></div>
@@ -453,17 +453,15 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // ================================================================
-        // ::: INICIO DE LA LÓGICA DE BOTONES QUE FALTABA :::
-        // ================================================================
+        // --- LÓGICA DE BOTONES Y NAVEGACIÓN ---
 
-        // --- 1. Botones de Cadencia ---
+        // 1. Botones de Cadencia
         const applyCadenceBtn = document.getElementById('btn-apply-cadence');
         const clearCadenceBtn = document.getElementById('btn-clear-cadence');
         if (applyCadenceBtn && typeof openCadenceModal === 'function') applyCadenceBtn.addEventListener('click', openCadenceModal);
         if (clearCadenceBtn && typeof clearCadencePrompt === 'function') clearCadenceBtn.addEventListener('click', clearCadencePrompt);
 
-        // --- 2. Lógica de Navegación de Paneles (Turnos, Petición, Docs, Tablón) ---
+        // 2. Lógica de Navegación de Paneles Principales
         const navButtons = document.querySelectorAll('.nav-btn[data-section]');
         const panels = {
             turnos: document.getElementById('content'),
@@ -489,25 +487,31 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        // --- 3. Botón de Permisos (que muestra/oculta el panel de licencias) ---
+        // 3. LÓGICA RESTAURADA PARA EL BOTÓN "PERMISOS"
         const btnCargaDias = document.getElementById('btn-carga-dias');
         const licenciasContainer = document.getElementById('licencias-container');
         if (btnCargaDias && licenciasContainer) {
             btnCargaDias.addEventListener('click', () => {
-                licenciasContainer.classList.toggle('oculto');
-                if (!licenciasContainer.classList.contains('oculto')) {
-                    licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
+                // Primero, se asegura de que estemos en el panel de Turnos.
+                switchPanel('turnos');
+                
+                // Segundo, muestra u oculta el sub-panel de licencias.
+                setTimeout(() => { // Pequeño retardo para asegurar que la vista es correcta.
+                    const isHidden = licenciasContainer.classList.contains('oculto');
+                    if (isHidden) {
+                        licenciasContainer.classList.remove('oculto');
+                        licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    } else {
+                        licenciasContainer.classList.add('oculto');
+                    }
+                }, 50);
             });
         }
 
-        // --- 4. Estado Inicial: Empezamos en el panel de 'turnos' ---
+        // 4. Estado Inicial: Empezamos en el panel de 'turnos'.
         switchPanel('turnos');
         
-        // ================================================================
-        // ::: FIN DE LA LÓGICA DE BOTONES :::
-        // ================================================================
-
+        // 5. Botón de Logout
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
             logoutBtn.onclick = () => {
@@ -554,6 +558,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 </script>
+
 
 <!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
 <div id="image-modal" class="image-modal-overlay oculto">
