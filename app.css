@@ -1775,7 +1775,7 @@ body[data-theme='dark'] #total-restan {
 .tablon-item-actions .red:hover { background-color: var(--red-color-dark); }
 
 /* ========================================================================= */
-/* ESTILOS DEL PANEL DE AUTENTICACIÓN (LOGIN)                                */
+/* ESTILOS DEL PANEL DE AUTENTICACIÓN (LOGIN)  - VERSIÓN CORREGIDA           */
 /* ========================================================================= */
 .auth-container {
   position: fixed;
@@ -1783,7 +1783,8 @@ body[data-theme='dark'] #total-restan {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: var(--color-background); /* Usa el color de fondo del tema */
+  /* CORRECCIÓN: Usar la variable de color de fondo correcta. */
+  background-color: var(--bg-color); 
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1792,43 +1793,50 @@ body[data-theme='dark'] #total-restan {
 }
 
 .auth-card {
-  background-color: var(--color-panel);
+  /* CORRECCIÓN: Usar la variable de fondo de panel correcta. */
+  background-color: var(--panel-bg);
   padding: 2rem 2.5rem;
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   text-align: center;
   width: 90%;
   max-width: 400px;
-  border: 1px solid var(--color-border);
+  /* CORRECCIÓN: Usar la variable de borde correcta. */
+  border: 1px solid var(--panel-border);
 }
 
 .auth-logo {
   width: 80px;
   height: 80px;
   margin-bottom: 1rem;
+  /* Aplicamos el filtro del tema también al logo del login */
+  filter: var(--logo-filter);
 }
 
 #auth-title {
   margin-top: 0;
   margin-bottom: 1.5rem;
-  color: var(--color-text-primary);
+  /* CORRECCIÓN: Usar la variable de texto principal correcta. */
+  color: var(--text-color);
 }
 
 .auth-form input {
   width: 100%;
   padding: 12px;
   margin-bottom: 1rem;
-  border: 1px solid var(--color-border);
+  /* CORRECCIÓN: Usar las variables de borde, fondo y texto correctas. */
+  border: 1px solid var(--panel-border);
   border-radius: 8px;
-  background-color: var(--color-background);
-  color: var(--color-text-primary);
+  background-color: var(--bg-color);
+  color: var(--text-color);
   font-size: 1rem;
 }
 
 .auth-button {
   width: 100%;
   padding: 12px;
-  background-color: #0b5ed7; /* Azul principal */
+  /* Usamos los colores de botón primario definidos en el tema */
+  background-color: var(--primary-color);
   color: white;
   border: none;
   border-radius: 8px;
@@ -1839,11 +1847,12 @@ body[data-theme='dark'] #total-restan {
 }
 
 .auth-button:hover {
-  background-color: #0a58ca;
+  background-color: var(--primary-color-dark);
 }
 
 .auth-error {
-  color: #dc3545; /* Rojo de error */
+  /* Usamos los colores de error definidos en el tema */
+  color: var(--red-color);
   min-height: 20px;
   margin-bottom: 0.5rem;
   font-size: 0.9rem;
@@ -1852,11 +1861,13 @@ body[data-theme='dark'] #total-restan {
 .auth-toggle-text {
   margin-top: 1.5rem;
   font-size: 0.95rem;
-  color: var(--color-text-secondary);
+  /* CORRECCIÓN: Usar la variable de texto secundario correcta. */
+  color: var(--text-color-light);
 }
 
 .auth-toggle-text a {
-  color: #0b5ed7;
+  /* Usamos el color primario del tema */
+  color: var(--primary-color);
   text-decoration: none;
   font-weight: bold;
 }
