@@ -425,30 +425,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const splashLogo = document.getElementById('splash-logo');
     const logoutBtn = document.getElementById('btn-logout');
 
-    // Bandera para asegurar que la app solo se inicializa una vez por sesión
     let appInitialized = false;
 
-    // --- FUNCIÓN DE ARRANQUE DE LA APP (cuando el usuario está autenticado) ---
     function arrancarAplicacion() {
-        if (appInitialized) return; // Si ya arrancó, no hacer nada.
+        if (appInitialized) return;
         appInitialized = true;
         console.log("Usuario autenticado. Arrancando la aplicación principal...");
 
-        // 1. Mostramos la app principal, pero la cubrimos con el splash.
         authContainer.style.display = 'none';
         mainApp.style.display = 'block';
         splashScreen.style.display = 'flex';
         
-        // 2. RESTAURAMOS LA LÓGICA DEL SPLASH: Al hacer clic en el logo, se oculta el splash.
         if (splashLogo) {
             splashLogo.onclick = () => {
                 splashScreen.style.display = 'none';
             };
         }
 
-        // 3. Inicializamos todos los módulos de la app (el código de app.js).
-        if(typeof restoreManualEdits === 'function') restoreManualEdits();
-        if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
+        // --- INICIALIZACIÓN DE MÓDULOS ---
         if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
         if(typeof initApp === 'function') initApp();
         if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
@@ -459,7 +453,61 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // 4. Mostramos y configuramos el botón de "Cerrar Sesión".
+        // ================================================================
+        // ::: INICIO DE LA LÓGICA DE BOTONES QUE FALTABA :::
+        // ================================================================
+
+        // --- 1. Botones de Cadencia ---
+        const applyCadenceBtn = document.getElementById('btn-apply-cadence');
+        const clearCadenceBtn = document.getElementById('btn-clear-cadence');
+        if (applyCadenceBtn && typeof openCadenceModal === 'function') applyCadenceBtn.addEventListener('click', openCadenceModal);
+        if (clearCadenceBtn && typeof clearCadencePrompt === 'function') clearCadenceBtn.addEventListener('click', clearCadencePrompt);
+
+        // --- 2. Lógica de Navegación de Paneles (Turnos, Petición, Docs, Tablón) ---
+        const navButtons = document.querySelectorAll('.nav-btn[data-section]');
+        const panels = {
+            turnos: document.getElementById('content'),
+            peticiones: document.getElementById('ajustes-section'),
+            tablon: document.getElementById('tablon-section'),
+            documentos: document.getElementById('documentos-section')
+        };
+
+        function switchPanel(targetSection) {
+            Object.values(panels).forEach(panel => panel && panel.classList.add('oculto'));
+            if (panels[targetSection]) {
+                panels[targetSection].classList.remove('oculto');
+            }
+            navButtons.forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.section === targetSection);
+            });
+        }
+
+        navButtons.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const target = e.currentTarget.dataset.section;
+                if (target) switchPanel(target);
+            });
+        });
+
+        // --- 3. Botón de Permisos (que muestra/oculta el panel de licencias) ---
+        const btnCargaDias = document.getElementById('btn-carga-dias');
+        const licenciasContainer = document.getElementById('licencias-container');
+        if (btnCargaDias && licenciasContainer) {
+            btnCargaDias.addEventListener('click', () => {
+                licenciasContainer.classList.toggle('oculto');
+                if (!licenciasContainer.classList.contains('oculto')) {
+                    licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        }
+
+        // --- 4. Estado Inicial: Empezamos en el panel de 'turnos' ---
+        switchPanel('turnos');
+        
+        // ================================================================
+        // ::: FIN DE LA LÓGICA DE BOTONES :::
+        // ================================================================
+
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
             logoutBtn.onclick = () => {
@@ -470,19 +518,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- FUNCIÓN PARA MOSTRAR EL LOGIN (cuando no hay usuario) ---
     function mostrarPantallaDeLogin() {
-        appInitialized = false; // Reseteamos la bandera
-        
-        // Ocultamos todo y mostramos ÚNICAMENTE el formulario de autenticación.
+        appInitialized = false;
         splashScreen.style.display = 'none';
         mainApp.style.display = 'none';
         authContainer.style.display = 'flex';
-        
         if(logoutBtn) logoutBtn.style.display = 'none';
     }
 
-    // --- FUNCIÓN QUE CONFIGURA LOS BOTONES DEL FORMULARIO DE LOGIN/REGISTRO ---
     function initAuthForm() {
         const emailInput = document.getElementById('auth-email'), passwordInput = document.getElementById('auth-password'), submitBtn = document.getElementById('auth-submit-btn'), toggleLink = document.getElementById('auth-toggle-link'), authTitle = document.getElementById('auth-title'), errorContainer = document.getElementById('auth-error');
         if (!submitBtn) return;
@@ -491,15 +534,10 @@ document.addEventListener('DOMContentLoaded', () => {
         submitBtn.addEventListener('click', () => { const email = emailInput.value, password = passwordInput.value; errorContainer.textContent = ''; if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; } if (isLoginMode) { firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } else { firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } });
     }
 
-    // =============================================================
-    //                PUNTO DE CONTROL PRINCIPAL
-    // =============================================================
+    // --- PUNTO DE CONTROL PRINCIPAL ---
     try {
-        // Inicializamos Firebase.
         firebase.initializeApp(firebaseConfig);
-        // Preparamos el formulario de login.
         initAuthForm();
-        // Escuchamos los cambios de estado de autenticación para decidir qué mostrar.
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
                 arrancarAplicacion();
@@ -510,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } catch (e) {
         console.error("ERROR FATAL AL INICIAR FIREBASE:", e);
         if(splashScreen) {
-            splashScreen.innerHTML = `<div style="padding: 20px; text-align: center; color: red;"><h3>Error Crítico</h3><p>No se pudo iniciar la aplicación. Es posible que la configuración de Firebase (firebase-config.js) no sea correcta o que haya un problema de red.</p><p>Detalle: ${e.message}</p></div>`;
+            splashScreen.innerHTML = `<div style="padding: 20px; text-align: center; color: red;"><h3>Error Crítico</h3><p>No se pudo iniciar la aplicación.</p></div>`;
             splashScreen.style.display = 'flex';
         }
     }
