@@ -423,20 +423,15 @@ document.addEventListener('DOMContentLoaded', () => {
     
     let appInitialized = false;
 
-    // --- FUNCIÓN DE ARRANQUE DE LA APP (AHORA RECIBE EL USUARIO) ---
+    // --- FUNCIÓN DE ARRANQUE DE LA APP ---
     function arrancarAplicacion(user) {
         if (appInitialized) return;
         
-        // =============================================================
-        // FIX CRÍTICO: INYECTAR EL ID DE USUARIO REAL EN AppState
-        // =============================================================
-        // Esto soluciona la pérdida de datos de Cadencia y Peticiones.
         if (user && user.uid && typeof AppState === 'object') {
             AppState.userId = user.uid;
             console.log(`Usuario ${user.email} autenticado. AppState actualizado con userId: ${AppState.userId}`);
         } else {
-            console.error("Error crítico: No se pudo establecer el ID de usuario. La persistencia de datos fallará.");
-            // Forzamos el cierre de sesión si no hay un usuario válido.
+            console.error("Error crítico: No se pudo establecer el ID de usuario.");
             firebase.auth().signOut();
             return;
         }
@@ -448,7 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         if (splashLogo) { splashLogo.onclick = () => { splashScreen.style.display = 'none'; }; }
 
-        // --- INICIALIZACIÓN DE MÓDULOS (Ahora usarán el userId correcto) ---
+        // --- INICIALIZACIÓN DE MÓDULOS ---
         if(typeof restoreManualEdits === 'function') restoreManualEdits();
         if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
         if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
@@ -461,7 +456,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
         
-        // --- LÓGICA DE NAVEGACIÓN Y BOTONES (CORREGIDA) ---
+        // =================================================================
+        // ::: FIX DEFINITIVO: RENDERIZADO INICIAL DE PETICIONES :::
+        // =================================================================
+        // Forzamos el renderizado de las peticiones justo después de la inicialización.
+        if (window.TurnApp && typeof window.TurnApp.renderPeticiones === 'function') {
+            window.TurnApp.renderPeticiones();
+        }
+        // =================================================================
+
+        // --- LÓGICA DE NAVEGACIÓN Y BOTONES ---
         const applyCadenceBtn = document.getElementById('btn-apply-cadence');
         const clearCadenceBtn = document.getElementById('btn-clear-cadence');
         if (applyCadenceBtn) applyCadenceBtn.addEventListener('click', () => typeof openCadenceModal === 'function' && openCadenceModal());
@@ -472,13 +476,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         function switchPanel(targetSection) {
             Object.values(panels).forEach(p => p && p.classList.add('oculto'));
-            // **FIX SCROLL: Ocultamos siempre el panel de licencias al cambiar de panel principal.**
             if (licenciasContainer) licenciasContainer.classList.add('oculto');
 
             const panelToShow = panels[targetSection];
             if (panelToShow) {
                 panelToShow.classList.remove('oculto');
-                // **FIX SCROLL: Llevamos la vista al inicio del nuevo panel.**
                 panelToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
             navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.section === targetSection));
@@ -491,7 +493,7 @@ document.addEventListener('DOMContentLoaded', () => {
             btnCargaDias.addEventListener('click', () => {
                 if (panels.turnos.classList.contains('oculto')) switchPanel('turnos');
                 
-                setTimeout(() => { // Pequeño retardo para asegurar que la vista de "Turnos" está activa.
+                setTimeout(() => {
                     licenciasContainer.classList.toggle('oculto');
                     if (!licenciasContainer.classList.contains('oculto')) {
                          licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -526,7 +528,6 @@ document.addEventListener('DOMContentLoaded', () => {
         initAuthForm();
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // Pasamos el objeto 'user' para que la app sepa quién es.
                 arrancarAplicacion(user);
             } else {
                 mostrarPantallaDeLogin();
