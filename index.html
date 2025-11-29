@@ -419,13 +419,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // =========================================================================
-    // PUNTO DE ARRANQUE SEGURO Y LÓGICA DE CONTROL (VERSIÓN FINAL)
+    // PUNTO DE ARRANQUE ÚNICO Y DEFINITIVO
     // =========================================================================
 
-    // --- Bandera para evitar que la app se inicialice varias veces ---
-    let appStarted = false;
-
-    // 1. Inicializamos Firebase. Es el primer paso y el más importante.
+    // 1. Inicializamos Firebase.
     firebase.initializeApp(firebaseConfig);
 
     // 2. Definimos nuestras funciones de control.
@@ -435,27 +432,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const mainApp = document.getElementById('app');
         const splashScreen = document.getElementById('splash');
 
-        // Ocultamos todo para empezar de cero
-        if (authContainer) authContainer.style.display = 'none';
-        if (mainApp) mainApp.classList.add('oculto');
-        if (splashScreen) splashScreen.style.display = 'none';
+        if(splashScreen) splashScreen.style.display = 'none';
+        if(authContainer) authContainer.style.display = 'none';
+        if(mainApp) mainApp.classList.add('oculto');
         
         if (pantalla === 'auth') {
-            if (authContainer) authContainer.style.display = 'flex';
+            if(authContainer) authContainer.style.display = 'flex';
         } else if (pantalla === 'app') {
-            if (splashScreen) splashScreen.style.display = 'flex'; // Mostramos el splash primero
-            if (mainApp) mainApp.classList.remove('oculto');
+            if(splashScreen) splashScreen.style.display = 'flex';
+            if(mainApp) mainApp.classList.remove('oculto');
         }
     }
 
     function arrancarAplicacion() {
-        // --- ¡CONTROL CLAVE! Si la app ya arrancó, no hacemos nada más. ---
-        if (appStarted) {
-            console.log("App ya iniciada. Se evita la re-inicialización.");
-            return; 
-        }
-        appStarted = true; // Levantamos la bandera
-        console.log("Arrancando la aplicación por primera vez...");
+        console.log("Arrancando la aplicación...");
 
         // Hacemos visible el botón de logout y le añadimos su funcionalidad
         const logoutBtn = document.getElementById('btn-logout');
@@ -464,15 +454,17 @@ document.addEventListener('DOMContentLoaded', () => {
             logoutBtn.addEventListener('click', () => {
                 if (confirm('¿Seguro que quieres cerrar la sesión?')) {
                     firebase.auth().signOut();
-                    // El onAuthStateChanged se encargará del resto, recargando la vista de login.
                 }
             });
         }
         
-        // Mostramos la app (que a su vez muestra el splash)
-        mostrarPantalla('app');
+        // --- Lógica de inicialización CONSOLIDADA desde app.js ---
 
-        // Inicializamos todos los módulos de app.js (el código original de tu app)
+        // 1. Cargar datos guardados
+        if(typeof restoreManualEdits === 'function') restoreManualEdits();
+        if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
+
+        // 2. Inicializar todos los módulos
         if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
         if(typeof initApp === 'function') initApp();
         if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
@@ -483,72 +475,64 @@ document.addEventListener('DOMContentLoaded', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // --- LÓGICA DE NAVEGACIÓN (Restaurada y mejorada) ---
-        const navButtons = document.querySelectorAll('.nav-btn[data-section]');
-        const panels = {
-            turnos: document.getElementById('content'),
-            peticiones: document.getElementById('ajustes-section'),
-            tablon: document.getElementById('tablon-section'),
-            documentos: document.getElementById('documentos-section'),
-        };
+        // 3. Añadir Listeners de UI que estaban en app.js
+        const applyCadenceBtn = document.getElementById('btn-apply-cadence');
+        const clearCadenceBtn = document.getElementById('btn-clear-cadence');
+        if (applyCadenceBtn && typeof openCadenceModal === 'function') applyCadenceBtn.addEventListener('click', openCadenceModal);
+        if (clearCadenceBtn && typeof clearCadencePrompt === 'function') clearCadenceBtn.addEventListener('click', clearCadencePrompt);
 
+        // 4. Lógica original y correcta de la pantalla de Splash
+        const splash = document.getElementById("splash");
+        const app = document.getElementById("app");
+        const logo = document.getElementById("splash-logo");
+        if (splash && app && logo) {
+            logo.addEventListener("click", () => {
+                splash.remove();
+                app.classList.remove("oculto");
+                app.scrollIntoView({ behavior: "smooth", block: "start" });
+            });
+        }
+        
+        // 5. Lógica de navegación principal
+        const navButtons = document.querySelectorAll('.nav-btn[data-section]');
+        const panels = { turnos: document.getElementById('content'), peticiones: document.getElementById('ajustes-section'), tablon: document.getElementById('tablon-section'), documentos: document.getElementById('documentos-section') };
         function switchPanel(targetSection) {
             Object.values(panels).forEach(panel => panel && panel.classList.add('oculto'));
-            
             if (panels[targetSection]) {
                 panels[targetSection].classList.remove('oculto');
                 panels[targetSection].scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
-            
-            navButtons.forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.section === targetSection);
-            });
+            navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.section === targetSection));
         }
-
-        navButtons.forEach(btn => {
-            btn.addEventListener('click', (e) => {
-                const target = e.currentTarget.dataset.section;
-                if(target) switchPanel(target);
-            });
-        });
+        navButtons.forEach(btn => btn.addEventListener('click', (e) => {
+            const target = e.currentTarget.dataset.section;
+            if (target) switchPanel(target);
+        }));
         
-        // --- LÓGICA DEL BOTÓN DE PERMISOS (Restaurada y corregida) ---
         const btnCargaDias = document.getElementById('btn-carga-dias');
         const licenciasContainer = document.getElementById('licencias-container');
-        const calendarPanel = document.getElementById('calendar-panel');
-
-        if(btnCargaDias && licenciasContainer && calendarPanel) {
+        if (btnCargaDias && licenciasContainer) {
             btnCargaDias.addEventListener('click', () => {
-                if (panels.turnos.classList.contains('oculto')) {
-                    switchPanel('turnos');
-                }
-                const isLicenciasHidden = licenciasContainer.classList.contains('oculto');
-                if (isLicenciasHidden) {
-                    licenciasContainer.classList.remove('oculto');
+                licenciasContainer.classList.toggle('oculto');
+                if (!licenciasContainer.classList.contains('oculto')) {
                     licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                } else {
-                    licenciasContainer.classList.add('oculto');
-                    calendarPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 }
             });
         }
-
-        // Estado inicial de la navegación
-        switchPanel('turnos');
+        
+        switchPanel('turnos'); // Empezamos en la vista de turnos
     }
 
     function initAuthForm() {
+        // ... (esta función se queda exactamente igual, no necesita cambios)
         const emailInput = document.getElementById('auth-email');
         const passwordInput = document.getElementById('auth-password');
         const submitBtn = document.getElementById('auth-submit-btn');
         const toggleLink = document.getElementById('auth-toggle-link');
         const authTitle = document.getElementById('auth-title');
         const errorContainer = document.getElementById('auth-error');
-
         if (!submitBtn) return;
-
         let isLoginMode = true;
-
         toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
@@ -558,40 +542,36 @@ document.addEventListener('DOMContentLoaded', () => {
             toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
             errorContainer.textContent = '';
         });
-
         submitBtn.addEventListener('click', () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             errorContainer.textContent = '';
-            if (!email || !password) {
-                errorContainer.textContent = 'Por favor, introduce email y contraseña.';
-                return;
-            }
+if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; }
             if (isLoginMode) {
-                firebase.auth().signInWithEmailAndPassword(email, password)
-                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+                firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
             } else {
-                firebase.auth().createUserWithEmailAndPassword(email, password)
-                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+                firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
             }
         });
     }
 
-    // 3. Establecemos el observador del estado de autenticación.
+    // 3. Observador de autenticación.
+    let appInitialized = false;
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            // Usuario está autenticado -> Arrancamos la aplicación.
-            arrancarAplicacion();
+            if (!appInitialized) { // Solo arranca la app si no se ha hecho ya
+                appInitialized = true;
+                arrancarAplicacion();
+            }
         } else {
-            // No hay usuario -> Mostramos el login y reseteamos la bandera.
-            appStarted = false; 
+            appInitialized = false; // Permite reiniciar la app si se cierra sesión y se vuelve a entrar
             const logoutBtn = document.getElementById('btn-logout');
             if(logoutBtn) logoutBtn.style.display = 'none';
             mostrarPantalla('auth');
         }
     });
 
-    // 4. Inicializamos el formulario de login/registro.
+    // 4. Inicializamos el formulario de login.
     initAuthForm();
 });
 </script>
