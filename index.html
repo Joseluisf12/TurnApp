@@ -419,6 +419,11 @@
 // INICIALIZACIÓN DE LA APP Y LÓGICA DE AUTENTICACIÓN
 // =========================================================================
 
+// ¡CORRECCIÓN! Inicializamos Firebase aquí, al principio de todo.
+// Esto asegura que la conexión está lista ANTES de que cualquier otra
+// función de autenticación (como initAuthForm) intente usarla.
+firebase.initializeApp(firebaseConfig);
+
 // Esta función se encarga de mostrar la app y ocultar el login, o viceversa.
 function mostrarPantalla(pantalla) {
     const authContainer = document.getElementById('auth-container');
