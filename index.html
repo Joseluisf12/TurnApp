@@ -417,10 +417,9 @@
   <script src="app.js" defer></script>
 
 <script>
-// Usamos 'load' en lugar de 'DOMContentLoaded' para asegurarnos de que todos los
-// scripts externos (como los de Firebase) se hayan cargado y ejecutado.
-// Esta es la corrección clave para que el botón de login funcione.
-window.addEventListener('load', () => {
+// La clave es usar 'DOMContentLoaded'. Esto asegura que el HTML está listo y
+// que todos los scripts con 'defer' (como los de Firebase) se han ejecutado.
+document.addEventListener('DOMContentLoaded', () => {
 
     // =========================================================================
     // PUNTO DE ARRANQUE ÚNICO Y DEFINITIVO
@@ -428,32 +427,16 @@ window.addEventListener('load', () => {
 
     let appInitialized = false;
 
-    // 1. Inicializamos Firebase. En este punto, es 100% seguro hacerlo.
+    // 1. Inicializar Firebase. Es seguro hacerlo aquí.
     firebase.initializeApp(firebaseConfig);
 
-    // 2. Definimos las funciones de control.
-
-    function mostrarPantalla(pantalla) {
-        const authContainer = document.getElementById('auth-container');
-        const mainApp = document.getElementById('app');
-        const splashScreen = document.getElementById('splash');
-
-        if(splashScreen) splashScreen.style.display = 'none';
-        if(authContainer) authContainer.style.display = 'none';
-        if(mainApp) mainApp.style.display = 'none'; // Usamos display para evitar conflictos con 'oculto'
-        
-        if (pantalla === 'auth') {
-            if(authContainer) authContainer.style.display = 'flex';
-        } else if (pantalla === 'app') {
-            if(mainApp) mainApp.style.display = 'block';
-            if(splashScreen) splashScreen.style.display = 'flex';
-        }
-    }
-
+    // 2. Definir la función que ARRANCA la aplicación principal
     function arrancarAplicacion() {
+        if (appInitialized) return; // Si ya ha arrancado, no hacer nada más.
+        appInitialized = true;
         console.log("Arrancando la aplicación...");
 
-        // Hacemos visible el botón de logout y le añadimos su funcionalidad
+        // Muestra el botón de logout y le da su funcionalidad
         const logoutBtn = document.getElementById('btn-logout');
         if (logoutBtn) {
             logoutBtn.style.display = 'block';
@@ -464,13 +447,9 @@ window.addEventListener('load', () => {
             });
         }
         
-        // --- Lógica de inicialización CONSOLIDADA (antes en app.js) ---
-
-        // 1. Cargar datos guardados
+        // --- Lógica de inicialización CONSOLIDADA (todo lo que antes hacía app.js por su cuenta) ---
         if(typeof restoreManualEdits === 'function') restoreManualEdits();
         if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
-
-        // 2. Inicializar todos los módulos
         if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
         if(typeof initApp === 'function') initApp();
         if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
@@ -481,23 +460,7 @@ window.addEventListener('load', () => {
         if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
         if(typeof initNotificationManager === 'function') initNotificationManager();
 
-        // 3. Añadir Listeners de UI (antes en app.js)
-        const applyCadenceBtn = document.getElementById('btn-apply-cadence');
-        const clearCadenceBtn = document.getElementById('btn-clear-cadence');
-        if (applyCadenceBtn && typeof openCadenceModal === 'function') applyCadenceBtn.addEventListener('click', openCadenceModal);
-        if (clearCadenceBtn && typeof clearCadencePrompt === 'function') clearCadenceBtn.addEventListener('click', clearCadencePrompt);
-
-        // 4. Lógica original de la pantalla de Splash
-        const splash = document.getElementById("splash");
-        const app = document.getElementById("app");
-        const logo = document.getElementById("splash-logo");
-        if (splash && app && logo) {
-            logo.addEventListener("click", () => {
-                splash.style.display = 'none'; // Ocultamos el splash
-            });
-        }
-        
-        // 5. Lógica de navegación principal
+        // --- Lógica de navegación ---
         const navButtons = document.querySelectorAll('.nav-btn[data-section]');
         const panels = { turnos: document.getElementById('content'), peticiones: document.getElementById('ajustes-section'), tablon: document.getElementById('tablon-section'), documentos: document.getElementById('documentos-section') };
         function switchPanel(targetSection) {
@@ -524,10 +487,25 @@ window.addEventListener('load', () => {
             });
         }
         
-        mostrarPantalla('app');
+        // Muestra la app y empieza en la sección de turnos
+        document.getElementById('auth-container').style.display = 'none';
+        document.getElementById('app').classList.remove('oculto');
+        document.getElementById('splash').style.display = 'flex'; // Aseguramos que el splash se ve
         switchPanel('turnos');
     }
 
+    // 3. Definir la función que muestra la pantalla de Login
+    function mostrarPantallaDeLogin() {
+        appInitialized = false; // Resetea la bandera por si se cierra sesión
+        const logoutBtn = document.getElementById('btn-logout');
+        if(logoutBtn) logoutBtn.style.display = 'none';
+        
+        document.getElementById('app').classList.add('oculto');
+        document.getElementById('splash').style.display = 'none';
+        document.getElementById('auth-container').style.display = 'flex';
+    }
+
+    // 4. Definir la función que inicializa el formulario de Login
     function initAuthForm() {
         const emailInput = document.getElementById('auth-email');
         const passwordInput = document.getElementById('auth-password');
@@ -537,6 +515,7 @@ window.addEventListener('load', () => {
         const errorContainer = document.getElementById('auth-error');
         if (!submitBtn) return;
         let isLoginMode = true;
+
         toggleLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
@@ -546,39 +525,35 @@ window.addEventListener('load', () => {
             toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión';
             errorContainer.textContent = '';
         });
+
         submitBtn.addEventListener('click', () => {
             const email = emailInput.value;
             const password = passwordInput.value;
             errorContainer.textContent = '';
             if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; }
+            
             if (isLoginMode) {
-                firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+                firebase.auth().signInWithEmailAndPassword(email, password)
+                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
             } else {
-                firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
+                firebase.auth().createUserWithEmailAndPassword(email, password)
+                    .catch(error => { errorContainer.textContent = 'Error: ' + error.message; });
             }
         });
     }
 
-    // 3. Observador de autenticación.
+    // --- Punto de Control Principal ---
+    initAuthForm(); // Prepara los botones de login
     firebase.auth().onAuthStateChanged(user => {
         if (user) {
-            if (!appInitialized) {
-                appInitialized = true;
-                arrancarAplicacion();
-            }
+            arrancarAplicacion(); // Si hay usuario, arranca la app
         } else {
-            appInitialized = false;
-            const logoutBtn = document.getElementById('btn-logout');
-            if(logoutBtn) logoutBtn.style.display = 'none';
-            mostrarPantalla('auth');
+            mostrarPantallaDeLogin(); // Si no, muestra el login
         }
     });
 
-    // 4. Inicializamos el formulario de login.
-    initAuthForm();
 });
 </script>
-
 
 <!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
 <div id="image-modal" class="image-modal-overlay oculto">
