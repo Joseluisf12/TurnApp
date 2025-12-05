@@ -336,9 +336,10 @@ function initCoordinatorTable() {
     
 
 // =================================================================
-//    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
+//    NUEVA VERSIÓN de initTablon (CONECTADA A FIREBASE)
 // =================================================================
 function initTablon() {
+    // --- 1. Elementos del DOM ---
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -353,138 +354,186 @@ function initTablon() {
         return;
     }
 
-       const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
+    // --- 2. Referencias a Firebase ---
+    // Usamos Firestore para guardar la información (metadata) de los archivos
+    // y Storage para guardar el archivo en sí.
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    const filesCollection = db.collection('groups').doc(AppState.groupId).collection('tablonFiles');
 
-    function renderFiles() {
-        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        fileListContainer.innerHTML = '';
-        const fragment = document.createDocumentFragment();
+    // --- 3. Renderizar la lista de archivos desde Firestore ---
+    async function renderFiles() {
+        fileListContainer.innerHTML = '<li>Cargando archivos desde la nube...</li>';
+        try {
+            const snapshot = await filesCollection.orderBy('createdAt', 'desc').get();
+            const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-        if (files.length > 0 && files[0].type.startsWith('image/')) {
-            tablonPreviewImage.src = files[0].data;
-            tablonPreviewContainer.classList.remove('oculto');
-        } else {
-            tablonPreviewContainer.classList.add('oculto');
-        }
+            fileListContainer.innerHTML = '';
+            const fragment = document.createDocumentFragment();
 
-        files.forEach((file, index) => {
-            const fileItem = document.createElement('div');
-            fileItem.className = 'tablon-item';
-            
-            const infoDiv = document.createElement('div');
-            infoDiv.className = 'tablon-item-info';
-
-            const nameStrong = document.createElement('strong');
-            nameStrong.className = 'tablon-item-name';
-            nameStrong.textContent = file.name;
-            // --- ¡CAMBIO 1! Hacemos el nombre editable ---
-            nameStrong.contentEditable = true; 
-            nameStrong.spellcheck = false;
-            // Guardamos el índice en el propio elemento para encontrarlo al editar
-            nameStrong.dataset.index = index;
-
-            const metaSmall = document.createElement('small');
-            metaSmall.className = 'tablon-item-meta';
-            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-            metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
-
-            infoDiv.appendChild(nameStrong);
-            infoDiv.appendChild(metaSmall);
-
-            const actionsDiv = document.createElement('div');
-            actionsDiv.className = 'tablon-item-actions';
-            actionsDiv.innerHTML = `
-                <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
-                <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
-                <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
-            `;
-
-            fileItem.appendChild(infoDiv);
-            fileItem.appendChild(actionsDiv);
-            fragment.appendChild(fileItem);
-        });
-        fileListContainer.appendChild(fragment);
-    }
-    
-    // --- ¡CAMBIO 2! Lógica para guardar el nombre editado ---
-    fileListContainer.addEventListener('blur', (event) => {
-        // Se activa cuando se deja de editar un nombre
-        if (event.target && event.target.classList.contains('tablon-item-name')) {
-            const index = parseInt(event.target.dataset.index, 10);
-            const newName = event.target.textContent.trim();
-            
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            if (files[index] && newName) {
-                files[index].name = newName;
-                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-                // Opcional: podrías volver a renderizar, pero no es estrictamente necesario
-                // renderFiles(); 
-            } else {
-                // Si el nombre se deja en blanco, se restaura el original
-                renderFiles();
+            if (files.length === 0) {
+                fileListContainer.innerHTML = '<li>No hay archivos en el tablón. ¡Sube el primero!</li>';
+                tablonPreviewContainer.classList.add('oculto');
+                return;
             }
-        }
-    }, true); // Usamos 'true' (captura) para asegurar que el evento se gestione bien
 
-    // --- ¡CAMBIO 3! Mejorar la experiencia de usuario con la tecla "Enter" ---
-    fileListContainer.addEventListener('keydown', (event) => {
-        if (event.target && event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
-            event.preventDefault(); // Evita que se cree un salto de línea
-            event.target.blur(); // Dispara el evento 'blur' para guardar
-        }
-    });
+            const latestImage = files.find(file => file.type.startsWith('image/'));
+            if (latestImage) {
+                tablonPreviewImage.src = latestImage.downloadURL;
+                tablonPreviewContainer.classList.remove('oculto');
+            } else {
+                tablonPreviewContainer.classList.add('oculto');
+            }
 
-    // El resto de la función permanece igual...
+            files.forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'tablon-item';
+                fileItem.dataset.id = file.id; // ID del documento de Firestore
+                fileItem.dataset.storagePath = file.storagePath; // Ruta en Storage para borrar
+
+                const infoDiv = document.createElement('div');
+                infoDiv.className = 'tablon-item-info';
+
+                const nameStrong = document.createElement('strong');
+                nameStrong.className = 'tablon-item-name';
+                nameStrong.textContent = file.name;
+
+                const metaSmall = document.createElement('small');
+                metaSmall.className = 'tablon-item-meta';
+                const uploadDate = new Date(file.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
+
+                infoDiv.appendChild(nameStrong);
+                infoDiv.appendChild(metaSmall);
+
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'tablon-item-actions';
+                actionsDiv.innerHTML = `
+                    <button class="view-btn modern-btn green" data-url="${file.downloadURL}" data-type="${file.type}" title="Ver">👁️</button>
+                    <button class="download-btn modern-btn" data-url="${file.downloadURL}" data-name="${file.name}" title="Descargar">📥</button>
+                    <button class="delete-btn modern-btn red" title="Eliminar">🗑️</button>
+                `;
+
+                fileItem.appendChild(infoDiv);
+                fileItem.appendChild(actionsDiv);
+                fragment.appendChild(fileItem);
+            });
+            fileListContainer.appendChild(fragment);
+
+        } catch (error) {
+            console.error("Error al cargar archivos desde Firebase:", error);
+            fileListContainer.innerHTML = `<li>Error al cargar archivos. Revisa la consola.</li>`;
+        }
+    }
+
+    // --- 4. Subir un nuevo archivo ---
+    function handleUpload(file) {
+        if (!file) return;
+        const timestamp = Date.now();
+        const storagePath = `tablon/${AppState.groupId}/${timestamp}-${file.name}`;
+        const storageRef = storage.ref(storagePath);
+        const uploadTask = storageRef.put(file);
+
+        // Creamos un item temporal para mostrar el progreso
+        const tempId = `upload-${timestamp}`;
+        const tempItem = document.createElement('div');
+        tempItem.className = 'tablon-item';
+        tempItem.id = tempId;
+        tempItem.innerHTML = `<div class="tablon-item-info"><strong>Subiendo ${file.name}...</strong><small id="${tempId}-progress">0%</small></div>`;
+        const firstItem = fileListContainer.firstChild;
+        fileListContainer.insertBefore(tempItem, firstItem);
+
+
+        uploadTask.on('state_changed',
+            (snapshot) => {
+                const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                const progressEl = document.getElementById(`${tempId}-progress`);
+                if (progressEl) progressEl.textContent = `${Math.round(progress)}%`;
+            },
+            (error) => {
+                console.error("Error en la subida:", error);
+                document.getElementById(tempId)?.remove();
+                alert(`Error al subir el archivo: ${error.message}`);
+            },
+            async () => {
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                const fileData = {
+                    name: file.name,
+                    type: file.type,
+                    size: file.size,
+                    createdAt: new Date().toISOString(),
+                    downloadURL: downloadURL,
+                    storagePath: storagePath
+                };
+                await filesCollection.add(fileData);
+                document.getElementById(tempId)?.remove();
+                renderFiles(); // Recargamos desde la fuente de la verdad
+            }
+        );
+    }
+
+    // --- 5. Eventos de click ---
     btnUpload.addEventListener('click', () => {
         fileInput.value = null;
         fileInput.click();
     });
 
-    fileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            files.unshift(fileData);
-            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-            renderFiles();
-        };
-        reader.readAsDataURL(file);
-    });
+    fileInput.addEventListener('change', (e) => handleUpload(e.target.files[0]));
 
-    fileListContainer.addEventListener('click', (event) => {
+    fileListContainer.addEventListener('click', async (event) => {
         const target = event.target;
-        const index = target.closest('[data-index]')?.dataset.index;
-        if (index === undefined) return;
-
-        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-        const file = files[index];
+        const fileItem = target.closest('.tablon-item');
 
         if (target.classList.contains('view-btn')) {
-            if (file.type.startsWith('image/')) {
-                modalImageContent.src = file.data;
+            const url = target.dataset.url;
+            const type = target.dataset.type;
+            if (type.startsWith('image/')) {
+                modalImageContent.src = url;
                 imageModal.classList.remove('oculto');
             } else {
-                fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
+                window.open(url, '_blank');
             }
-        } else if (target.classList.contains('download-btn')) {
-            const a = document.createElement('a');
-            a.href = file.data;
-            a.download = file.name;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        } else if (target.classList.contains('delete-btn')) {
-            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
-                files.splice(index, 1);
-                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
-                renderFiles();
+        }
+        else if (target.classList.contains('download-btn')) {
+            try {
+                const url = target.dataset.url;
+                const name = target.dataset.name;
+                const response = await fetch(url);
+                const blob = await response.blob();
+                const blobUrl = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = blobUrl;
+                a.download = name;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(blobUrl);
+            } catch (error) {
+                console.error("Error al descargar:", error);
+                alert("No se pudo descargar el archivo.");
+            }
+        }
+        else if (target.classList.contains('delete-btn')) {
+            const docId = fileItem.dataset.id;
+            const storagePath = fileItem.dataset.storagePath;
+            const fileName = fileItem.querySelector('.tablon-item-name').textContent;
+
+            if (confirm(`¿Seguro que quieres eliminar "${fileName}"?`)) {
+                try {
+                    fileItem.style.opacity = '0.5';
+                    if (storagePath) await storage.ref(storagePath).delete();
+                    await filesCollection.doc(docId).delete();
+                    renderFiles();
+                } catch (error) {
+                    console.error("Error al eliminar:", error);
+                    alert(`No se pudo eliminar el archivo: ${error.message}`);
+                    renderFiles();
+                }
             }
         }
     });
 
+    // Eventos del modal
     tablonPreviewImage.addEventListener('click', () => {
         if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
             modalImageContent.src = tablonPreviewImage.src;
@@ -495,8 +544,10 @@ function initTablon() {
     imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
     window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
 
+    // --- 6. Carga inicial ---
     renderFiles();
 }
+
 
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
