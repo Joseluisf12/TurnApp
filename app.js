@@ -1928,5 +1928,42 @@ function initNotificationManager() {
     window.addEventListener('storage', checkAndDisplayNotifications);
 }
 
+// =========================================================================
+//    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
+// =========================================================================
+function initializeAndStartApp(user) {
+    if (!user) return;
+
+    // 1. Poblamos el estado de la aplicación con la información del usuario
+    AppState.userId = user.uid;
+    AppState.userName = user.displayName || user.email; // Usamos nombre de pantalla o email
+    AppState.isCoordinator = (user.uid === AppState.coordinatorId);
+
+    console.log("Usuario conectado:", AppState); // Para depurar fácilmente
+
+    // Si el usuario es nuevo y no tiene nombre, se lo ponemos (su email)
+    if (!user.displayName && user.email) {
+        user.updateProfile({
+            displayName: user.email.split('@')[0]
+        }).catch(error => {
+            console.error("Error al actualizar el nombre de usuario:", error);
+        });
+    }
+    
+    // 2. Ahora que AppState es correcto, inicializamos todos los módulos
+    // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
+    if(typeof restoreManualEdits === 'function') restoreManualEdits();
+    if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
+    if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
+    if(typeof initApp === 'function') initApp();
+    if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
+    if(typeof initTablon === 'function') initTablon();
+    if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
+    if(typeof initPeticiones === 'function') initPeticiones();
+    if(typeof initEditableTitle === 'function') initEditableTitle();
+    if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
+    if(typeof initNotificationManager === 'function') initNotificationManager();
+}
+
 
   // ------------------ FIN app.js ------------------
