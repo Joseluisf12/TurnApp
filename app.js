@@ -600,13 +600,13 @@ function initTablon() {
 }
 
 // =================================================================
-//    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
+//    NUEVA VERSIÓN de initDocumentosPanel (CONECTADA A FIREBASE)
 // =================================================================
 function initDocumentosPanel() {
+    // --- 1. Elementos del DOM y Configuración ---
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
-    // Configuración de PDF.js
     if (typeof pdfjsLib !== 'undefined') {
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
     }
@@ -616,28 +616,21 @@ function initDocumentosPanel() {
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
-    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
- 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
 
-    function loadDocs() {
-        const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-        CATEGORIES.forEach(cat => {
-            if (!Array.isArray(data[cat])) data[cat] = [];
-        });
-        return data;
-    }
+    // --- 2. Referencias a Firebase ---
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+    const docsCollection = db.collection('groups').doc(AppState.groupId).collection('documentos');
 
-    function saveDocs(docs) {
-        localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
-    }
-    
-    async function generatePdfThumbnail(pdfDataUrl) {
+    // --- 3. Funciones de Renderizado ---
+    async function generatePdfThumbnail(file) {
+        const fileUrl = URL.createObjectURL(file);
         try {
-            const pdf = await pdfjsLib.getDocument(pdfDataUrl).promise;
+            const pdf = await pdfjsLib.getDocument(fileUrl).promise;
             const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 0.5 });
+            const viewport = page.getViewport({ scale: 0.3 }); // Escala pequeña para thumbnail
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.height = viewport.height;
@@ -646,67 +639,134 @@ function initDocumentosPanel() {
             return canvas.toDataURL('image/jpeg', 0.8);
         } catch (error) {
             console.error("Error generando la miniatura del PDF:", error);
-            return null;
+            return null; // Devuelve null si falla
+        } finally {
+            URL.revokeObjectURL(fileUrl); // Liberamos memoria
         }
     }
 
-    function renderDocs() {
-        const docs = loadDocs();
-        
+    async function renderDocs() {
+        // Limpiamos todas las tarjetas antes de cargar
         CATEGORIES.forEach(category => {
             const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
-            if (!card) return;
-
-            const imgPreview = card.querySelector('.documento-preview-img');
-            const overlay = card.querySelector('.preview-overlay');
-            const fileListContainer = card.querySelector('.documento-file-list');
-            
-            const files = docs[category];
-
-            if (files && files.length > 0) {
-                const lastFile = files[0];
-                if (lastFile.thumbnail) {
-                    imgPreview.src = lastFile.thumbnail;
-                    imgPreview.style.display = 'block';
-                    overlay.style.display = 'none';
-                }
-            } else {
-                imgPreview.src = '';
+            if (card) {
+                card.querySelector('.documento-file-list').innerHTML = '<li>Cargando...</li>';
+                const imgPreview = card.querySelector('.documento-preview-img');
+                const overlay = card.querySelector('.preview-overlay');
                 imgPreview.style.display = 'none';
                 overlay.style.display = 'flex';
             }
-
-            fileListContainer.innerHTML = '';
-            const fragment = document.createDocumentFragment();
-
-            if (files) {
-                files.forEach((file, index) => {
-                    const fileItem = document.createElement('div');
-                    fileItem.className = 'documento-file-item';
-                    const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-
-                    // --- ¡CAMBIO AQUÍ! Usamos iconos en lugar de texto y añadimos un 'title' para accesibilidad ---
-                    fileItem.innerHTML = `
-                        <div class="documento-file-info">
-                            <strong class="documento-file-name">${file.name}</strong>
-                            <small class="documento-file-meta">Subido: ${uploadDate}</small>
-                        </div>
-                        <div class="documento-file-actions">
-                            <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}" title="Ver">👁️</button>
-                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}" title="Descargar">📥</button>
-                            <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}" title="Eliminar">🗑️</button>
-                        </div>
-                    `;
-                    fragment.appendChild(fileItem);
-                });
-            }
-            fileListContainer.appendChild(fragment);
         });
+
+        try {
+            const snapshot = await docsCollection.orderBy('createdAt', 'desc').get();
+            const allDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+            CATEGORIES.forEach(category => {
+                const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
+                const fileListContainer = card.querySelector('.documento-file-list');
+                const imgPreview = card.querySelector('.documento-preview-img');
+                const overlay = card.querySelector('.preview-overlay');
+                
+                const filesForCategory = allDocs.filter(doc => doc.category === category);
+
+                fileListContainer.innerHTML = '';
+                const fragment = document.createDocumentFragment();
+
+                if (filesForCategory.length > 0) {
+                    const lastFile = filesForCategory[0];
+                    if (lastFile.thumbnail) {
+                        imgPreview.src = lastFile.thumbnail;
+                        imgPreview.dataset.viewUrl = lastFile.downloadURL; // Guardamos URL para vista rápida
+                        imgPreview.style.display = 'block';
+                        overlay.style.display = 'none';
+                    }
+
+                    filesForCategory.forEach(file => {
+                        const fileItem = document.createElement('div');
+                        fileItem.className = 'documento-file-item';
+                        // Guardamos todos los datos necesarios en el elemento
+                        fileItem.dataset.id = file.id;
+                        fileItem.dataset.storagePath = file.storagePath;
+                        fileItem.dataset.viewUrl = file.downloadURL;
+                        fileItem.dataset.fileName = file.name;
+
+                        const uploadDate = new Date(file.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        fileItem.innerHTML = `
+                            <div class="documento-file-info">
+                                <strong class="documento-file-name">${file.name}</strong>
+                                <small class="documento-file-meta">Subido: ${uploadDate}</small>
+                            </div>
+                            <div class="documento-file-actions">
+                                <button class="doc-view-btn modern-btn green" title="Ver">👁️</button>
+                                <button class="doc-download-btn modern-btn" title="Descargar">📥</button>
+                                <button class="doc-delete-btn modern-btn red" title="Eliminar">🗑️</button>
+                            </div>
+                        `;
+                        fragment.appendChild(fileItem);
+                    });
+                } else {
+                     fileListContainer.innerHTML = '<li>No hay documentos.</li>';
+                }
+                 fileListContainer.appendChild(fragment);
+            });
+        } catch (error) {
+            console.error("Error al cargar documentos desde Firebase:", error);
+            CATEGORIES.forEach(category => {
+                 const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
+                 if(card) card.querySelector('.documento-file-list').innerHTML = '<li>Error al cargar.</li>';
+            });
+        }
+    }
+    
+    // --- 4. Subida de Archivos ---
+    async function handleUpload(file, category) {
+        if (!file || !category) return;
+
+        const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
+        const overlayText = card.querySelector('.preview-text');
+        if (overlayText) overlayText.textContent = 'Procesando...';
+
+        const thumbnail = await generatePdfThumbnail(file);
+
+        if (overlayText) overlayText.textContent = 'Subiendo...';
+        
+        const timestamp = Date.now();
+        const storagePath = `documentos/${AppState.groupId}/${category}/${timestamp}-${file.name}`;
+        const storageRef = storage.ref(storagePath);
+        const uploadTask = storageRef.put(file);
+
+        uploadTask.on('state_changed',
+            null, // No usamos el progreso aquí, pero se podría
+            (error) => {
+                console.error("Error en la subida del PDF:", error);
+                alert(`Error al subir el PDF: ${error.message}`);
+                renderDocs(); // Revertimos al estado original
+            },
+            async () => {
+                const downloadURL = await uploadTask.snapshot.ref.getDownloadURL();
+                const fileData = {
+                    name: file.name,
+                    size: file.size,
+                    type: file.type,
+                    createdAt: new Date().toISOString(),
+                    downloadURL: downloadURL,
+                    storagePath: storagePath,
+                    category: category,
+                    thumbnail: thumbnail // Guardamos la miniatura
+                };
+                await docsCollection.add(fileData);
+                renderDocs(); // Recargamos todo para mostrar el nuevo estado
+            }
+        );
     }
 
-    documentosSection.addEventListener('click', (event) => {
+    // --- 5. Eventos ---
+    documentosSection.addEventListener('click', async (event) => {
         const target = event.target;
+        const fileItem = target.closest('.documento-file-item');
 
+        // Botón Subir
         if (target.matches('.btn-upload-pdf')) {
             currentUploadCategory = target.dataset.category;
             pdfInput.value = null;
@@ -714,96 +774,88 @@ function initDocumentosPanel() {
             return;
         }
 
+        // Botón Ver
         if (target.matches('.doc-view-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
-            const file = loadDocs()[category][index];
-            
-            if (file && file.data) {
-                if (window.innerWidth < 768) {
-                    fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
-                } else {
-                    modalPdfContent.src = file.data;
-                    pdfModal.classList.remove('oculto');
-                }
+            const url = fileItem.dataset.viewUrl;
+            if (window.innerWidth < 768) { // En móvil, abrir en nueva pestaña
+                window.open(url, '_blank');
+            } else {
+                modalPdfContent.src = url;
+                pdfModal.classList.remove('oculto');
             }
             return;
         }
 
-        if (target.matches('.doc-download-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
-            const file = loadDocs()[category][index];
+        // Vista rápida desde la miniatura
+        const previewContainer = target.closest('.documento-preview-container');
+         if (previewContainer && previewContainer.querySelector('.documento-preview-img').style.display === 'block') {
+            const url = previewContainer.querySelector('.documento-preview-img').dataset.viewUrl;
+             if (window.innerWidth < 768) {
+                window.open(url, '_blank');
+            } else {
+                modalPdfContent.src = url;
+                pdfModal.classList.remove('oculto');
+            }
+            return;
+        }
 
-            if (file && file.data) {
+        // Botón Descargar
+        if (target.matches('.doc-download-btn')) {
+            target.disabled = true; // Prevenir doble clic
+            try {
+                const url = fileItem.dataset.viewUrl;
+                const name = fileItem.dataset.fileName;
+                const response = await fetch(url);
+                const blob = await response.blob();
                 const a = document.createElement('a');
-                a.href = file.data;
-                a.download = file.name;
+                a.href = URL.createObjectURL(blob);
+                a.download = name;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            } catch (error) {
+                console.error("Error al descargar PDF:", error);
+                alert("No se pudo descargar el archivo.");
+            } finally {
+                target.disabled = false;
             }
             return;
         }
 
+        // Botón Eliminar
         if (target.matches('.doc-delete-btn')) {
-            const category = target.dataset.category;
-            const index = parseInt(target.dataset.index, 10);
-            const docs = loadDocs();
-            const file = docs[category][index];
-
-            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
-                docs[category].splice(index, 1);
-                saveDocs(docs);
-                renderDocs();
-            }
-            return;
-        }
-        
-        const previewContainer = target.closest('.documento-preview-container');
-        if (previewContainer) {
-            const category = previewContainer.closest('.documento-card').dataset.category;
-            const docs = loadDocs();
-            if (docs[category] && docs[category].length > 0) {
-                const lastFile = docs[category][0];
-                if (window.innerWidth < 768) {
-                    fetch(lastFile.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
-                } else {
-                    modalPdfContent.src = lastFile.data;
-                    pdfModal.classList.remove('oculto');
+             if (confirm(`¿Seguro que quieres eliminar "${fileItem.dataset.fileName}"?`)) {
+                try {
+                    fileItem.style.opacity = '0.5';
+                    target.disabled = true;
+                    await storage.ref(fileItem.dataset.storagePath).delete();
+                    await docsCollection.doc(fileItem.dataset.id).delete();
+                    renderDocs(); // Recargamos para reflejar el cambio
+                } catch (error) {
+                    console.error("Error al eliminar PDF:", error);
+                    alert(`No se pudo eliminar el archivo: ${error.message}`);
+                    fileItem.style.opacity = '1';
+                    target.disabled = false;
                 }
             }
+            return;
         }
     });
 
-    pdfInput.addEventListener('change', async (e) => {
+    pdfInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
-        if (!file || !currentUploadCategory) return;
-
-        const reader = new FileReader();
-        reader.onload = async (event) => {
-            const pdfData = event.target.result;
-            
-            const card = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"]`);
-            const overlayText = card.querySelector('.preview-text');
-            if (overlayText) overlayText.textContent = 'Procesando...';
-
-            const thumbnailData = await generatePdfThumbnail(pdfData);
-            const docs = loadDocs();
-            const newFileData = { name: file.name, size: file.size, date: new Date().toISOString(), data: pdfData, thumbnail: thumbnailData };
-
-            docs[currentUploadCategory].unshift(newFileData);
-            saveDocs(docs);
-            renderDocs();
-        };
-        reader.readAsDataURL(file);
-    });
-
-    modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
-    pdfModal.addEventListener('click', (e) => {
-        if (e.target === pdfModal) pdfModal.classList.add('oculto');
+        if (file && currentUploadCategory) {
+            handleUpload(file, currentUploadCategory);
+        }
     });
     
+    // Eventos del modal
+    modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
+    pdfModal.addEventListener('click', (e) => { if (e.target === pdfModal) pdfModal.classList.add('oculto'); });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !pdfModal.classList.contains('oculto')) { pdfModal.classList.add('oculto'); }});
+
+    // --- 6. Carga Inicial ---
     renderDocs();
 }
 
