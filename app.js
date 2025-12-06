@@ -44,214 +44,195 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-// INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
+// INICIO DEL NUEVO initCoordinatorTable v4.0 (CONECTADO A FIREBASE)
 // =================================================================
 function initCoordinatorTable() {
-
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
+    
+    // --- 1. REFERENCIAS A FIREBASE Y ELEMENTOS DEL DOM ---
+    const db = firebase.firestore();
+    const docRef = db.collection('groups').doc(AppState.groupId).collection('appData').doc('coordinatorTable');
 
-    // 1. ESTADO Y CLAVES
-     const KEYS = {
-        TEXT: `turnapp.group.${AppState.groupId}.coordTable.texts`,
-        COLORS: `turnapp.group.${AppState.groupId}.coordTable.colors`,
-        ROWS: `turnapp.group.${AppState.groupId}.coordTable.rows`,
-        COLS: `turnapp.group.${AppState.groupId}.coordTable.cols`,
-        HEADERS: `turnapp.group.${AppState.groupId}.coordTable.headers`
+    const controls = {
+        addRow: document.getElementById('btn-add-row'),
+        removeRow: document.getElementById('btn-remove-row'),
+        addCol: document.getElementById('btn-add-col'),
+        removeCol: document.getElementById('btn-remove-col'),
+        limpiar: document.getElementById('limpiar-tabla')
     };
 
-    const DEFAULT_TURN_COLUMNS = [
-        { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
-        { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
-        { id: 'th-n', header: 'N' }
-    ];
-    let tableState = {};
-    let selectedRowIndex = -1; // ¡NUEVO! Para guardar la fila seleccionada
+    const DEFAULT_STATE = {
+        rows: 18,
+        cols: [
+            { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
+            { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
+            { id: 'th-n', header: 'N' }
+        ],
+        headers: {},
+        texts: {},
+        colors: {}
+    };
 
-        function syncStateFromStorage(AppState) {
-        let turnColumns;
-        try {
-            turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
-            if (!Array.isArray(turnColumns)) throw new Error("Estructura de columnas corrupta.");
-        } catch (e) {
-            console.error("Error al leer columnas, reseteando a valores por defecto.", e);
-            turnColumns = [...DEFAULT_TURN_COLUMNS];
-            localStorage.setItem(KEYS.COLS, JSON.stringify(turnColumns));
-        }
+    let tableState = {}; // Se llenará desde Firebase
+    let selectedRowIndex = -1;
+    let localUpdate = false; // Flag para evitar bucles de re-renderizado
 
-        tableState = {
-            rowCount: parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10),
-            turnColumns: turnColumns,
-            columnCount: 2 + turnColumns.length + 1,
-            turnColumnIndices: Array.from({ length: turnColumns.length }, (_, i) => i + 2),
-            texts: JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}'),
-            colors: JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}'),
-            headers: JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}')
-        };
-    }
-
-    // 2. FUNCIONES DE RENDERIZADO (sin cambios significativos)
+    // --- 2. FUNCIONES DE RENDERIZADO (Adaptadas para no usar localStorage) ---
+    
+    // Renderiza el <colgroup> para los anchos de columna
     function renderColgroup() {
         let colgroup = tabla.querySelector('colgroup');
         if (!colgroup) {
             colgroup = document.createElement('colgroup');
             tabla.insertBefore(colgroup, thead);
         }
-        colgroup.innerHTML = `<col style="width: 9%;"><col style="width: 18%;">`;
-        const numTurnCols = tableState.turnColumns.length;
+        const numTurnCols = tableState.cols.length;
         const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0;
+        
+        let html = `<col style="width: 9%;"><col style="width: 18%;">`;
         for (let i = 0; i < numTurnCols; i++) {
-            colgroup.innerHTML += `<col style="width: ${turnColWidth}%;">`;
+            html += `<col style="width: ${turnColWidth}%;\">`;
         }
-        colgroup.innerHTML += `<col style="width: 35%;">`;
+        html += `<col style="width: 35%;">`;
+        colgroup.innerHTML = html;
     }
 
+    // Renderiza las cabeceras <th>
     function renderHeaders() {
-        if (!thead) return;
         thead.innerHTML = '';
         const row1 = thead.insertRow();
         const row2 = thead.insertRow();
 
-        row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
-        const thCiclo = document.createElement('th');
-        thCiclo.id = "th-ciclo";
-        thCiclo.colSpan = tableState.turnColumns.length > 0 ? tableState.turnColumns.length : 1;
-        thCiclo.contentEditable = true;
-        thCiclo.className = "titulo-ciclo";
-        thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
-        row1.appendChild(thCiclo);
-        row1.innerHTML += '<th colspan="1">OBSERVACIONES</th>';
+        row1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th>`;
+        row1.innerHTML += `<th id="th-ciclo" colspan="${tableState.cols.length || 1}" class="titulo-ciclo">${tableState.headers['th-ciclo'] || 'CICLO'}</th>`;
+        row1.innerHTML += `<th colspan="1">OBSERVACIONES</th>`;
 
         row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
-        tableState.turnColumns.forEach(col => {
-            const th = document.createElement('th');
-            th.id = col.id;
-            th.contentEditable = true;
-            th.innerText = tableState.headers[col.id] || col.header;
-            row2.appendChild(th);
+        tableState.cols.forEach(col => {
+            row2.innerHTML += `<th id="${col.id}">${tableState.headers[col.id] || col.header}</th>`;
         });
-        const thCocina = document.createElement('th');
-        thCocina.id = 'th-cocina';
-        thCocina.contentEditable = true;
-        thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
-        row2.appendChild(thCocina);
-    }
+        row2.innerHTML += `<th id="th-cocina">${tableState.headers['th-cocina'] || 'COCINA'}</th>`;
 
-    function initializeRow(row, rowIndex) {
-        row.innerHTML = '';
-        row.dataset.rowIndex = rowIndex; // ¡NUEVO! Guardamos el índice en la fila
-        for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
-            const cell = document.createElement('td');
-            const cellId = `r${rowIndex}-c${cellIndex}`;
-            const textEditor = document.createElement('div');
-            textEditor.className = 'text-editor';
-            textEditor.contentEditable = true;
-            textEditor.innerText = tableState.texts[cellId] || '';
-            cell.appendChild(textEditor);
-
-            if (tableState.turnColumnIndices.includes(cellIndex)) {
-                cell.style.position = 'relative';
-                textEditor.style.paddingBottom = '16px';
-                if (tableState.colors[cellId]) {
-                    cell.style.backgroundColor = tableState.colors[cellId];
-                }
-                const handle = document.createElement('button');
-                handle.type = 'button';
-                handle.title = 'Elegir color';
-                handle.innerHTML = '&#9679;';
-                handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
-                handle.onmouseenter = () => handle.style.opacity = '0.6';
-                handle.onmouseleave = () => handle.style.opacity = '0.1';
-                handle.onclick = (ev) => {
-                    ev.stopPropagation();
-                    openColorPicker(handle, (color) => {
-                        cell.style.backgroundColor = (color === 'initial') ? '' : color;
-                        tableState.colors[cellId] = (color === 'initial') ? undefined : color;
-                        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-                    });
-                };
-                cell.appendChild(handle);
-            }
-            row.appendChild(cell);
+        // Solo el coordinador puede editar las cabeceras
+        if (AppState.isCoordinator) {
+            thead.querySelectorAll('th').forEach(th => {
+                if (th.id) th.contentEditable = true;
+            });
         }
     }
-
+    
+    // Renderiza el cuerpo <tbody> con todas las filas y celdas
     function renderBody() {
-        if (!tbody) return;
         tbody.innerHTML = '';
-        for (let i = 0; i < tableState.rowCount; i++) {
+        const turnColumnIndices = Array.from({ length: tableState.cols.length }, (_, i) => i + 2);
+
+        for (let i = 0; i < tableState.rows; i++) {
             const row = tbody.insertRow();
-            initializeRow(row, i);
+            row.dataset.rowIndex = i;
+
+            for (let j = 0; j < (2 + tableState.cols.length + 1); j++) {
+                const cell = document.createElement('td');
+                const cellId = `r${i}-c${j}`;
+                
+                const textEditor = document.createElement('div');
+                textEditor.className = 'text-editor';
+                textEditor.innerText = tableState.texts[cellId] || '';
+                if (AppState.isCoordinator) {
+                    textEditor.contentEditable = true;
+                }
+                cell.appendChild(textEditor);
+
+                if (turnColumnIndices.includes(j)) {
+                    cell.style.position = 'relative';
+                    if (tableState.colors[cellId]) {
+                        cell.style.backgroundColor = tableState.colors[cellId];
+                    }
+                    if (AppState.isCoordinator) {
+                         const handle = document.createElement('button');
+                         handle.type = 'button';
+                         handle.title = 'Elegir color';
+                         handle.innerHTML = '&#9679;';
+                         handle.className = 'coord-color-handle';
+                         handle.onclick = (ev) => {
+                             ev.stopPropagation();
+                             openColorPicker(handle, (color) => {
+                                const newColor = (color === 'initial') ? '' : color;
+                                localUpdate = true;
+                                docRef.update({ [`colors.${cellId}`]: newColor || firebase.firestore.FieldValue.delete() })
+                                    .finally(() => localUpdate = false);
+                             });
+                         };
+                         cell.appendChild(handle);
+                    }
+                }
+                row.appendChild(cell);
+            }
         }
-        selectedRowIndex = -1; // Reseteamos selección
+        selectedRowIndex = -1;
     }
 
-    function fullTableRedraw() {
-        syncStateFromStorage(AppState);
+    // --- 3. MANEJO DE DATOS CON FIRESTORE ---
+
+    // Función que se dispara cada vez que hay un cambio en la nube
+    function onRemoteUpdate(doc) {
+        if (localUpdate) return; // Si el cambio lo hicimos nosotros, no re-renderizar
+
+        const data = doc.data();
+        if (data) {
+            tableState = { ...DEFAULT_STATE, ...data };
+        } else {
+            // Si no existe el documento, lo creamos con los valores por defecto
+            tableState = DEFAULT_STATE;
+            docRef.set(DEFAULT_STATE);
+        }
+        
+        // Redibujamos todo
         renderColgroup();
         renderHeaders();
         renderBody();
+        updateControlsVisibility();
+    }
+    
+    // Función para actualizar los controles según el rol
+    function updateControlsVisibility() {
+        const display = AppState.isCoordinator ? 'inline-block' : 'none';
+        Object.values(controls).forEach(btn => {
+            if(btn) btn.style.display = display;
+        });
     }
 
-    // 3. ¡NUEVAS FUNCIONES PARA MANIPULAR DATOS!
-    function shiftData(fromIndex, direction) {
-        const newTexts = {};
-        const newColors = {};
-        const numRows = tableState.rowCount;
+    // --- 4. VINCULACIÓN DE EVENTOS (CONDICIONALES AL ROL) ---
+    function bindCoordinatorEvents() {
+        if (!AppState.isCoordinator) return;
 
-        for (let r = 0; r < numRows; r++) {
-            for (let c = 0; c < tableState.columnCount; c++) {
-                const oldKey = `r${r}-c${c}`;
-                let newRowIndex = r;
-
-                if (direction === 'down' && r >= fromIndex) {
-                    newRowIndex = r + 1;
-                } else if (direction === 'up' && r > fromIndex) {
-                    newRowIndex = r - 1;
-                }
-
-                if (r === fromIndex && direction === 'up') continue; // Saltamos la fila eliminada
-
-                const newKey = `r${newRowIndex}-c${c}`;
-                if (tableState.texts[oldKey] !== undefined) newTexts[newKey] = tableState.texts[oldKey];
-                if (tableState.colors[oldKey] !== undefined) newColors[newKey] = tableState.colors[oldKey];
-            }
-        }
-        tableState.texts = newTexts;
-        tableState.colors = newColors;
-        localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
-        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
-    }
-
-    // 4. VINCULACIÓN DE EVENTOS (MODIFICADA)
-        function bindEvents(AppState) {
+        // Guardar cambios en cabeceras
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
-                tableState.headers[target.id] = target.innerText.trim();
-                localStorage.setItem(KEYS.HEADERS, JSON.stringify(tableState.headers));
+                localUpdate = true;
+                docRef.update({ [`headers.${target.id}`]: target.innerText.trim() })
+                    .finally(() => localUpdate = false);
             }
         }, true);
 
-        tbody.addEventListener("input", (e) => {
+        // Guardar cambios en el texto de las celdas
+        tbody.addEventListener('input', (e) => {
             const textEditor = e.target;
             const row = textEditor.closest('tr');
             const cell = textEditor.closest('td');
-            if (!textEditor.classList.contains('text-editor') || !row || !cell) return;
-            
-            const rowIndex = row.dataset.rowIndex;
-            const cellIndex = cell.cellIndex;
-            const cellId = `r${rowIndex}-c${cellIndex}`;
-
-            tableState.texts[cellId] = textEditor.innerText;
-            localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
+            if (textEditor.classList.contains('text-editor') && row && cell) {
+                const cellId = `r${row.dataset.rowIndex}-c${cell.cellIndex}`;
+                localUpdate = true;
+                docRef.update({ [`texts.${cellId}`]: textEditor.innerText })
+                    .finally(() => localUpdate = false);
+            }
         });
-        
-        // ¡NUEVA LÓGICA DE SELECCIÓN!
-        tbody.addEventListener("click", (e) => {
-            if (e.target.closest('.color-handle')) return;
+
+        // Lógica de selección de fila
+        tbody.addEventListener('click', (e) => {
             const fila = e.target.closest("tr");
             if (fila && fila.parentElement === tbody) {
                 Array.from(tbody.children).forEach(tr => tr.classList.remove("seleccionada"));
@@ -260,80 +241,59 @@ function initCoordinatorTable() {
             }
         });
 
-        const btnAddRow = document.getElementById('btn-add-row');
-        const btnRemoveRow = document.getElementById('btn-remove-row');
-        const btnAddCol = document.getElementById('btn-add-col');
-        const btnRemoveCol = document.getElementById('btn-remove-col');
-        const btnLimpiar = document.getElementById("limpiar-tabla");
-
-        // ¡NUEVA LÓGICA PARA AÑADIR FILA!
-        if (btnAddRow) btnAddRow.onclick = () => {
-            const insertIndex = (selectedRowIndex !== -1) ? selectedRowIndex + 1 : tableState.rowCount;
-            
-            shiftData(insertIndex, 'down');
-            tableState.rowCount++;
-            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-            
-            // Redibujamos para mantener la consistencia de los datos
-            renderBody();
-        };
-
-        // ¡NUEVA LÓGICA PARA QUITAR FILA!
-        if (btnRemoveRow) btnRemoveRow.onclick = () => {
-            if (selectedRowIndex === -1) {
-                return alert("Por favor, selecciona una fila para eliminar.");
-            }
-            if (!confirm(`¿Seguro que quieres eliminar la fila ${selectedRowIndex + 1}?`)) {
-                return;
-            }
-
-            shiftData(selectedRowIndex, 'up');
-            tableState.rowCount--;
-            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
-
-            // Redibujamos para mantener la consistencia
-            renderBody();
-        };
-
-        if (btnAddCol) btnAddCol.onclick = () => {
-            const newTurnName = prompt("Introduce el nombre para la nueva columna:", `T${tableState.turnColumns.length + 1}`);
-            if (!newTurnName || newTurnName.trim() === '') return;
-            tableState.turnColumns.push({ id: `th-custom-${Date.now()}`, header: newTurnName.trim() });
-            localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-            fullTableRedraw();
-        };
-
-        if (btnRemoveCol) btnRemoveCol.onclick = () => {
-            if (tableState.turnColumns.length > 0) {
-                if (!confirm("¿Seguro que quieres eliminar la última columna de turno?")) return;
-                tableState.turnColumns.pop();
-                localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
-                fullTableRedraw();
-            } else {
-                alert("No hay columnas de turno que eliminar.");
-            }
+        // Botones de control
+        controls.addRow.onclick = () => {
+            localUpdate = true;
+            docRef.update({ rows: firebase.firestore.FieldValue.increment(1) })
+                 .finally(() => localUpdate = false);
         };
         
-        if (btnLimpiar) {
-            const newBtn = btnLimpiar.cloneNode(true);
-            btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
-            newBtn.addEventListener("click", () => {
-                if (confirm("¿Seguro que quieres borrar todos los textos y colores de la tabla?")) {
-                    tableState.texts = {};
-                    tableState.colors = {};
-                    localStorage.removeItem(KEYS.TEXT);
-                    localStorage.removeItem(KEYS.COLORS);
-                        renderBody();
-                    }
-                });
+        controls.removeRow.onclick = () => {
+            if (tableState.rows > 1) {
+                localUpdate = true;
+                docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) })
+                     .finally(() => localUpdate = false);
             }
-        }
-    
-        // 5. INICIALIZACIÓN
-        fullTableRedraw();
-        bindEvents(AppState);      
+        };
+
+        controls.addCol.onclick = () => {
+            const name = prompt("Nombre para la nueva columna:", `T${tableState.cols.length + 1}`);
+            if (name) {
+                const newCol = { id: `th-custom-${Date.now()}`, header: name.trim() };
+                localUpdate = true;
+                docRef.update({ cols: firebase.firestore.FieldValue.arrayUnion(newCol) })
+                    .finally(() => localUpdate = false);
+            }
+        };
+
+        controls.removeCol.onclick = () => {
+            if (tableState.cols.length > 0) {
+                const newCols = [...tableState.cols];
+                newCols.pop();
+                localUpdate = true;
+                docRef.update({ cols: newCols })
+                    .finally(() => localUpdate = false);
+            }
+        };
+
+        controls.limpiar.onclick = () => {
+            if (confirm("¿Seguro que quieres borrar TODOS los textos y colores de la tabla?")) {
+                localUpdate = true;
+                docRef.update({ texts: {}, colors: {} })
+                    .finally(() => localUpdate = false);
+            }
+        };
     }
+
+    // --- 5. INICIALIZACIÓN ---
+    docRef.onSnapshot(onRemoteUpdate, (error) => {
+        console.error("Error al escuchar la tabla del coordinador:", error);
+        tbody.innerHTML = '<tr><td colspan="8">Error al cargar datos. Revisa la consola.</td></tr>';
+    });
     
+    bindCoordinatorEvents();
+}
+
 
 // =================================================================
 //    NUEVA VERSIÓN de initTablon (CONECTADA A FIREBASE)
