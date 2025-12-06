@@ -905,10 +905,10 @@ tbody tr.seleccionada > td:last-child {
 }
 
 /* Texto de la petición */
-.peticion-left div:first-child {
-  font-weight: 500;
-  color: #202020;
-  word-wrap: break-word;
+.peticion-texto {
+    font-weight: 500;
+    color: var(--text-color); /* ¡LA CLAVE! Usa el color del tema */
+    word-break: break-word;
 }
 
 /* Fecha/hora */
