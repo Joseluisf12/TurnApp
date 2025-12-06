@@ -1,8 +1,10 @@
-const firebaseConfig = {
-  apiKey: "AIzaSyBjuSYwvjJJopKDzhJBs09yvxIwoH_PtIM",
-  authDomain: "turnapp-v2.firebaseapp.com",
-  projectId: "turnapp-v2",
-  storageBucket: "turnapp-v2.firebasestorage.app",
-  messagingSenderId: "614338234742",
-  appId: "1:614338234742:web:e776f7f8f15c3c46d8d257"
-};
+  const firebaseConfig = {
+    apiKey: "AIzaSyD7nJlEjrImBXIhuF5y9tTvmkzOR9A5SRY",
+    authDomain: "turnapp12.firebaseapp.com",
+    projectId: "turnapp12",
+    storageBucket: "turnapp12.firebasestorage.app",
+    messagingSenderId: "252416935066",
+    appId: "1:252416935066:web:ef06f33dd0d5db40388b23"
+  };
+
+  
