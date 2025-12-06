@@ -44,7 +44,7 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-// INICIO DEL initCoordinatorTable v4.2 (VERSIÓN DEFINITIVA)
+// INICIO DEL initCoordinatorTable v4.3 (VERSIÓN FINAL CON CORRECCIONES)
 // =================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -64,13 +64,12 @@ function initCoordinatorTable() {
         limpiar: document.getElementById('limpiar-tabla')
     };
     
-    // ¡¡¡PALETA DE COLORES COMPLETA RESTAURADA!!!
-    const FULL_COLOR_PALETTE = [
-        '#f8caca', '#fde2c3', '#fafcc2', '#c2f7c2', '#c4e3f3', '#d6cdea',
-        '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff',
-        '#bdb2ff', '#ffc6ff', '#f1f1f1', '#d4d4d4', '#a1a1a1', '#ff7b7b',
-        '#ffb35a', 'initial' // 19 colores + reset
-    ];
+    // ¡¡¡NUEVA PALETA DE COLORES MÁS VIVA Y COMPLETA!!!
+    const COORDINATOR_PALETTE = [
+        '#ef9a9a', '#ffcc80', '#fff59d', '#f48fb1', '#ffab91', '#e6ee9c',
+        '#a5d6a7', '#80cbc4', '#81d4fa', '#c5e1a5', '#80deea', '#90caf9',
+        '#ce93d8', '#b39ddb', '#bcaaa4', '#eeeeee', '#b0bec5', 'initial'
+    ]; 
 
     const DEFAULT_STATE = {
         rows: 18,
@@ -83,37 +82,30 @@ function initCoordinatorTable() {
     let localUpdate = false;
 
     // --- 2. FUNCIONES DE RENDERIZADO Y AYUDANTES ---
-    
-    // Paleta de colores (ahora usa la constante FULL_COLOR_PALETTE)
     function openColorPicker(targetElement, callback) {
         document.getElementById('coord-color-palette')?.remove();
         const palette = document.createElement('div');
         palette.id = 'coord-color-palette';
-        Object.assign(palette.style, { position: 'absolute', display: 'flex', gap: '8px', padding: '10px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', zIndex: '100' });
+        Object.assign(palette.style, { position: 'absolute', display: 'flex', flexWrap: 'wrap', width: '250px', gap: '8px', padding: '10px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', zIndex: '100' });
 
-        FULL_COLOR_PALETTE.forEach(color => {
+        COORDINATOR_PALETTE.forEach(color => {
             const swatch = document.createElement('button');
             swatch.className = 'palette-swatch';
-            Object.assign(swatch.style, { width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', border: '2px solid var(--bg-color)' });
+            Object.assign(swatch.style, { width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', border: '2px solid var(--bg-color)', display: 'flex', alignItems: 'center', justifyContent: 'center' });
 
             if (color === 'initial') {
                 swatch.innerHTML = '🔄';
-                swatch.style.backgroundColor = 'var(--button-bg-color)';
                 swatch.title = "Quitar color";
-                swatch.classList.add('reset-btn');
-            } else {
-                swatch.style.backgroundColor = color;
             }
-
+            swatch.style.backgroundColor = color === 'initial' ? 'var(--button-bg-color)' : color;
             swatch.onclick = () => { callback(color); palette.remove(); };
             palette.appendChild(swatch);
         });
 
         document.body.appendChild(palette);
         const targetRect = targetElement.getBoundingClientRect();
-        const paletteRect = palette.getBoundingClientRect();
         let left = window.scrollX + targetRect.left;
-        if (left + paletteRect.width > window.innerWidth) left = window.innerWidth - paletteRect.width - 10;
+        if (left + 250 > window.innerWidth) left = window.innerWidth - 260;
         palette.style.top = `${window.scrollY + targetRect.bottom + 5}px`;
         palette.style.left = `${left}px`;
 
@@ -125,30 +117,25 @@ function initCoordinatorTable() {
         setTimeout(() => document.addEventListener('click', closeListener, true), 100);
     }
     
-    function renderColgroup() { /* ... sin cambios ... */ }
-    function renderHeaders() { /* ... sin cambios ... */ }
+    function renderColgroup() { let colgroup = tabla.querySelector('colgroup'); if (!colgroup) { colgroup = document.createElement('colgroup'); tabla.insertBefore(colgroup, thead); } const numTurnCols = tableState.cols?.length || 0; const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0; let html = `<col style="width: 9%;"><col style="width: 18%;">`; for (let i = 0; i < numTurnCols; i++) { html += `<col style="width: ${turnColWidth}%;\">`; } html += `<col style="width: 35%;">`; colgroup.innerHTML = html; }
+    function renderHeaders() { thead.innerHTML = ''; const r1 = thead.insertRow(); const r2 = thead.insertRow(); const numTurnCols = tableState.cols?.length || 0; r1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th><th id="th-ciclo" colspan="${numTurnCols || 1}" class="titulo-ciclo">${tableState.headers?.['th-ciclo'] || 'CICLO'}</th><th colspan="1">OBSERVACIONES</th>`; r2.innerHTML = '<th>Nº</th><th>NOMBRE</th>'; tableState.cols?.forEach(c => { r2.innerHTML += `<th id="${c.id}">${tableState.headers?.[c.id] || c.header}</th>`; }); r2.innerHTML += `<th id="th-cocina">${tableState.headers?.['th-cocina'] || 'COCINA'}</th>`; if (AppState.isCoordinator) { thead.querySelectorAll('th[id]').forEach(th => th.contentEditable = true); } }
     
     function renderBody() {
         tbody.innerHTML = '';
-        const turnColumnIndices = Array.from({ length: tableState.cols.length }, (_, i) => i + 2);
-
+        const numCols = 2 + (tableState.cols?.length || 0) + 1;
         for (let i = 0; i < tableState.rows; i++) {
             const row = tbody.insertRow();
             row.dataset.rowIndex = i;
-
-            for (let j = 0; j < (2 + tableState.cols.length + 1); j++) {
+            for (let j = 0; j < numCols; j++) {
                 const cell = document.createElement('td');
                 const cellId = `r${i}-c${j}`;
-                
                 const textEditor = document.createElement('div');
                 textEditor.className = 'text-editor';
-                textEditor.innerText = tableState.texts[cellId] || '';
+                textEditor.innerText = tableState.texts?.[cellId] || '';
                 if (AppState.isCoordinator) textEditor.contentEditable = true;
                 cell.appendChild(textEditor);
-
-                cell.style.backgroundColor = tableState.colors[cellId] || '';
-
-                if (turnColumnIndices.includes(j)) {
+                cell.style.backgroundColor = tableState.colors?.[cellId] || '';
+                if (j >= 2 && j < numCols - 1) {
                     cell.style.position = 'relative';
                     if (AppState.isCoordinator) {
                          const handle = document.createElement('button');
@@ -158,22 +145,10 @@ function initCoordinatorTable() {
                              ev.stopPropagation();
                              openColorPicker(handle, (color) => {
                                 const newColor = (color === 'initial') ? '' : color;
-                                
-                                // ¡¡¡CLAVE!!! 1. Actualización local INMEDIATA
-                                const targetCell = handle.closest('td');
-                                if (targetCell) targetCell.style.backgroundColor = newColor;
-
-                                // 2. Actualización en Firebase
+                                handle.closest('td').style.backgroundColor = newColor;
                                 localUpdate = true;
                                 docRef.update({ [`colors.${cellId}`]: newColor || firebase.firestore.FieldValue.delete() })
-                                    .catch(err => {
-                                        console.error("Error al guardar color: ", err);
-                                        if (targetCell) targetCell.style.backgroundColor = tableState.colors[cellId] || '';
-                                        alert("No se pudo guardar el color.");
-                                    })
-                                    .finally(() => {
-                                        setTimeout(() => localUpdate = false, 100);
-                                    });
+                                    .finally(() => setTimeout(() => localUpdate = false, 50));
                              });
                          };
                          cell.appendChild(handle);
@@ -184,16 +159,12 @@ function initCoordinatorTable() {
         }
         selectedRowIndex = -1;
     }
-    // Copiamos las funciones renderColgroup y renderHeaders aquí para que sean autocontenidas
-    function renderColgroup() { let colgroup = tabla.querySelector('colgroup'); if (!colgroup) { colgroup = document.createElement('colgroup'); tabla.insertBefore(colgroup, thead); } const numTurnCols = tableState.cols.length; const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0; let html = `<col style="width: 9%;"><col style="width: 18%;">`; for (let i = 0; i < numTurnCols; i++) { html += `<col style="width: ${turnColWidth}%;\">`; } html += `<col style="width: 35%;">`; colgroup.innerHTML = html; }
-    function renderHeaders() { thead.innerHTML = ''; const r1 = thead.insertRow(); const r2 = thead.insertRow(); r1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th><th id="th-ciclo" colspan="${tableState.cols.length || 1}" class="titulo-ciclo">${tableState.headers['th-ciclo'] || 'CICLO'}</th><th colspan="1">OBSERVACIONES</th>`; r2.innerHTML = '<th>Nº</th><th>NOMBRE</th>'; tableState.cols.forEach(c => { r2.innerHTML += `<th id="${c.id}">${tableState.headers[c.id] || c.header}</th>`; }); r2.innerHTML += `<th id="th-cocina">${tableState.headers['th-cocina'] || 'COCINA'}</th>`; if (AppState.isCoordinator) { thead.querySelectorAll('th[id]').forEach(th => th.contentEditable = true); } }
-
 
     // --- 3. MANEJO DE DATOS CON FIRESTORE ---
     function onRemoteUpdate(doc) {
         if (localUpdate) return;
         tableState = { ...DEFAULT_STATE, ...(doc.data() || {}) };
-        if (!doc.exists) docRef.set(DEFAULT_STATE);
+        if (!doc.exists) docRef.set(DEFAULT_STATE).catch(console.error);
         renderColgroup(); renderHeaders(); renderBody(); updateControlsVisibility();
     }
     
@@ -202,45 +173,21 @@ function initCoordinatorTable() {
         Object.values(controls).forEach(btn => { if(btn) btn.style.display = display; });
     }
 
-    // --- 4. VINCULACIÓN DE EVENTOS ---
+    // --- 4. VINCULACIÓN DE EVENTOS (¡¡¡CORREGIDO!!!) ---
     function bindCoordinatorEvents() {
         if (!AppState.isCoordinator) return;
 
-        thead.addEventListener('blur', (e) => {
-            const th = e.target.closest('th');
-            if (th && th.isContentEditable) {
-                localUpdate = true;
-                docRef.update({ [`headers.${th.id}`]: th.innerText.trim() }).finally(() => localUpdate = false);
-            }
-        }, true);
+        // VINCULACIÓN ROBUSTA DE BOTONES DE CONTROL
+        if (controls.addRow) controls.addRow.onclick = () => { docRef.update({ rows: firebase.firestore.FieldValue.increment(1) }); };
+        if (controls.removeRow) controls.removeRow.onclick = () => { if (tableState.rows > 1 && confirm("¿Eliminar la última fila?")) { docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) }); } };
+        if (controls.addCol) controls.addCol.onclick = () => { const name = prompt("Nombre nueva columna:", `T${(tableState.cols?.length || 0) + 1}`); if (name) { const newCol = { id: `th-c-${Date.now()}`, header: name.trim() }; docRef.update({ cols: firebase.firestore.FieldValue.arrayUnion(newCol) }); } };
+        if (controls.removeCol) controls.removeCol.onclick = () => { if ((tableState.cols?.length || 0) > 0 && confirm("¿Eliminar la última columna de turno?")) { const newCols = tableState.cols.slice(0, -1); docRef.update({ cols: newCols }); } };
+        if (controls.limpiar) controls.limpiar.onclick = () => { if (confirm("¿Borrar TODOS los textos y colores de la tabla?")) { docRef.update({ texts: {}, colors: {} }); } };
 
-        tbody.addEventListener('blur', (e) => {
-            const editor = e.target.closest('.text-editor');
-            if (editor && editor.isContentEditable) {
-                const cell = editor.closest('td');
-                const row = editor.closest('tr');
-                if (cell && row) {
-                    const cellId = `r${row.dataset.rowIndex}-c${cell.cellIndex}`;
-                    localUpdate = true;
-                    docRef.update({ [`texts.${cellId}`]: editor.innerText.trim() }).finally(() => localUpdate = false);
-                }
-            }
-        }, true);
-        
-        tbody.addEventListener('click', (e) => {
-            const fila = e.target.closest("tr");
-            if (fila?.parentElement === tbody) {
-                tbody.querySelectorAll("tr").forEach(tr => tr.classList.remove("seleccionada"));
-                fila.classList.add("seleccionada");
-                selectedRowIndex = parseInt(fila.dataset.rowIndex, 10);
-            }
-        });
-
-        if (controls.addRow) controls.addRow.onclick = () => { localUpdate = true; docRef.update({ rows: firebase.firestore.FieldValue.increment(1) }).finally(() => localUpdate = false); };
-        if (controls.removeRow) controls.removeRow.onclick = () => { if (tableState.rows > 1) { localUpdate = true; docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) }).finally(() => localUpdate = false); } };
-        if (controls.addCol) controls.addCol.onclick = () => { const n = prompt("Nombre:", `T${(tableState.cols||[]).length+1}`); if(n){const c={id:`th-c-${Date.now()}`,h:n.trim()};localUpdate=true;docRef.update({cols:firebase.firestore.FieldValue.arrayUnion(c)}).finally(()=>localUpdate=false);}};
-        if (controls.removeCol) controls.removeCol.onclick = () => { if ((tableState.cols||[]).length > 0) { const c=tableState.cols.slice(0,-1); localUpdate=true; docRef.update({cols:c}).finally(()=>localUpdate=false); }};
-        if (controls.limpiar) controls.limpiar.onclick = () => { if (confirm("¿Borrar TODOS los textos y colores?")) { localUpdate = true; docRef.update({ texts: {}, colors: {} }).finally(() => localUpdate = false); } };
+        // VINCULACIÓN DE EDICIÓN DE CELDAS
+        thead.addEventListener('blur', (e) => { const th = e.target.closest('th'); if (th?.isContentEditable) docRef.update({ [`headers.${th.id}`]: th.innerText.trim() }); }, true);
+        tbody.addEventListener('blur', (e) => { const editor = e.target.closest('.text-editor'); if (editor?.isContentEditable) { const cell = editor.closest('td'); const row = editor.closest('tr'); if(cell&&row) docRef.update({ [`texts.r${row.dataset.rowIndex}-c${cell.cellIndex}`]: editor.innerText.trim() }); } }, true);
+        tbody.addEventListener('click', (e) => { const fila = e.target.closest("tr"); if (fila?.parentElement === tbody) { tbody.querySelectorAll("tr.seleccionada").forEach(tr => tr.classList.remove("seleccionada")); fila.classList.add("seleccionada"); selectedRowIndex = parseInt(fila.dataset.rowIndex, 10); } });
     }
 
     // --- 5. INICIALIZACIÓN ---
