@@ -867,11 +867,18 @@ let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
 
+// ------------ (PEGA ESTE NUEVO CÓDIGO) ------------
 const AppState = {
     groupId: 'equipo_alpha',
-    // El userId se establecerá dinámicamente después del login.
-    // Lo inicializamos a null para evitar usar datos de prueba.
-    userId: null 
+    
+    // !! IMPORTANTE !!
+    // Pega aquí tu "User ID" de Firebase para asignarte como Coordinador.
+    // Lo encuentras en: Firebase Console > Authentication > Users tab.
+    coordinatorId: 'rD3KBeWoJEgyhXQXoFV58ia6N3x1', 
+    
+    userId: null,        // Se establecerá dinámicamente en el login.
+    userName: null,      // También lo guardaremos en el login.
+    isCoordinator: false // Se calculará automáticamente en el login.
 };
 
 
@@ -1677,114 +1684,120 @@ function applyCadenceRender(month, year){
   });
 }
 
-// ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
+// =================================================================
+//    NUEVA VERSIÓN de initPeticiones (CONECTADA A FIREBASE)
+// =================================================================
 function initPeticiones() {
-  const listaUsuario = document.getElementById('lista-peticiones-usuario');
-  const peticionTexto = document.getElementById('peticion-texto');
-  const enviarPeticionBtn = document.getElementById('enviar-peticion');
-  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
+    const listaUsuario = document.getElementById('lista-peticiones-usuario');
+    const peticionTexto = document.getElementById('peticion-texto');
+    const enviarPeticionBtn = document.getElementById('enviar-peticion');
 
-  // 1. PRIMERO comprobamos que los elementos existen.
-  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn) {
-    console.warn("initPeticiones: faltan elementos del DOM.");
-    return; // Si algo falta, la función termina aquí y no crashea.
-  }
-
-  // 2. AHORA, que ya sabemos que existen, modificamos su estilo.
-  peticionTexto.style.fontSize = '1.3em';
-  peticionTexto.style.lineHeight = '1.4';
-
-  const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
-
-  function load() {
-    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
-  }
-
-  function save(arr) {
-    localStorage.setItem(KEY_USER, JSON.stringify(arr));
-  }
-
-  function render() {
-    const user = load();
-    listaUsuario.innerHTML = '';
-    user.forEach((p, idx) => {
-      const li = document.createElement('li');
-      li.className = 'peticion-item';
-
-      const left = document.createElement('div');
-      left.className = 'peticion-left';
-
-      const textoDiv = document.createElement('div');
-      textoDiv.textContent = p.texto;
-      textoDiv.style.fontSize = '1.1em';
-      textoDiv.style.lineHeight = '1.4';
-      left.appendChild(textoDiv);
-
-      if (p.fechaHora) {
-        const fechaDiv = document.createElement('div');
-        fechaDiv.className = 'fecha-hora';
-        fechaDiv.textContent = new Date(p.fechaHora).toLocaleString('es-ES');
-        fechaDiv.style.fontSize = '0.85em';
-        fechaDiv.style.opacity = '0.85';
-        left.appendChild(fechaDiv);
-      }
-
-      const right = document.createElement('div');
-      right.style.display = 'flex';
-      right.style.gap = '8px';
-
-      const chk = document.createElement('input');
-      chk.type = 'checkbox';
-      chk.checked = !!p.revisada;
-      chk.addEventListener('change', () => {
-        const u = load();
-        u[idx].revisada = chk.checked;
-        save(u);
-        render();
-        if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
-          window.TurnApp.checkAndDisplayNotifications();
-        }
-      });
-
-      const delBtn = document.createElement('button');
-      delBtn.textContent = '🗑️';
-      delBtn.addEventListener('click', () => {
-        const u = load();
-        u.splice(idx, 1);
-        save(u);
-        render();
-      });
-
-      right.appendChild(chk);
-      right.appendChild(delBtn);
-
-      li.appendChild(left);
-      li.appendChild(right);
-      listaUsuario.appendChild(li);
-    });
-  }
-
-  function agregarPeticion(textoRaw) {
-    const texto = String(textoRaw || '').trim();
-    if (!texto) return;
-    const nueva = { texto, fechaHora: new Date().toISOString(), revisada: false };
-    const u = load();
-    u.unshift(nueva);
-    save(u);
-    render();
-    if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
-      window.TurnApp.checkAndDisplayNotifications();
+    if (!listaUsuario || !peticionTexto || !enviarPeticionBtn) {
+        console.error("initPeticiones: faltan elementos del DOM.");
+        return;
     }
-  }
 
-  enviarPeticionBtn.addEventListener('click', () => {
-    agregarPeticion(peticionTexto.value);
-    peticionTexto.value = '';
-  });
+    const peticionesCollection = firebase.firestore()
+        .collection('groups').doc(AppState.groupId)
+        .collection('peticiones');
 
-      // En lugar de intentar renderizar ahora, exponemos la función para llamarla más tarde.
-    window.TurnApp = window.TurnApp || {};
-    window.TurnApp.renderPeticiones = render;
+    // Función para renderizar una única petición (más eficiente)
+    function renderPeticion(peticion) {
+        const li = document.createElement('li');
+        li.className = 'peticion-item';
+        li.dataset.id = peticion.id; // Guardamos el ID del documento
+
+        const fechaHora = peticion.createdAt ? new Date(peticion.createdAt).toLocaleString('es-ES') : 'Fecha no disponible';
+        const autor = peticion.userName || 'Usuario desconocido';
+
+        // --- Checkbox de Revisado (solo editable por el coordinador) ---
+        const revisadoCheckbox = `
+            <input type="checkbox" 
+                   ${peticion.revisada ? 'checked' : ''} 
+                   ${!AppState.isCoordinator ? 'disabled' : ''} 
+                   title="${AppState.isCoordinator ? 'Marcar como revisada' : 'Estado de la petición'}">
+        `;
+
+        li.innerHTML = `
+            <div class="peticion-left">
+                <div class="peticion-texto">${peticion.texto}</div>
+                <div class="fecha-hora">De: ${autor} - ${fechaHora}</div>
+            </div>
+            <div class="peticion-right">
+                ${revisadoCheckbox}
+                <button class="delete-btn modern-btn red" 
+                        title="Eliminar petición" 
+                        ${!AppState.isCoordinator ? 'style="display:none;"' : ''}>
+                    🗑️
+                </button>
+            </div>
+        `;
+
+        // --- Eventos para los botones de esta petición ---
+        const chk = li.querySelector('input[type="checkbox"]');
+        if (AppState.isCoordinator) {
+            chk.addEventListener('change', () => {
+                peticionesCollection.doc(peticion.id).update({ revisada: chk.checked });
+            });
+        }
+
+        const delBtn = li.querySelector('.delete-btn');
+        if (delBtn) {
+            delBtn.addEventListener('click', () => {
+                if (confirm('¿Seguro que quieres eliminar esta petición?')) {
+                    peticionesCollection.doc(peticion.id).delete().catch(err => {
+                        alert('Error al eliminar la petición.');
+                        console.error("Error al eliminar petición:", err);
+                    });
+                }
+            });
+        }
+        return li;
+    }
+    
+    // --- Escuchar cambios en tiempo real ---
+    peticionesCollection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+        listaUsuario.innerHTML = ''; // Limpiamos la lista
+        if (snapshot.empty) {
+            listaUsuario.innerHTML = '<li>No hay peticiones.</li>';
+            return;
+        }
+        snapshot.forEach(doc => {
+            const peticion = { id: doc.id, ...doc.data() };
+            listaUsuario.appendChild(renderPeticion(peticion));
+        });
+    }, error => {
+        console.error("Error al escuchar peticiones:", error);
+        listaUsuario.innerHTML = '<li>Error al cargar las peticiones.</li>';
+    });
+
+    // --- Evento para enviar una nueva petición ---
+    enviarPeticionBtn.addEventListener('click', () => {
+        const texto = peticionTexto.value.trim();
+        if (!texto) return;
+
+        enviarPeticionBtn.disabled = true;
+        const nuevaPeticion = {
+            texto: texto,
+            createdAt: new Date().toISOString(),
+            revisada: false,
+            userId: AppState.userId,
+            userName: AppState.userName || 'Usuario Anónimo'
+        };
+
+        peticionesCollection.add(nuevaPeticion)
+            .then(() => {
+                peticionTexto.value = '';
+            })
+            .catch(error => {
+                alert('No se pudo enviar tu petición. Inténtalo de nuevo.');
+                console.error("Error al añadir petición:", error);
+            })
+            .finally(() => {
+                enviarPeticionBtn.disabled = false;
+                peticionTexto.focus();
+            });
+    });
 }
 
 
