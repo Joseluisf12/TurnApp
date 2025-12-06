@@ -397,9 +397,60 @@ function initTablon() {
                 const nameStrong = document.createElement('strong');
                 nameStrong.className = 'tablon-item-name';
                 nameStrong.textContent = file.name;
+                nameStrong.contentEditable = true; // <-- AÑADIDO: Hacemos el nombre editable
+                nameStrong.title = "Haz clic para editar el nombre"; // <-- AÑADIDO: Pista visual para el usuario
+
+                // --- INICIO: NUEVO BLOQUE DE CÓDIGO AÑADIDO ---
+                // Guardar al pulsar 'Enter'
+                nameStrong.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault(); // Evita saltos de línea
+                        e.target.blur();    // Dispara el evento 'blur' para guardar
+                    }
+                });
+
+                // Guardar al hacer clic fuera (perder el foco)
+                nameStrong.addEventListener('blur', async (e) => {
+                    const newName = e.target.textContent.trim();
+                    const docId = fileItem.dataset.id;
+
+                    // Si no hay ID o el nombre está vacío, no hacemos nada y restauramos el original
+                    if (!docId || !newName) {
+                        e.target.textContent = file.name;
+                        return;
+                    }
+
+                    // Solo actualizamos si el nombre realmente ha cambiado
+                    if (newName !== file.name) {
+                        const originalOpacity = e.target.style.opacity;
+                        e.target.style.opacity = '0.5'; // Indicador visual de que se está guardando
+
+                        try {
+                            // Actualizamos solo el campo 'name' en Firestore
+                            await filesCollection.doc(docId).update({ name: newName });
+                            
+                            // Actualizamos el objeto 'file' local para consistencia
+                            file.name = newName;
+
+                            // ¡IMPORTANTE! Actualizamos también el nombre en el botón de descarga
+                            const downloadBtn = fileItem.querySelector('.download-btn');
+                            if (downloadBtn) {
+                                downloadBtn.dataset.name = newName;
+                            }
+
+                        } catch (error) {
+                            console.error("Error al actualizar el nombre del archivo:", error);
+                            alert(`Error al cambiar el nombre: ${error.message}`);
+                            e.target.textContent = file.name; // Revertimos en caso de error
+                        } finally {
+                           e.target.style.opacity = originalOpacity; // Restauramos la opacidad
+                        }
+                    }
+                });
 
                 const metaSmall = document.createElement('small');
                 metaSmall.className = 'tablon-item-meta';
+
                 const uploadDate = new Date(file.createdAt).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
                 metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
 
@@ -547,7 +598,6 @@ function initTablon() {
     // --- 6. Carga inicial ---
     renderFiles();
 }
-
 
 // =================================================================
 //    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
