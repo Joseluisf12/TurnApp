@@ -44,7 +44,7 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-// INICIO DEL NUEVO initCoordinatorTable v4.0 (CONECTADO A FIREBASE)
+// INICIO DEL NUEVO initCoordinatorTable v4.1 (CON PALETA CORREGIDA)
 // =================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -76,13 +76,77 @@ function initCoordinatorTable() {
         colors: {}
     };
 
-    let tableState = {}; // Se llenará desde Firebase
+    let tableState = {};
     let selectedRowIndex = -1;
-    let localUpdate = false; // Flag para evitar bucles de re-renderizado
+    let localUpdate = false;
 
-    // --- 2. FUNCIONES DE RENDERIZADO (Adaptadas para no usar localStorage) ---
+    // --- 2. FUNCIONES DE RENDERIZADO Y AYUDANTES ---
+
+    // ¡¡¡FUNCIÓN CORREGIDA!!! - Ahora incluimos el creador de la paleta aquí
+    function openColorPicker(targetElement, callback) {
+        const oldPalette = document.getElementById('coord-color-palette');
+        if (oldPalette) oldPalette.remove();
+
+        const colors = ['#f8caca', '#fde2c3', '#fafcc2', '#c2f7c2', '#c4e3f3', '#d6cdea', 'initial'];
+        const palette = document.createElement('div');
+        palette.id = 'coord-color-palette';
+        
+        palette.style.position = 'absolute';
+        palette.style.display = 'flex';
+        palette.style.gap = '8px';
+        palette.style.padding = '10px';
+        palette.style.backgroundColor = 'var(--panel-bg)';
+        palette.style.borderRadius = '8px';
+        palette.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
+        palette.style.zIndex = '100';
+
+        colors.forEach(color => {
+            const swatch = document.createElement('button');
+            swatch.className = 'palette-swatch';
+            swatch.style.width = '30px';
+            swatch.style.height = '30px';
+            swatch.style.borderRadius = '50%';
+            swatch.style.cursor = 'pointer';
+            swatch.style.border = '2px solid var(--bg-color)';
+
+            if (color === 'initial') {
+                swatch.innerHTML = '🔄';
+                swatch.style.backgroundColor = 'var(--button-bg-color)';
+                swatch.title = "Quitar color";
+                swatch.classList.add('reset-btn');
+            } else {
+                swatch.style.backgroundColor = color;
+            }
+
+            swatch.onclick = () => {
+                callback(color);
+                palette.remove();
+            };
+            palette.appendChild(swatch);
+        });
+
+        document.body.appendChild(palette);
+        
+        const targetRect = targetElement.getBoundingClientRect();
+        const paletteRect = palette.getBoundingClientRect();
+        
+        let left = window.scrollX + targetRect.left;
+        if (left + paletteRect.width > window.innerWidth) {
+            left = window.innerWidth - paletteRect.width - 10;
+        }
+
+        palette.style.top = `${window.scrollY + targetRect.bottom + 5}px`;
+        palette.style.left = `${left}px`;
+
+        const closeListener = (e) => {
+            if (!palette.contains(e.target) && e.target !== targetElement) {
+                palette.remove();
+                document.removeEventListener('click', closeListener, true);
+            }
+        };
+        setTimeout(() => document.addEventListener('click', closeListener, true), 100);
+    }
     
-    // Renderiza el <colgroup> para los anchos de columna
     function renderColgroup() {
         let colgroup = tabla.querySelector('colgroup');
         if (!colgroup) {
@@ -100,7 +164,6 @@ function initCoordinatorTable() {
         colgroup.innerHTML = html;
     }
 
-    // Renderiza las cabeceras <th>
     function renderHeaders() {
         thead.innerHTML = '';
         const row1 = thead.insertRow();
@@ -116,7 +179,6 @@ function initCoordinatorTable() {
         });
         row2.innerHTML += `<th id="th-cocina">${tableState.headers['th-cocina'] || 'COCINA'}</th>`;
 
-        // Solo el coordinador puede editar las cabeceras
         if (AppState.isCoordinator) {
             thead.querySelectorAll('th').forEach(th => {
                 if (th.id) th.contentEditable = true;
@@ -124,7 +186,6 @@ function initCoordinatorTable() {
         }
     }
     
-    // Renderiza el cuerpo <tbody> con todas las filas y celdas
     function renderBody() {
         tbody.innerHTML = '';
         const turnColumnIndices = Array.from({ length: tableState.cols.length }, (_, i) => i + 2);
@@ -145,11 +206,11 @@ function initCoordinatorTable() {
                 }
                 cell.appendChild(textEditor);
 
+                cell.style.backgroundColor = tableState.colors[cellId] || '';
+
                 if (turnColumnIndices.includes(j)) {
                     cell.style.position = 'relative';
-                    if (tableState.colors[cellId]) {
-                        cell.style.backgroundColor = tableState.colors[cellId];
-                    }
+
                     if (AppState.isCoordinator) {
                          const handle = document.createElement('button');
                          handle.type = 'button';
@@ -175,28 +236,23 @@ function initCoordinatorTable() {
     }
 
     // --- 3. MANEJO DE DATOS CON FIRESTORE ---
-
-    // Función que se dispara cada vez que hay un cambio en la nube
     function onRemoteUpdate(doc) {
-        if (localUpdate) return; // Si el cambio lo hicimos nosotros, no re-renderizar
+        if (localUpdate) return;
 
         const data = doc.data();
         if (data) {
             tableState = { ...DEFAULT_STATE, ...data };
         } else {
-            // Si no existe el documento, lo creamos con los valores por defecto
             tableState = DEFAULT_STATE;
             docRef.set(DEFAULT_STATE);
         }
         
-        // Redibujamos todo
         renderColgroup();
         renderHeaders();
         renderBody();
         updateControlsVisibility();
     }
     
-    // Función para actualizar los controles según el rol
     function updateControlsVisibility() {
         const display = AppState.isCoordinator ? 'inline-block' : 'none';
         Object.values(controls).forEach(btn => {
@@ -208,7 +264,6 @@ function initCoordinatorTable() {
     function bindCoordinatorEvents() {
         if (!AppState.isCoordinator) return;
 
-        // Guardar cambios en cabeceras
         thead.addEventListener('blur', (e) => {
             const target = e.target;
             if (target.tagName === 'TH' && target.isContentEditable && target.id) {
@@ -218,7 +273,6 @@ function initCoordinatorTable() {
             }
         }, true);
 
-        // Guardar cambios en el texto de las celdas
         tbody.addEventListener('input', (e) => {
             const textEditor = e.target;
             const row = textEditor.closest('tr');
@@ -231,7 +285,6 @@ function initCoordinatorTable() {
             }
         });
 
-        // Lógica de selección de fila
         tbody.addEventListener('click', (e) => {
             const fila = e.target.closest("tr");
             if (fila && fila.parentElement === tbody) {
@@ -241,7 +294,6 @@ function initCoordinatorTable() {
             }
         });
 
-        // Botones de control
         controls.addRow.onclick = () => {
             localUpdate = true;
             docRef.update({ rows: firebase.firestore.FieldValue.increment(1) })
@@ -250,6 +302,13 @@ function initCoordinatorTable() {
         
         controls.removeRow.onclick = () => {
             if (tableState.rows > 1) {
+                if (selectedRowIndex === -1 || !confirm("¿Seguro que quieres eliminar la fila seleccionada?")) {
+                    alert("Por favor, selecciona una fila para eliminar.");
+                    return;
+                }
+                // Esta parte es compleja de hacer con atomicidad en Firestore, así que la simulamos.
+                // Es un TODO a futuro para mejorar la eficiencia si la tabla crece mucho.
+                alert("La eliminación de filas intermedias se implementará en una futura versión. Por ahora, solo se puede reducir el número total de filas.");
                 localUpdate = true;
                 docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) })
                      .finally(() => localUpdate = false);
@@ -257,7 +316,7 @@ function initCoordinatorTable() {
         };
 
         controls.addCol.onclick = () => {
-            const name = prompt("Nombre para la nueva columna:", `T${tableState.cols.length + 1}`);
+            const name = prompt("Nombre para la nueva columna:", `T${(tableState.cols || []).length + 1}`);
             if (name) {
                 const newCol = { id: `th-custom-${Date.now()}`, header: name.trim() };
                 localUpdate = true;
@@ -267,7 +326,7 @@ function initCoordinatorTable() {
         };
 
         controls.removeCol.onclick = () => {
-            if (tableState.cols.length > 0) {
+            if ((tableState.cols || []).length > 0) {
                 const newCols = [...tableState.cols];
                 newCols.pop();
                 localUpdate = true;
@@ -293,7 +352,6 @@ function initCoordinatorTable() {
     
     bindCoordinatorEvents();
 }
-
 
 // =================================================================
 //    NUEVA VERSIÓN de initTablon (CONECTADA A FIREBASE)
