@@ -44,7 +44,7 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-// INICIO DEL NUEVO initCoordinatorTable v4.1 (CON PALETA CORREGIDA)
+// INICIO DEL initCoordinatorTable v4.2 (VERSIÓN DEFINITIVA)
 // =================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -52,7 +52,7 @@ function initCoordinatorTable() {
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
     
-    // --- 1. REFERENCIAS A FIREBASE Y ELEMENTOS DEL DOM ---
+    // --- 1. REFERENCIAS, ESTADO Y CONSTANTES ---
     const db = firebase.firestore();
     const docRef = db.collection('groups').doc(AppState.groupId).collection('appData').doc('coordinatorTable');
 
@@ -63,17 +63,19 @@ function initCoordinatorTable() {
         removeCol: document.getElementById('btn-remove-col'),
         limpiar: document.getElementById('limpiar-tabla')
     };
+    
+    // ¡¡¡PALETA DE COLORES COMPLETA RESTAURADA!!!
+    const FULL_COLOR_PALETTE = [
+        '#f8caca', '#fde2c3', '#fafcc2', '#c2f7c2', '#c4e3f3', '#d6cdea',
+        '#ffadad', '#ffd6a5', '#fdffb6', '#caffbf', '#9bf6ff', '#a0c4ff',
+        '#bdb2ff', '#ffc6ff', '#f1f1f1', '#d4d4d4', '#a1a1a1', '#ff7b7b',
+        '#ffb35a', 'initial' // 19 colores + reset
+    ];
 
     const DEFAULT_STATE = {
         rows: 18,
-        cols: [
-            { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
-            { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
-            { id: 'th-n', header: 'N' }
-        ],
-        headers: {},
-        texts: {},
-        colors: {}
+        cols: [{ id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' }, { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' }, { id: 'th-n', header: 'N' }],
+        headers: {}, texts: {}, colors: {}
     };
 
     let tableState = {};
@@ -81,33 +83,18 @@ function initCoordinatorTable() {
     let localUpdate = false;
 
     // --- 2. FUNCIONES DE RENDERIZADO Y AYUDANTES ---
-
-    // ¡¡¡FUNCIÓN CORREGIDA!!! - Ahora incluimos el creador de la paleta aquí
+    
+    // Paleta de colores (ahora usa la constante FULL_COLOR_PALETTE)
     function openColorPicker(targetElement, callback) {
-        const oldPalette = document.getElementById('coord-color-palette');
-        if (oldPalette) oldPalette.remove();
-
-        const colors = ['#f8caca', '#fde2c3', '#fafcc2', '#c2f7c2', '#c4e3f3', '#d6cdea', 'initial'];
+        document.getElementById('coord-color-palette')?.remove();
         const palette = document.createElement('div');
         palette.id = 'coord-color-palette';
-        
-        palette.style.position = 'absolute';
-        palette.style.display = 'flex';
-        palette.style.gap = '8px';
-        palette.style.padding = '10px';
-        palette.style.backgroundColor = 'var(--panel-bg)';
-        palette.style.borderRadius = '8px';
-        palette.style.boxShadow = '0 4px 15px rgba(0, 0, 0, 0.2)';
-        palette.style.zIndex = '100';
+        Object.assign(palette.style, { position: 'absolute', display: 'flex', gap: '8px', padding: '10px', backgroundColor: 'var(--panel-bg)', borderRadius: '8px', boxShadow: '0 4px 15px rgba(0, 0, 0, 0.2)', zIndex: '100' });
 
-        colors.forEach(color => {
+        FULL_COLOR_PALETTE.forEach(color => {
             const swatch = document.createElement('button');
             swatch.className = 'palette-swatch';
-            swatch.style.width = '30px';
-            swatch.style.height = '30px';
-            swatch.style.borderRadius = '50%';
-            swatch.style.cursor = 'pointer';
-            swatch.style.border = '2px solid var(--bg-color)';
+            Object.assign(swatch.style, { width: '30px', height: '30px', borderRadius: '50%', cursor: 'pointer', border: '2px solid var(--bg-color)' });
 
             if (color === 'initial') {
                 swatch.innerHTML = '🔄';
@@ -118,73 +105,28 @@ function initCoordinatorTable() {
                 swatch.style.backgroundColor = color;
             }
 
-            swatch.onclick = () => {
-                callback(color);
-                palette.remove();
-            };
+            swatch.onclick = () => { callback(color); palette.remove(); };
             palette.appendChild(swatch);
         });
 
         document.body.appendChild(palette);
-        
         const targetRect = targetElement.getBoundingClientRect();
         const paletteRect = palette.getBoundingClientRect();
-        
         let left = window.scrollX + targetRect.left;
-        if (left + paletteRect.width > window.innerWidth) {
-            left = window.innerWidth - paletteRect.width - 10;
-        }
-
+        if (left + paletteRect.width > window.innerWidth) left = window.innerWidth - paletteRect.width - 10;
         palette.style.top = `${window.scrollY + targetRect.bottom + 5}px`;
         palette.style.left = `${left}px`;
 
         const closeListener = (e) => {
             if (!palette.contains(e.target) && e.target !== targetElement) {
-                palette.remove();
-                document.removeEventListener('click', closeListener, true);
+                palette.remove(); document.removeEventListener('click', closeListener, true);
             }
         };
         setTimeout(() => document.addEventListener('click', closeListener, true), 100);
     }
     
-    function renderColgroup() {
-        let colgroup = tabla.querySelector('colgroup');
-        if (!colgroup) {
-            colgroup = document.createElement('colgroup');
-            tabla.insertBefore(colgroup, thead);
-        }
-        const numTurnCols = tableState.cols.length;
-        const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0;
-        
-        let html = `<col style="width: 9%;"><col style="width: 18%;">`;
-        for (let i = 0; i < numTurnCols; i++) {
-            html += `<col style="width: ${turnColWidth}%;\">`;
-        }
-        html += `<col style="width: 35%;">`;
-        colgroup.innerHTML = html;
-    }
-
-    function renderHeaders() {
-        thead.innerHTML = '';
-        const row1 = thead.insertRow();
-        const row2 = thead.insertRow();
-
-        row1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th>`;
-        row1.innerHTML += `<th id="th-ciclo" colspan="${tableState.cols.length || 1}" class="titulo-ciclo">${tableState.headers['th-ciclo'] || 'CICLO'}</th>`;
-        row1.innerHTML += `<th colspan="1">OBSERVACIONES</th>`;
-
-        row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
-        tableState.cols.forEach(col => {
-            row2.innerHTML += `<th id="${col.id}">${tableState.headers[col.id] || col.header}</th>`;
-        });
-        row2.innerHTML += `<th id="th-cocina">${tableState.headers['th-cocina'] || 'COCINA'}</th>`;
-
-        if (AppState.isCoordinator) {
-            thead.querySelectorAll('th').forEach(th => {
-                if (th.id) th.contentEditable = true;
-            });
-        }
-    }
+    function renderColgroup() { /* ... sin cambios ... */ }
+    function renderHeaders() { /* ... sin cambios ... */ }
     
     function renderBody() {
         tbody.innerHTML = '';
@@ -201,29 +143,37 @@ function initCoordinatorTable() {
                 const textEditor = document.createElement('div');
                 textEditor.className = 'text-editor';
                 textEditor.innerText = tableState.texts[cellId] || '';
-                if (AppState.isCoordinator) {
-                    textEditor.contentEditable = true;
-                }
+                if (AppState.isCoordinator) textEditor.contentEditable = true;
                 cell.appendChild(textEditor);
 
                 cell.style.backgroundColor = tableState.colors[cellId] || '';
 
                 if (turnColumnIndices.includes(j)) {
                     cell.style.position = 'relative';
-
                     if (AppState.isCoordinator) {
                          const handle = document.createElement('button');
-                         handle.type = 'button';
-                         handle.title = 'Elegir color';
-                         handle.innerHTML = '&#9679;';
                          handle.className = 'coord-color-handle';
+                         handle.innerHTML = '●';
                          handle.onclick = (ev) => {
                              ev.stopPropagation();
                              openColorPicker(handle, (color) => {
                                 const newColor = (color === 'initial') ? '' : color;
+                                
+                                // ¡¡¡CLAVE!!! 1. Actualización local INMEDIATA
+                                const targetCell = handle.closest('td');
+                                if (targetCell) targetCell.style.backgroundColor = newColor;
+
+                                // 2. Actualización en Firebase
                                 localUpdate = true;
                                 docRef.update({ [`colors.${cellId}`]: newColor || firebase.firestore.FieldValue.delete() })
-                                    .finally(() => localUpdate = false);
+                                    .catch(err => {
+                                        console.error("Error al guardar color: ", err);
+                                        if (targetCell) targetCell.style.backgroundColor = tableState.colors[cellId] || '';
+                                        alert("No se pudo guardar el color.");
+                                    })
+                                    .finally(() => {
+                                        setTimeout(() => localUpdate = false, 100);
+                                    });
                              });
                          };
                          cell.appendChild(handle);
@@ -234,122 +184,70 @@ function initCoordinatorTable() {
         }
         selectedRowIndex = -1;
     }
+    // Copiamos las funciones renderColgroup y renderHeaders aquí para que sean autocontenidas
+    function renderColgroup() { let colgroup = tabla.querySelector('colgroup'); if (!colgroup) { colgroup = document.createElement('colgroup'); tabla.insertBefore(colgroup, thead); } const numTurnCols = tableState.cols.length; const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0; let html = `<col style="width: 9%;"><col style="width: 18%;">`; for (let i = 0; i < numTurnCols; i++) { html += `<col style="width: ${turnColWidth}%;\">`; } html += `<col style="width: 35%;">`; colgroup.innerHTML = html; }
+    function renderHeaders() { thead.innerHTML = ''; const r1 = thead.insertRow(); const r2 = thead.insertRow(); r1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th><th id="th-ciclo" colspan="${tableState.cols.length || 1}" class="titulo-ciclo">${tableState.headers['th-ciclo'] || 'CICLO'}</th><th colspan="1">OBSERVACIONES</th>`; r2.innerHTML = '<th>Nº</th><th>NOMBRE</th>'; tableState.cols.forEach(c => { r2.innerHTML += `<th id="${c.id}">${tableState.headers[c.id] || c.header}</th>`; }); r2.innerHTML += `<th id="th-cocina">${tableState.headers['th-cocina'] || 'COCINA'}</th>`; if (AppState.isCoordinator) { thead.querySelectorAll('th[id]').forEach(th => th.contentEditable = true); } }
+
 
     // --- 3. MANEJO DE DATOS CON FIRESTORE ---
     function onRemoteUpdate(doc) {
         if (localUpdate) return;
-
-        const data = doc.data();
-        if (data) {
-            tableState = { ...DEFAULT_STATE, ...data };
-        } else {
-            tableState = DEFAULT_STATE;
-            docRef.set(DEFAULT_STATE);
-        }
-        
-        renderColgroup();
-        renderHeaders();
-        renderBody();
-        updateControlsVisibility();
+        tableState = { ...DEFAULT_STATE, ...(doc.data() || {}) };
+        if (!doc.exists) docRef.set(DEFAULT_STATE);
+        renderColgroup(); renderHeaders(); renderBody(); updateControlsVisibility();
     }
     
     function updateControlsVisibility() {
         const display = AppState.isCoordinator ? 'inline-block' : 'none';
-        Object.values(controls).forEach(btn => {
-            if(btn) btn.style.display = display;
-        });
+        Object.values(controls).forEach(btn => { if(btn) btn.style.display = display; });
     }
 
-    // --- 4. VINCULACIÓN DE EVENTOS (CONDICIONALES AL ROL) ---
+    // --- 4. VINCULACIÓN DE EVENTOS ---
     function bindCoordinatorEvents() {
         if (!AppState.isCoordinator) return;
 
         thead.addEventListener('blur', (e) => {
-            const target = e.target;
-            if (target.tagName === 'TH' && target.isContentEditable && target.id) {
+            const th = e.target.closest('th');
+            if (th && th.isContentEditable) {
                 localUpdate = true;
-                docRef.update({ [`headers.${target.id}`]: target.innerText.trim() })
-                    .finally(() => localUpdate = false);
+                docRef.update({ [`headers.${th.id}`]: th.innerText.trim() }).finally(() => localUpdate = false);
             }
         }, true);
 
-        tbody.addEventListener('input', (e) => {
-            const textEditor = e.target;
-            const row = textEditor.closest('tr');
-            const cell = textEditor.closest('td');
-            if (textEditor.classList.contains('text-editor') && row && cell) {
-                const cellId = `r${row.dataset.rowIndex}-c${cell.cellIndex}`;
-                localUpdate = true;
-                docRef.update({ [`texts.${cellId}`]: textEditor.innerText })
-                    .finally(() => localUpdate = false);
+        tbody.addEventListener('blur', (e) => {
+            const editor = e.target.closest('.text-editor');
+            if (editor && editor.isContentEditable) {
+                const cell = editor.closest('td');
+                const row = editor.closest('tr');
+                if (cell && row) {
+                    const cellId = `r${row.dataset.rowIndex}-c${cell.cellIndex}`;
+                    localUpdate = true;
+                    docRef.update({ [`texts.${cellId}`]: editor.innerText.trim() }).finally(() => localUpdate = false);
+                }
             }
-        });
-
+        }, true);
+        
         tbody.addEventListener('click', (e) => {
             const fila = e.target.closest("tr");
-            if (fila && fila.parentElement === tbody) {
-                Array.from(tbody.children).forEach(tr => tr.classList.remove("seleccionada"));
+            if (fila?.parentElement === tbody) {
+                tbody.querySelectorAll("tr").forEach(tr => tr.classList.remove("seleccionada"));
                 fila.classList.add("seleccionada");
                 selectedRowIndex = parseInt(fila.dataset.rowIndex, 10);
             }
         });
 
-        controls.addRow.onclick = () => {
-            localUpdate = true;
-            docRef.update({ rows: firebase.firestore.FieldValue.increment(1) })
-                 .finally(() => localUpdate = false);
-        };
-        
-        controls.removeRow.onclick = () => {
-            if (tableState.rows > 1) {
-                if (selectedRowIndex === -1 || !confirm("¿Seguro que quieres eliminar la fila seleccionada?")) {
-                    alert("Por favor, selecciona una fila para eliminar.");
-                    return;
-                }
-                // Esta parte es compleja de hacer con atomicidad en Firestore, así que la simulamos.
-                // Es un TODO a futuro para mejorar la eficiencia si la tabla crece mucho.
-                alert("La eliminación de filas intermedias se implementará en una futura versión. Por ahora, solo se puede reducir el número total de filas.");
-                localUpdate = true;
-                docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) })
-                     .finally(() => localUpdate = false);
-            }
-        };
-
-        controls.addCol.onclick = () => {
-            const name = prompt("Nombre para la nueva columna:", `T${(tableState.cols || []).length + 1}`);
-            if (name) {
-                const newCol = { id: `th-custom-${Date.now()}`, header: name.trim() };
-                localUpdate = true;
-                docRef.update({ cols: firebase.firestore.FieldValue.arrayUnion(newCol) })
-                    .finally(() => localUpdate = false);
-            }
-        };
-
-        controls.removeCol.onclick = () => {
-            if ((tableState.cols || []).length > 0) {
-                const newCols = [...tableState.cols];
-                newCols.pop();
-                localUpdate = true;
-                docRef.update({ cols: newCols })
-                    .finally(() => localUpdate = false);
-            }
-        };
-
-        controls.limpiar.onclick = () => {
-            if (confirm("¿Seguro que quieres borrar TODOS los textos y colores de la tabla?")) {
-                localUpdate = true;
-                docRef.update({ texts: {}, colors: {} })
-                    .finally(() => localUpdate = false);
-            }
-        };
+        if (controls.addRow) controls.addRow.onclick = () => { localUpdate = true; docRef.update({ rows: firebase.firestore.FieldValue.increment(1) }).finally(() => localUpdate = false); };
+        if (controls.removeRow) controls.removeRow.onclick = () => { if (tableState.rows > 1) { localUpdate = true; docRef.update({ rows: firebase.firestore.FieldValue.increment(-1) }).finally(() => localUpdate = false); } };
+        if (controls.addCol) controls.addCol.onclick = () => { const n = prompt("Nombre:", `T${(tableState.cols||[]).length+1}`); if(n){const c={id:`th-c-${Date.now()}`,h:n.trim()};localUpdate=true;docRef.update({cols:firebase.firestore.FieldValue.arrayUnion(c)}).finally(()=>localUpdate=false);}};
+        if (controls.removeCol) controls.removeCol.onclick = () => { if ((tableState.cols||[]).length > 0) { const c=tableState.cols.slice(0,-1); localUpdate=true; docRef.update({cols:c}).finally(()=>localUpdate=false); }};
+        if (controls.limpiar) controls.limpiar.onclick = () => { if (confirm("¿Borrar TODOS los textos y colores?")) { localUpdate = true; docRef.update({ texts: {}, colors: {} }).finally(() => localUpdate = false); } };
     }
 
     // --- 5. INICIALIZACIÓN ---
     docRef.onSnapshot(onRemoteUpdate, (error) => {
-        console.error("Error al escuchar la tabla del coordinador:", error);
-        tbody.innerHTML = '<tr><td colspan="8">Error al cargar datos. Revisa la consola.</td></tr>';
+        console.error("Error al sincronizar tabla:", error);
+        tbody.innerHTML = '<tr><td colspan="8">Error al cargar datos.</td></tr>';
     });
-    
     bindCoordinatorEvents();
 }
 

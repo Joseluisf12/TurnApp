@@ -1877,35 +1877,34 @@ body[data-theme='dark'] #total-restan {
 }
 
 /* ========================================================================= */
-/* HANDLE DE COLOR PARA LA TABLA DEL COORDINADOR (CORREGIDO)                 */
+/* HANDLE DE COLOR PARA LA TABLA DEL COORDINADOR (CORREGIDO v2)              */
 /* ========================================================================= */
 
 .coord-color-handle {
     position: absolute;
-    top: 50%; /* Centrado verticalmente */
-    right: 3px; /* Pegado a la derecha */
-    transform: translateY(-50%);
+    bottom: 1px; /* Posicionado abajo */
+    right: 1px;  /* y a la derecha */
     
-    height: 20px;
-    width: 20px;
+    height: 14px; /* Más pequeño */
+    width: 14px;
     
-    font-size: 16px;
-    line-height: 20px;
-    text-align: center;
+    font-size: 10px; /* Icono más pequeño */
+    line-height: 14px;
     
     background: transparent;
     border: none;
     border-radius: 50%;
     
     color: var(--text-color);
-    opacity: 0.15; /* Muy discreto */
+    opacity: 0.05; /* Aún más discreto por defecto */
     
     cursor: pointer;
-    z-index: 5; /* Por debajo del texto pero visible */
+    z-index: 5;
     padding: 0;
-    transition: opacity 0.2s;
+    transition: opacity 0.2s, transform 0.2s;
 }
 
 .coord-color-handle:hover {
-    opacity: 0.8; /* Se hace visible al pasar el ratón */
+    opacity: 0.9; /* Muy visible en hover */
+    transform: scale(1.2); /* Se agranda un poco para indicar interacción */
 }
