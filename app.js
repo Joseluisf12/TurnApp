@@ -1630,7 +1630,7 @@ function initAliasManager() {
     // 1. Solo se ejecuta si el usuario es Coordinador
     if (!AppState.isCoordinator) return;
 
-    const peticionesPanel = document.getElementById('peticiones-section');
+    const peticionesPanel = document.getElementById('ajustes-section');
     if (!peticionesPanel) return;
 
     // 2. Crear y añadir el botón para abrir el gestor
