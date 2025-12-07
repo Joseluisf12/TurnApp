@@ -5,54 +5,61 @@
 // cálculo de festivos variables y correcciones de UI.
 // Sirve como base para el futuro desarrollo multi-usuario.
 
-
 // =========================================================================
-// GESTOR DE TEMA (CLARO/OSCURO) SINCRONIZADO CON FIREBASE
+// GESTOR DE TEMA (CLARO/OSCURO) SINCRONIZADO CON FIREBASE (v2 - Robusto)
 // =========================================================================
-function initThemeSwitcher() {
+async function initThemeSwitcher() {
     const themeToggleButton = document.getElementById("btn-toggle-theme");
     const body = document.body;
     if (!themeToggleButton) return;
 
     // 1. Referencia al documento del usuario en Firestore
     const db = firebase.firestore();
+    if (!AppState.userId) {
+        console.error("ThemeSwitcher: No se pudo obtener el ID de usuario. Usando tema por defecto.");
+        body.classList.remove('dark'); body.classList.add('light');
+        themeToggleButton.textContent = '🌙';
+        return;
+    }
     const userDocRef = db.collection('userData').doc(AppState.userId);
 
     // Función interna que solo se encarga de aplicar los cambios visuales
     const applyThemeToUI = (theme) => {
-        // Usamos un atributo 'data-theme' para poder usarlo en CSS
-        body.dataset.theme = theme;
+        // NOTA IMPORTANTE: Este código asume que tu CSS usa clases (.light, .dark)
+        // Si tu CSS usa un selector como [data-theme="dark"], reemplaza las
+        // dos líneas siguientes por: body.dataset.theme = theme;
+        body.classList.remove('light', 'dark');
+        body.classList.add(theme);
+
         themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
     };
 
-    // 2. Escuchamos en tiempo real cualquier cambio en el documento del usuario
+    // 2. Carga inicial del tema al arrancar la app (usando 'get')
+    try {
+        const doc = await userDocRef.get();
+        const initialTheme = (doc.exists && doc.data().theme) ? doc.data().theme : 'light';
+        applyThemeToUI(initialTheme);
+    } catch (error) {
+        console.error("Error en la carga inicial del tema:", error);
+        applyThemeToUI('light'); // Fallback a tema claro
+    }
+
+    // 3. Escuchamos en tiempo real para cambios posteriores
     userDocRef.onSnapshot(doc => {
-        // Por defecto, usamos el tema 'light'
-        let currentTheme = 'light';
-        // Si el documento existe y tiene la preferencia guardada, la usamos
         if (doc.exists && doc.data().theme) {
-            currentTheme = doc.data().theme;
+            applyThemeToUI(doc.data().theme);
         }
-        applyThemeToUI(currentTheme);
-    }, error => {
-        console.error("Error al sincronizar el tema de usuario:", error);
-        // En caso de error, aplicamos el tema por defecto para asegurar la UI
-        applyThemeToUI('light');
     });
 
-    // 3. Al hacer clic, cambiamos el tema y lo guardamos en Firestore
+    // 4. Al hacer clic, guardamos el nuevo tema en Firestore
     themeToggleButton.addEventListener('click', () => {
-        // Determinamos cuál será el nuevo tema
-        const newTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
-        
-        // Actualizamos la preferencia en Firestore.
-        // El listener onSnapshot se encargará de actualizar la UI automáticamente.
-        userDocRef.set({ theme: newTheme }, { merge: true })
-            .catch(error => {
-                console.error("No se pudo guardar la preferencia de tema:", error);
-            });
+        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+        userDocRef.set({ theme: newTheme }, { merge: true }).catch(error => {
+            console.error("No se pudo guardar la preferencia de tema:", error);
+        });
     });
 }
+
 
 // =================================================================
 // INICIO DEL initCoordinatorTable v5.3 (BOTONES Y REDIBUJADO CORREGIDOS)
@@ -2077,7 +2084,7 @@ async function initNotificationManager() {
     // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
     if(typeof restoreManualEdits === 'function') await restoreManualEdits();
     if(typeof restoreCadenceSpec === 'function') await restoreCadenceSpec();
-    if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
+    if(typeof initThemeSwitcher === 'function') await initThemeSwitcher();
     if(typeof initApp === 'function') initApp();
     if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
     if(typeof initTablon === 'function') initTablon();
