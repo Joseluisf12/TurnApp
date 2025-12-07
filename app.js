@@ -1640,19 +1640,19 @@ function initAliasManager() {
     // 3. Crear el botón para abrir el gestor de alias
     const openManagerBtn = document.createElement('button');
     openManagerBtn.id = 'btn-open-alias-manager';
-    openManagerBtn.className = 'modern-btn'; // Usamos una clase genérica que ya tienes
+    openManagerBtn.className = 'modern-btn';
     openManagerBtn.innerHTML = '👤 <span class="btn-text">Gestionar Alias</span>';
     openManagerBtn.title = 'Asignar nombres a los usuarios';
-    // Le damos un color diferente para distinguirlo de "Enviar"
-    openManagerBtn.style.backgroundColor = '#6c757d'; // Un gris neutro
-    openManager-btn.style.marginRight = '10px'; // Un margen para que no esté pegado
+    openManagerBtn.style.backgroundColor = '#6c757d';
+    // --- CORRECCIÓN: Se ha arreglado el nombre de la variable aquí ---
+    openManagerBtn.style.marginRight = '10px'; 
 
     // 4. Insertamos el nuevo botón ANTES del botón de "Enviar Petición"
     const enviarBtn = document.getElementById('enviar-peticion');
     if (enviarBtn) {
         peticionesControles.insertBefore(openManagerBtn, enviarBtn);
     } else {
-        peticionesControles.appendChild(openManagerBtn); // Fallback si no encuentra el botón
+        peticionesControles.appendChild(openManagerBtn); // Fallback
     }
 
     // 5. Crear el HTML del modal (esto no cambia)
@@ -1682,7 +1682,6 @@ function initAliasManager() {
 
     // El resto de la función (loadUsersAndAliases, saveAliases, eventos) permanece exactamente igual...
     
-    // Función para cargar los usuarios y sus alias
     async function loadUsersAndAliases() {
         aliasListDiv.innerHTML = 'Cargando usuarios...';
         try {
@@ -1715,7 +1714,6 @@ function initAliasManager() {
         }
     }
 
-    // Función para guardar los cambios
     async function saveAliases() {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Guardando...';
@@ -1745,7 +1743,7 @@ function initAliasManager() {
         }
     }
 
-    // Eventos para abrir, cerrar y guardar
+    // Eventos
     openManagerBtn.addEventListener('click', () => {
         overlay.classList.add('visible');
         loadUsersAndAliases();
