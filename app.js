@@ -1908,131 +1908,98 @@ function initPeticiones() {
 }
 
 /* ================================================================= */
-/*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
+/*    NUEVO GESTOR DE NOTIFICACIONES CONECTADO A FIREBASE (v2)       */
 /* ================================================================= */
-
-function initNotificationManager() {
-    // 1. --- CLAVES y SELECTORES (AÑADIMOS PETICIONES) ---
-        // ¡Clave personal del usuario para saber qué ha visto!
-    const SEEN_FILES_KEY = `turnapp.user.${AppState.userId}.seenFiles.v1`; 
-    // Claves de grupo que necesita leer
-    const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
-    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
-    const PETICIONES_KEY = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
-
+async function initNotificationManager() {
+    const db = firebase.firestore();
+    const userDocRef = db.collection('userData').doc(AppState.userId);
 
     const navTablon = document.querySelector('.nav-btn[data-section="tablon"]');
     const navDocs = document.querySelector('.nav-btn[data-section="documentos"]');
-    const navPeticiones = document.querySelector('.nav-btn[data-section="peticiones"]'); // <-- NUEVO
 
-    if (!navTablon || !navDocs || !navPeticiones) {
+    if (!navTablon || !navDocs) {
         console.error("NotificationManager: No se encontraron los botones de navegación.");
         return;
     }
 
-    // 2. --- FUNCIONES DE ESTADO (MÁS SEGURAS) ---
-    function getSeenFiles() {
-        try {
-            const data = JSON.parse(localStorage.getItem(SEEN_FILES_KEY) || '[]');
-            return Array.isArray(data) ? data : [];
-        } catch (e) { return []; }
-    }
+    let seenFileIds = new Set();
 
-    function saveSeenFiles(seenFiles) {
+    // 1. Carga los IDs de los archivos que el usuario ya ha visto
+    async function loadSeenIds() {
         try {
-            localStorage.setItem(SEEN_FILES_KEY, JSON.stringify(seenFiles));
-        } catch (e) { console.error("Error al guardar 'seenFiles'", e); }
-    }
-    
-    function getFileId(file) {
-        return (file && file.name && file.date) ? `${file.name}|${file.date}` : null;
-    }
-
-    // 3. --- LÓGICA DE COMPROBACIÓN (CON PETICIONES) ---
-    function hasUnseenTablonFiles() {
-        try {
-            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-            if (!Array.isArray(files) || files.length === 0) return false;
-            const seen = getSeenFiles();
-            return files.some(f => { const id = getFileId(f); return id && !seen.includes(id); });
-        } catch (e) { return false; }
-    }
-
-    function hasUnseenDocsFiles() {
-        try {
-            const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-            if (typeof data !== 'object' || data === null) return false;
-            const seen = getSeenFiles();
-            for (const category in data) {
-                const files = data[category];
-                if (Array.isArray(files) && files.some(f => { const id = getFileId(f); return id && !seen.includes(id); })) {
-                    return true;
-                }
+            const userDoc = await userDocRef.get();
+            if (userDoc.exists && Array.isArray(userDoc.data().seenFileIds)) {
+                seenFileIds = new Set(userDoc.data().seenFileIds);
             }
-        } catch (e) { return false; }
-        return false;
+        } catch (error) {
+            console.error("Error al cargar IDs vistos:", error);
+        }
     }
 
-    // ¡NUEVA FUNCIÓN PARA PETICIONES!
-    function hasUnseenPeticiones() {
+    // 2. Comprueba si hay archivos sin ver en una colección
+    async function hasUnseen(collectionName) {
         try {
-            const peticiones = JSON.parse(localStorage.getItem(PETICIONES_KEY) || '[]');
-            if (!Array.isArray(peticiones)) return false;
-            // Comprueba si alguna petición tiene el flag 'visto' en false.
-            return peticiones.some(p => p.visto === false);
-        } catch (e) {
+            const snapshot = await db.collection('groups').doc(AppState.groupId).collection(collectionName).get();
+            const allFileIds = snapshot.docs.map(doc => doc.id);
+            // Si algún ID de la colección no está en el set de "vistos", devuelve true
+            return allFileIds.some(id => !seenFileIds.has(id));
+        } catch (error) {
+            console.error(`Error comprobando ${collectionName}:`, error);
             return false;
         }
     }
 
-    // 4. --- ACTUALIZACIÓN DE LA INTERFAZ (CON PETICIONES) ---
-    function checkAndDisplayNotifications() {
-        navTablon.classList.toggle('has-notification', hasUnseenTablonFiles());
-        navDocs.classList.toggle('has-notification', hasUnseenDocsFiles());
-        navPeticiones.classList.toggle('has-notification', hasUnseenPeticiones()); // <-- NUEVO
+    // 3. Actualiza la UI con los puntos rojos
+    async function checkAndDisplayNotifications() {
+        // Ejecutamos las comprobaciones en paralelo para más eficiencia
+        const [unseenTablon, unseenDocs] = await Promise.all([
+            hasUnseen('tablonFiles'),
+            hasUnseen('documentos')
+        ]);
+        
+        navTablon.classList.toggle('has-notification', unseenTablon);
+        navDocs.classList.toggle('has-notification', unseenDocs);
     }
 
-    // 5. --- EVENTOS Y EJECUCIÓN (CON PETICIONES) ---
-    function markSectionAsSeen(section) {
-        if (section === 'tablon' || section === 'documentos') {
-            let filesToMark = [];
-            try {
-                if (section === 'tablon') {
-                    const data = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
-                    if(Array.isArray(data)) filesToMark = data;
-                } else {
-                    const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
-                    if (typeof data === 'object' && data !== null) filesToMark = Object.values(data).flat();
-                }
-            } catch(e) { return; }
+    // 4. Marca todos los archivos de una sección como "vistos"
+    async function markSectionAsSeen(collectionName) {
+        try {
+            const snapshot = await db.collection('groups').doc(AppState.groupId).collection(collectionName).get();
+            const allFileIds = snapshot.docs.map(doc => doc.id);
             
-            if (filesToMark.length > 0) {
-                const seen = getSeenFiles();
-                const newSeen = new Set(seen);
-                filesToMark.forEach(f => { const id = getFileId(f); if (id) newSeen.add(id); });
-                saveSeenFiles(Array.from(newSeen));
+            let changed = false;
+            allFileIds.forEach(id => {
+                if (!seenFileIds.has(id)) {
+                    seenFileIds.add(id);
+                    changed = true;
+                }
+            });
+
+            // Si se añadieron nuevos IDs, los guardamos en Firestore
+            if (changed) {
+                await userDocRef.set({ seenFileIds: Array.from(seenFileIds) }, { merge: true });
             }
-        } else if (section === 'peticiones') {
-    // --- ANULADO ---
-    // Ya no marcamos todas las peticiones como vistas al entrar.
-    // El estado 'visto' ahora solo se controla manualmente con el checkbox.
-}
-        checkAndDisplayNotifications();
+        } catch (error) {
+            console.error(`Error marcando como vista la sección ${collectionName}:`, error);
+        } finally {
+            // Re-evaluamos las notificaciones para que el punto rojo desaparezca al instante
+            await checkAndDisplayNotifications();
+        }
     }
 
-    navTablon.addEventListener('click', () => markSectionAsSeen('tablon'));
+    // 5. Eventos y carga inicial
+    navTablon.addEventListener('click', () => markSectionAsSeen('tablonFiles'));
     navDocs.addEventListener('click', () => markSectionAsSeen('documentos'));
-    navPeticiones.addEventListener('click', () => markSectionAsSeen('peticiones')); // <-- NUEVO
     
-    checkAndDisplayNotifications();
+    // Al iniciar, cargamos los datos y hacemos la primera comprobación
+    await loadSeenIds();
+    await checkAndDisplayNotifications();
 
-    // Hacemos la función de chequeo global para poder llamarla desde otros módulos
+    // Hacemos la función de chequeo global por si se necesita desde fuera
     window.TurnApp = window.TurnApp || {};
     window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
-
-    // Escucha global para cambios en otras pestañas (útil si la app crece)
-    window.addEventListener('storage', checkAndDisplayNotifications);
 }
+
 
 // =========================================================================
 //    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
@@ -2069,7 +2036,7 @@ function initNotificationManager() {
     if(typeof initAliasManager === 'function') initAliasManager();
     if(typeof initEditableTitle === 'function') initEditableTitle();
     if(typeof initLicenciasPanel === 'function') await initLicenciasPanel();
-    if(typeof initNotificationManager === 'function') initNotificationManager();
+    if(typeof initNotificationManager === 'function') await initNotificationManager();
 }
 
 
