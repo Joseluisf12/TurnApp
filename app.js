@@ -6,7 +6,7 @@
 // Sirve como base para el futuro desarrollo multi-usuario.
 
 // =========================================================================
-// GESTOR DE TEMA (CLARO/OSCURO) SINCRONIZADO CON FIREBASE (v2 - Robusto)
+// GESTOR DE TEMA (CLARO/OSCURO) SINCRONIZADO CON FIREBASE (v3 - Corregido)
 // =========================================================================
 async function initThemeSwitcher() {
     const themeToggleButton = document.getElementById("btn-toggle-theme");
@@ -17,24 +17,19 @@ async function initThemeSwitcher() {
     const db = firebase.firestore();
     if (!AppState.userId) {
         console.error("ThemeSwitcher: No se pudo obtener el ID de usuario. Usando tema por defecto.");
-        body.classList.remove('dark'); body.classList.add('light');
+        body.dataset.theme = 'light';
         themeToggleButton.textContent = '🌙';
         return;
     }
     const userDocRef = db.collection('userData').doc(AppState.userId);
 
-    // Función interna que solo se encarga de aplicar los cambios visuales
+    // Función interna que aplica el tema usando el atributo 'data-theme'
     const applyThemeToUI = (theme) => {
-        // NOTA IMPORTANTE: Este código asume que tu CSS usa clases (.light, .dark)
-        // Si tu CSS usa un selector como [data-theme="dark"], reemplaza las
-        // dos líneas siguientes por: body.dataset.theme = theme;
-        body.classList.remove('light', 'dark');
-        body.classList.add(theme);
-
+        body.dataset.theme = theme;
         themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
     };
 
-    // 2. Carga inicial del tema al arrancar la app (usando 'get')
+    // 2. Carga inicial del tema al arrancar la app
     try {
         const doc = await userDocRef.get();
         const initialTheme = (doc.exists && doc.data().theme) ? doc.data().theme : 'light';
@@ -44,22 +39,27 @@ async function initThemeSwitcher() {
         applyThemeToUI('light'); // Fallback a tema claro
     }
 
-    // 3. Escuchamos en tiempo real para cambios posteriores
-    userDocRef.onSnapshot(doc => {
-        if (doc.exists && doc.data().theme) {
-            applyThemeToUI(doc.data().theme);
+    // 3. Escuchamos en tiempo real para cambios posteriores (desde otros dispositivos)
+    userDocRef.onSnapshot(snapshot => {
+        if (snapshot.exists && snapshot.data().theme) {
+            // Solo actualizamos si el tema en la DB es diferente al que ya se muestra
+            if (body.dataset.theme !== snapshot.data().theme) {
+                applyThemeToUI(snapshot.data().theme);
+            }
         }
     });
 
-    // 4. Al hacer clic, guardamos el nuevo tema en Firestore
+    // 4. Al hacer clic, damos respuesta inmediata y guardamos en Firestore
     themeToggleButton.addEventListener('click', () => {
-        const newTheme = body.classList.contains('dark') ? 'light' : 'dark';
+        const newTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+        // Primero, actualizamos la UI localmente para una respuesta instantánea
+        applyThemeToUI(newTheme);
+        // Segundo, guardamos el cambio en Firestore para sincronizarlo
         userDocRef.set({ theme: newTheme }, { merge: true }).catch(error => {
             console.error("No se pudo guardar la preferencia de tema:", error);
         });
     });
 }
-
 
 // =================================================================
 // INICIO DEL initCoordinatorTable v5.3 (BOTONES Y REDIBUJADO CORREGIDOS)
