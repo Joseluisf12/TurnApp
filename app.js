@@ -5,42 +5,53 @@
 // cálculo de festivos variables y correcciones de UI.
 // Sirve como base para el futuro desarrollo multi-usuario.
 
-/**
- * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
- */
+
+// =========================================================================
+// GESTOR DE TEMA (CLARO/OSCURO) SINCRONIZADO CON FIREBASE
+// =========================================================================
 function initThemeSwitcher() {
     const themeToggleButton = document.getElementById("btn-toggle-theme");
     const body = document.body;
+    if (!themeToggleButton) return;
 
-    // Función que aplica el tema y actualiza el botón y localStorage
-    const applyTheme = (theme) => {
+    // 1. Referencia al documento del usuario en Firestore
+    const db = firebase.firestore();
+    const userDocRef = db.collection('userData').doc(AppState.userId);
+
+    // Función interna que solo se encarga de aplicar los cambios visuales
+    const applyThemeToUI = (theme) => {
         // Usamos un atributo 'data-theme' para poder usarlo en CSS
-        body.dataset.theme = theme; 
-        
-        // Guardamos la preferencia para que no se pierda al recargar
-        localStorage.setItem('turnapp_theme', theme);
-        
-        // Cambiamos el icono del botón para que refleje el estado actual
-        if (themeToggleButton) {
-            themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
-        }
-    };
-    
-    // Función que se ejecuta al hacer clic en el botón
-    const toggleTheme = () => {
-        // Comprobamos cuál es el tema actual y lo cambiamos
-        const newTheme = body.dataset.theme === 'light' ? 'dark' : 'light';
-        applyTheme(newTheme);
+        body.dataset.theme = theme;
+        themeToggleButton.textContent = theme === 'dark' ? '☀️' : '🌙';
     };
 
-    // Añadimos el "escuchador" de clics al botón
-    if (themeToggleButton) {
-        themeToggleButton.addEventListener('click', toggleTheme);
-    }
-    
-    // Al cargar la app, aplicamos el tema guardado o el claro por defecto
-    const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
-    applyTheme(savedTheme);
+    // 2. Escuchamos en tiempo real cualquier cambio en el documento del usuario
+    userDocRef.onSnapshot(doc => {
+        // Por defecto, usamos el tema 'light'
+        let currentTheme = 'light';
+        // Si el documento existe y tiene la preferencia guardada, la usamos
+        if (doc.exists && doc.data().theme) {
+            currentTheme = doc.data().theme;
+        }
+        applyThemeToUI(currentTheme);
+    }, error => {
+        console.error("Error al sincronizar el tema de usuario:", error);
+        // En caso de error, aplicamos el tema por defecto para asegurar la UI
+        applyThemeToUI('light');
+    });
+
+    // 3. Al hacer clic, cambiamos el tema y lo guardamos en Firestore
+    themeToggleButton.addEventListener('click', () => {
+        // Determinamos cuál será el nuevo tema
+        const newTheme = body.dataset.theme === 'dark' ? 'light' : 'dark';
+        
+        // Actualizamos la preferencia en Firestore.
+        // El listener onSnapshot se encargará de actualizar la UI automáticamente.
+        userDocRef.set({ theme: newTheme }, { merge: true })
+            .catch(error => {
+                console.error("No se pudo guardar la preferencia de tema:", error);
+            });
+    });
 }
 
 // =================================================================
