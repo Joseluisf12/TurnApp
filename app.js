@@ -1630,20 +1630,32 @@ function initAliasManager() {
     // 1. Solo se ejecuta si el usuario es Coordinador
     if (!AppState.isCoordinator) return;
 
-    const peticionesPanel = document.getElementById('ajustes-section');
-    if (!peticionesPanel) return;
+    // 2. Localizamos el DIV que contiene el botón "Enviar Petición"
+    const peticionesControles = document.querySelector('.peticiones-controles');
+    if (!peticionesControles) {
+        console.error("Error en Gestor de Alias: No se encontró el contenedor '.peticiones-controles'.");
+        return;
+    }
 
-    // 2. Crear y añadir el botón para abrir el gestor
+    // 3. Crear el botón para abrir el gestor de alias
     const openManagerBtn = document.createElement('button');
     openManagerBtn.id = 'btn-open-alias-manager';
-    openManagerBtn.className = 'modern-btn';
+    openManagerBtn.className = 'modern-btn'; // Usamos una clase genérica que ya tienes
     openManagerBtn.innerHTML = '👤 <span class="btn-text">Gestionar Alias</span>';
     openManagerBtn.title = 'Asignar nombres a los usuarios';
-    
-    // Insertamos el botón al principio del panel de peticiones
-    peticionesPanel.insertBefore(openManagerBtn, peticionesPanel.firstChild);
+    // Le damos un color diferente para distinguirlo de "Enviar"
+    openManagerBtn.style.backgroundColor = '#6c757d'; // Un gris neutro
+    openManager-btn.style.marginRight = '10px'; // Un margen para que no esté pegado
 
-    // 3. Crear el HTML del modal (panel flotante)
+    // 4. Insertamos el nuevo botón ANTES del botón de "Enviar Petición"
+    const enviarBtn = document.getElementById('enviar-peticion');
+    if (enviarBtn) {
+        peticionesControles.insertBefore(openManagerBtn, enviarBtn);
+    } else {
+        peticionesControles.appendChild(openManagerBtn); // Fallback si no encuentra el botón
+    }
+
+    // 5. Crear el HTML del modal (esto no cambia)
     const modalHTML = `
         <div id="alias-manager-overlay">
             <div id="alias-manager-modal">
@@ -1668,17 +1680,17 @@ function initAliasManager() {
     
     const db = firebase.firestore();
 
-    // 4. Función para cargar los usuarios y sus alias
+    // El resto de la función (loadUsersAndAliases, saveAliases, eventos) permanece exactamente igual...
+    
+    // Función para cargar los usuarios y sus alias
     async function loadUsersAndAliases() {
         aliasListDiv.innerHTML = 'Cargando usuarios...';
-        
         try {
-            // Obtenemos todos los documentos de la colección 'userData'
             const snapshot = await db.collection('userData').get();
             const users = snapshot.docs.map(doc => ({
                 uid: doc.id,
-                alias: doc.data().alias || '', // Usamos el alias guardado o un string vacío
-                originalName: doc.data().userName || doc.id // Nombre original para referencia
+                alias: doc.data().alias || '',
+                originalName: doc.data().userName || doc.id
             }));
 
             aliasListDiv.innerHTML = '';
@@ -1687,7 +1699,6 @@ function initAliasManager() {
                 return;
             }
 
-            // Creamos una fila de inputs por cada usuario
             users.forEach(user => {
                 const item = document.createElement('div');
                 item.className = 'alias-item';
@@ -1704,7 +1715,7 @@ function initAliasManager() {
         }
     }
 
-    // 5. Función para guardar los cambios
+    // Función para guardar los cambios
     async function saveAliases() {
         saveBtn.disabled = true;
         saveBtn.textContent = 'Guardando...';
@@ -1716,13 +1727,11 @@ function initAliasManager() {
             const uid = input.dataset.uid;
             const newAlias = input.value.trim();
             const userDocRef = db.collection('userData').doc(uid);
-            // Actualizamos el campo 'alias' de cada usuario en un lote
             batch.set(userDocRef, { alias: newAlias }, { merge: true });
         });
 
         try {
             await batch.commit();
-            // ¡Importante! Forzamos la recarga de las peticiones para que se vean los nuevos nombres
             if (window.TurnApp && typeof window.TurnApp.reloadPeticiones === 'function') {
                 window.TurnApp.reloadPeticiones();
             }
@@ -1736,7 +1745,7 @@ function initAliasManager() {
         }
     }
 
-    // 6. Eventos para abrir, cerrar y guardar
+    // Eventos para abrir, cerrar y guardar
     openManagerBtn.addEventListener('click', () => {
         overlay.classList.add('visible');
         loadUsersAndAliases();
