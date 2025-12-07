@@ -1,4 +1,4 @@
-/* app.css - Versión 4.0 
+/* app.css - Versión 7.0 
 /* ==========================================================================
    1. VARIABLES DE COLOR PARA LOS TEMAS
    ========================================================================== */
@@ -1907,4 +1907,109 @@ body[data-theme='dark'] #total-restan {
 .coord-color-handle:hover {
     opacity: 0.9; /* Muy visible en hover */
     transform: scale(1.2); /* Se agranda un poco para indicar interacción */
+}
+
+/* ===================================== */
+/* ESTILOS PARA EL GESTOR DE ALIAS (NUEVO) */
+/* ===================================== */
+
+#btn-open-alias-manager {
+    margin-left: 10px;
+    padding: 8px 12px;
+}
+
+#alias-manager-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+#alias-manager-overlay.visible {
+    opacity: 1;
+    visibility: visible;
+}
+
+#alias-manager-modal {
+    background-color: var(--panel-bg);
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 500px;
+    transform: scale(0.95);
+    transition: transform 0.3s;
+}
+
+#alias-manager-overlay.visible #alias-manager-modal {
+    transform: scale(1);
+}
+
+#alias-manager-modal h3 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+#alias-list {
+    max-height: 60vh;
+    overflow-y: auto;
+    margin-bottom: 20px;
+}
+
+.alias-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 10px;
+    border-radius: 6px;
+    transition: background-color 0.2s;
+}
+
+.alias-item:nth-child(odd) {
+    background-color: var(--bg-color);
+}
+
+.alias-uid {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.8em;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.alias-input {
+    flex-grow: 1;
+    padding: 8px 10px;
+    border: 1px solid var(--border-color);
+    background-color: var(--input-bg);
+    color: var(--text-color);
+    border-radius: 5px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.alias-input:focus {
+    outline: none;
+    border-color: var(--accent-color);
+    box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.2);
+}
+
+#alias-manager-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
 }

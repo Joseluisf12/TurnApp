@@ -1624,7 +1624,136 @@ function applyCadenceRender(month, year){
 }
 
 // =================================================================
-//    NUEVA VERSIÓN de initPeticiones (CONECTADA A FIREBASE)
+//    NUEVO GESTOR DE ALIAS DE USUARIO (SOLO COORDINADOR)
+// =================================================================
+function initAliasManager() {
+    // 1. Solo se ejecuta si el usuario es Coordinador
+    if (!AppState.isCoordinator) return;
+
+    const peticionesPanel = document.getElementById('peticiones-section');
+    if (!peticionesPanel) return;
+
+    // 2. Crear y añadir el botón para abrir el gestor
+    const openManagerBtn = document.createElement('button');
+    openManagerBtn.id = 'btn-open-alias-manager';
+    openManagerBtn.className = 'modern-btn';
+    openManagerBtn.innerHTML = '👤 <span class="btn-text">Gestionar Alias</span>';
+    openManagerBtn.title = 'Asignar nombres a los usuarios';
+    
+    // Insertamos el botón al principio del panel de peticiones
+    peticionesPanel.insertBefore(openManagerBtn, peticionesPanel.firstChild);
+
+    // 3. Crear el HTML del modal (panel flotante)
+    const modalHTML = `
+        <div id="alias-manager-overlay">
+            <div id="alias-manager-modal">
+                <h3>Gestor de Alias de Usuarios</h3>
+                <div id="alias-list-container">
+                    <p>Asigna un nombre o número a cada usuario para identificarlo fácilmente en las peticiones.</p>
+                    <div id="alias-list">Cargando usuarios...</div>
+                </div>
+                <div id="alias-manager-actions">
+                    <button id="btn-close-alias" class="modern-btn">Cerrar</button>
+                    <button id="btn-save-alias" class="modern-btn green">Guardar Cambios</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+
+    const overlay = document.getElementById('alias-manager-overlay');
+    const saveBtn = document.getElementById('btn-save-alias');
+    const closeBtn = document.getElementById('btn-close-alias');
+    const aliasListDiv = document.getElementById('alias-list');
+    
+    const db = firebase.firestore();
+
+    // 4. Función para cargar los usuarios y sus alias
+    async function loadUsersAndAliases() {
+        aliasListDiv.innerHTML = 'Cargando usuarios...';
+        
+        try {
+            // Obtenemos todos los documentos de la colección 'userData'
+            const snapshot = await db.collection('userData').get();
+            const users = snapshot.docs.map(doc => ({
+                uid: doc.id,
+                alias: doc.data().alias || '', // Usamos el alias guardado o un string vacío
+                originalName: doc.data().userName || doc.id // Nombre original para referencia
+            }));
+
+            aliasListDiv.innerHTML = '';
+            if (users.length === 0) {
+                aliasListDiv.innerHTML = '<p>Aún no se han registrado otros usuarios.</p>';
+                return;
+            }
+
+            // Creamos una fila de inputs por cada usuario
+            users.forEach(user => {
+                const item = document.createElement('div');
+                item.className = 'alias-item';
+                item.innerHTML = `
+                    <span class="alias-uid" title="${user.uid}">(${user.originalName})</span>
+                    <input type="text" class="alias-input" data-uid="${user.uid}" value="${user.alias}" placeholder="Nombre o alias...">
+                `;
+                aliasListDiv.appendChild(item);
+            });
+
+        } catch (error) {
+            console.error("Error al cargar usuarios para el gestor de alias:", error);
+            aliasListDiv.innerHTML = 'Error al cargar los datos. Inténtalo de nuevo.';
+        }
+    }
+
+    // 5. Función para guardar los cambios
+    async function saveAliases() {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Guardando...';
+
+        const batch = db.batch();
+        const inputs = aliasListDiv.querySelectorAll('.alias-input');
+
+        inputs.forEach(input => {
+            const uid = input.dataset.uid;
+            const newAlias = input.value.trim();
+            const userDocRef = db.collection('userData').doc(uid);
+            // Actualizamos el campo 'alias' de cada usuario en un lote
+            batch.set(userDocRef, { alias: newAlias }, { merge: true });
+        });
+
+        try {
+            await batch.commit();
+            // ¡Importante! Forzamos la recarga de las peticiones para que se vean los nuevos nombres
+            if (window.TurnApp && typeof window.TurnApp.reloadPeticiones === 'function') {
+                window.TurnApp.reloadPeticiones();
+            }
+            overlay.classList.remove('visible');
+        } catch (error) {
+            console.error("Error al guardar los alias:", error);
+            alert('No se pudieron guardar los cambios. Revisa la consola.');
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Guardar Cambios';
+        }
+    }
+
+    // 6. Eventos para abrir, cerrar y guardar
+    openManagerBtn.addEventListener('click', () => {
+        overlay.classList.add('visible');
+        loadUsersAndAliases();
+    });
+
+    closeBtn.addEventListener('click', () => overlay.classList.remove('visible'));
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            overlay.classList.remove('visible');
+        }
+    });
+
+    saveBtn.addEventListener('click', saveAliases);
+}
+
+// =================================================================
+//    NUEVA VERSIÓN de initPeticiones (CONECTADA A ALIAS)
 // =================================================================
 function initPeticiones() {
     const listaUsuario = document.getElementById('lista-peticiones-usuario');
@@ -1636,20 +1765,46 @@ function initPeticiones() {
         return;
     }
 
-    const peticionesCollection = firebase.firestore()
-        .collection('groups').doc(AppState.groupId)
-        .collection('peticiones');
+    const db = firebase.firestore();
+    const peticionesCollection = db.collection('groups').doc(AppState.groupId).collection('peticiones');
+    const userDataCollection = db.collection('userData');
+    
+    let userAliases = {}; // Caché local para los alias y nombres de usuario
+    let unsubscribe = null; // Para poder detener el listener de peticiones al recargar
 
-    // Función para renderizar una única petición (más eficiente)
+    // 1. Función para obtener TODOS los alias y nombres de usuario
+    async function fetchAliases() {
+        try {
+            const snapshot = await userDataCollection.get();
+            const aliases = {};
+            snapshot.forEach(doc => {
+                aliases[doc.id] = {
+                    alias: doc.data().alias || '',
+                    // Guardamos el userName original como respaldo
+                    userName: doc.data().userName || doc.id 
+                };
+            });
+            userAliases = aliases;
+            console.log("Alias de usuarios cargados/actualizados:", userAliases);
+        } catch (error) {
+            console.error("Error al cargar los alias de usuario:", error);
+        }
+    }
+
+    // 2. Función para renderizar una única petición, usando los alias
     function renderPeticion(peticion) {
         const li = document.createElement('li');
         li.className = 'peticion-item';
-        li.dataset.id = peticion.id; // Guardamos el ID del documento
+        li.dataset.id = peticion.id;
 
         const fechaHora = peticion.createdAt ? new Date(peticion.createdAt).toLocaleString('es-ES') : 'Fecha no disponible';
-        const autor = peticion.userName || 'Usuario desconocido';
+        
+        // --- ¡LÓGICA MEJORADA PARA MOSTRAR EL NOMBRE! ---
+        const userData = userAliases[peticion.userId];
+        // Prioridad: 1. Alias, 2. Nombre de usuario original, 3. 'Usuario desconocido'
+        const autor = (userData?.alias) ? userData.alias : (peticion.userName || 'Usuario desconocido');
+        // --- Fin de la mejora ---
 
-        // --- Checkbox de Revisado (solo editable por el coordinador) ---
         const revisadoCheckbox = `
             <input type="checkbox" 
                    ${peticion.revisada ? 'checked' : ''} 
@@ -1660,7 +1815,7 @@ function initPeticiones() {
         li.innerHTML = `
             <div class="peticion-left">
                 <div class="peticion-texto">${peticion.texto}</div>
-                <div class="fecha-hora">De: ${autor} - ${fechaHora}</div>
+                <div class="fecha-hora">De: <strong>${autor}</strong> - ${fechaHora}</div>
             </div>
             <div class="peticion-right">
                 ${revisadoCheckbox}
@@ -1672,45 +1827,56 @@ function initPeticiones() {
             </div>
         `;
 
-        // --- Eventos para los botones de esta petición ---
-        const chk = li.querySelector('input[type="checkbox"]');
+        // Eventos de la petición...
         if (AppState.isCoordinator) {
+            const chk = li.querySelector('input[type="checkbox"]');
             chk.addEventListener('change', () => {
                 peticionesCollection.doc(peticion.id).update({ revisada: chk.checked });
             });
-        }
-
-        const delBtn = li.querySelector('.delete-btn');
-        if (delBtn) {
+            const delBtn = li.querySelector('.delete-btn');
             delBtn.addEventListener('click', () => {
                 if (confirm('¿Seguro que quieres eliminar esta petición?')) {
-                    peticionesCollection.doc(peticion.id).delete().catch(err => {
-                        alert('Error al eliminar la petición.');
-                        console.error("Error al eliminar petición:", err);
-                    });
+                    peticionesCollection.doc(peticion.id).delete().catch(err => console.error("Error al eliminar petición:", err));
                 }
             });
         }
         return li;
     }
-    
-    // --- Escuchar cambios en tiempo real ---
-    peticionesCollection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
-        listaUsuario.innerHTML = ''; // Limpiamos la lista
-        if (snapshot.empty) {
-            listaUsuario.innerHTML = '<li>No hay peticiones.</li>';
-            return;
-        }
-        snapshot.forEach(doc => {
-            const peticion = { id: doc.id, ...doc.data() };
-            listaUsuario.appendChild(renderPeticion(peticion));
-        });
-    }, error => {
-        console.error("Error al escuchar peticiones:", error);
-        listaUsuario.innerHTML = '<li>Error al cargar las peticiones.</li>';
-    });
 
-    // --- Evento para enviar una nueva petición ---
+    // 3. Función principal que escucha cambios en las peticiones
+    function listenForPeticiones() {
+        if (unsubscribe) {
+            unsubscribe(); // Detenemos el listener anterior si existe
+        }
+        
+        unsubscribe = peticionesCollection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+            listaUsuario.innerHTML = '';
+            if (snapshot.empty) {
+                listaUsuario.innerHTML = '<li>No hay peticiones.</li>';
+                return;
+            }
+            snapshot.forEach(doc => {
+                const peticion = { id: doc.id, ...doc.data() };
+                listaUsuario.appendChild(renderPeticion(peticion));
+            });
+        }, error => {
+            console.error("Error al escuchar peticiones:", error);
+            listaUsuario.innerHTML = '<li>Error al cargar las peticiones.</li>';
+        });
+    }
+
+    // 4. Función para recargar todo (se llamará desde el gestor de alias)
+    async function reloadPeticiones() {
+        listaUsuario.innerHTML = '<li>Actualizando nombres...</li>';
+        await fetchAliases();     // Primero actualiza la caché de nombres
+        listenForPeticiones();    // Después, vuelve a dibujar las peticiones
+    }
+
+    // 5. Exponemos la función de recarga para que sea accesible globalmente
+    window.TurnApp = window.TurnApp || {};
+    window.TurnApp.reloadPeticiones = reloadPeticiones;
+    
+    // 6. Evento para enviar una nueva petición
     enviarPeticionBtn.addEventListener('click', () => {
         const texto = peticionTexto.value.trim();
         if (!texto) return;
@@ -1721,24 +1887,18 @@ function initPeticiones() {
             createdAt: new Date().toISOString(),
             revisada: false,
             userId: AppState.userId,
-            userName: AppState.userName || 'Usuario Anónimo'
+            userName: AppState.userName // Guardamos el nombre original siempre
         };
 
         peticionesCollection.add(nuevaPeticion)
-            .then(() => {
-                peticionTexto.value = '';
-            })
-            .catch(error => {
-                alert('No se pudo enviar tu petición. Inténtalo de nuevo.');
-                console.error("Error al añadir petición:", error);
-            })
-            .finally(() => {
-                enviarPeticionBtn.disabled = false;
-                peticionTexto.focus();
-            });
+            .then(() => { peticionTexto.value = ''; })
+            .catch(error => { console.error("Error al añadir petición:", error); })
+            .finally(() => { enviarPeticionBtn.disabled = false; peticionTexto.focus(); });
     });
-}
 
+    // 7. Carga inicial
+    reloadPeticiones();
+}
 
 /* ================================================================= */
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
@@ -1899,6 +2059,7 @@ function initNotificationManager() {
     if(typeof initTablon === 'function') initTablon();
     if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
     if(typeof initPeticiones === 'function') initPeticiones();
+    if(typeof initAliasManager === 'function') initAliasManager();
     if(typeof initEditableTitle === 'function') initEditableTitle();
     if(typeof initLicenciasPanel === 'function') await initLicenciasPanel();
     if(typeof initNotificationManager === 'function') initNotificationManager();
