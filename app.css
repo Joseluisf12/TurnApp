@@ -2013,3 +2013,29 @@ body[data-theme='dark'] #total-restan {
     justify-content: flex-end;
     gap: 10px;
 }
+
+/* ================================================================= */
+/*  AJUSTE VISUAL BOTONES DE ZONA DE PETICIONES (CENTRADO Y UNIFORME) */
+/* ================================================================= */
+
+/* 1. Anula la regla anterior para centrar el contenedor de botones
+   y alinearlo con el cuadro de texto que tiene encima. */
+.peticiones-controles {
+    display: flex;
+    justify-content: center;    /* ¡LA CLAVE! Centra los botones. */
+    gap: 12px;                  /* Crea un espacio uniforme entre ellos. */
+    width: 95%;                 /* Mismo ancho que el textarea para alineación perfecta. */
+    margin: 0 auto 15px auto;   /* Centra todo el bloque de botones. */
+}
+
+/* 2. Hace que los dos botones (Gestionar y Enviar) tengan
+   el mismo ancho, creando una apariencia más limpia y simétrica. */
+.peticiones-controles > button {
+    flex-grow: 1;           /* Permite que los botones crezcan para ocupar el espacio. */
+    max-width: 250px;       /* Un límite para que no sean demasiado anchos en pantallas grandes. */
+}
+
+/* 3. Pequeño ajuste para que el botón de Enviar Petición se adapte bien. */
+#enviar-peticion {
+    width: auto; /* Dejamos que flexbox gestione su ancho. */
+}
