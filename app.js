@@ -951,34 +951,73 @@ async function initLicenciasPanel() {
 // =========================================================================
 
 // =========================================================================
-// LÓGICA PARA EL TÍTULO EDITABLE
+// LÓGICA PARA EL TÍTULO EDITABLE (CONECTADO A FIREBASE)
 // =========================================================================
 function initEditableTitle() {
     const titleElement = document.getElementById('editable-title');
     if (!titleElement) return;
 
-    const EDITABLE_TITLE_KEY = `turnapp.group.${AppState.groupId}.editableTitle`;
+    // 1. Referencia al documento del grupo en Firestore
+    const db = firebase.firestore();
+    const groupDocRef = db.collection('groups').doc(AppState.groupId);
 
-    // 1. Cargar el texto guardado al iniciar
-    const savedTitle = localStorage.getItem(EDITABLE_TITLE_KEY);
-    if (savedTitle) {
-        titleElement.textContent = savedTitle;
+    // 2. Hacer editable el título SOLO para el Coordinador
+    if (AppState.isCoordinator) {
+        titleElement.contentEditable = true;
+        titleElement.style.cursor = 'text';
+    } else {
+        titleElement.contentEditable = false;
+        titleElement.style.cursor = 'default';
     }
 
-    // 2. Guardar el texto cuando el usuario deja de editar
-    titleElement.addEventListener('blur', () => {
-        const newTitle = titleElement.textContent.trim();
-        localStorage.setItem(EDITABLE_TITLE_KEY, newTitle);
+    // 3. Escuchar cambios en tiempo real desde Firestore
+    groupDocRef.onSnapshot(doc => {
+        if (doc.exists && doc.data().groupName) {
+            // Actualizamos el título si es diferente, para evitar perder el foco si se está editando
+            if (titleElement.textContent !== doc.data().groupName) {
+                titleElement.textContent = doc.data().groupName;
+            }
+        } else {
+            // Si el nombre no existe, ponemos uno por defecto (y el coordinador puede crearlo)
+            const defaultText = "Nombre del Grupo";
+            if (titleElement.textContent !== defaultText) {
+                 titleElement.textContent = defaultText;
+            }
+            // Si el documento o el campo no existen, el coordinador lo creará al editar
+            if (AppState.isCoordinator) {
+                groupDocRef.set({ groupName: defaultText }, { merge: true });
+            }
+        }
+    }, error => {
+        console.error("Error al sincronizar el título del grupo:", error);
+        titleElement.textContent = "Error de conexión";
     });
 
-    // 3. Evitar que 'Enter' cree un salto de línea y forzar guardado
-    titleElement.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            titleElement.blur();
-        }
-    });
+    // 4. Guardar el nuevo nombre cuando el Coordinador deja de editar
+    if (AppState.isCoordinator) {
+        titleElement.addEventListener('blur', () => {
+            const newTitle = titleElement.textContent.trim();
+            if (newTitle) {
+                // Solo guardamos si el título ha cambiado para no hacer escrituras innecesarias
+                groupDocRef.get().then(doc => {
+                    if (!doc.exists || doc.data().groupName !== newTitle) {
+                        console.log("Guardando nuevo nombre de grupo en Firestore:", newTitle);
+                        groupDocRef.set({ groupName: newTitle }, { merge: true });
+                    }
+                });
+            }
+        });
+
+        // 5. Evitar saltos de línea con 'Enter' y forzar guardado
+        titleElement.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                titleElement.blur(); // Dispara el evento 'blur' para guardar
+            }
+        });
+    }
 }
+
 
 // festivos nacionales (mes 0-11)
 const spanishHolidays = [
