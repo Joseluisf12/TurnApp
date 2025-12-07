@@ -44,7 +44,7 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-// INICIO DEL initCoordinatorTable v5.1 (CORRECCIÓN DE RACE CONDITION)
+// INICIO DEL initCoordinatorTable v5.3 (BOTONES Y REDIBUJADO CORREGIDOS)
 // =================================================================
 function initCoordinatorTable() {
     const tabla = document.getElementById("tabla-coordinador");
@@ -69,15 +69,17 @@ function initCoordinatorTable() {
     let selectedRowIndex = -1;
     let localUpdate = false;
 
-    // --- 3. RENDERIZADO Y FUNCIONES DE AYUDA (SIN CAMBIOS) ---
-    // (Las funciones openColorPicker, renderColgroup, renderHeaders se autocontienen al final)
-
+    // --- 3. RENDERIZADO Y AYUDANTES ---
+    // (Funciones auxiliares autocontenidas al final)
     function renderBody() {
         tbody.innerHTML = '';
         if (!tableState.rowData) return;
         tableState.rowData.forEach((rowDataItem, rowIndex) => {
             const row = tbody.insertRow();
             row.dataset.rowIndex = rowIndex;
+            // ¡Importante! Mantiene la selección visual después del redibujado
+            if(rowIndex === selectedRowIndex) row.classList.add('seleccionada');
+
             const numTurnCols = tableState.cols?.length || 0;
             const totalCells = NUM_STATIC_COLS_START + numTurnCols + NUM_STATIC_COLS_END;
             for (let cellIndex = 0; cellIndex < totalCells; cellIndex++) {
@@ -98,81 +100,98 @@ function initCoordinatorTable() {
                     handle.onclick = (ev) => {
                          ev.stopPropagation();
                          openColorPicker(handle, (color) => {
-                            const newColor = (color === 'initial') ? '' : color;
-                            handle.closest('td').style.backgroundColor = newColor;
-                            
-                            // ¡CORRECCIÓN! Modifica el estado en memoria, no una copia
-                            tableState.rowData[rowIndex].cells[cellIndex].color = newColor;
-
+                            handle.closest('td').style.backgroundColor = (color === 'initial' ? '' : color);
+                            tableState.rowData[rowIndex].cells[cellIndex].color = (color === 'initial' ? '' : color);
                             localUpdate = true;
-                            docRef.update({ rowData: tableState.rowData })
-                                .finally(() => setTimeout(() => localUpdate = false, 50));
+                            docRef.update({ rowData: tableState.rowData }).finally(() => setTimeout(() => localUpdate = false, 50));
                          });
                     };
                     cell.appendChild(handle);
                 }
             }
         });
-        selectedRowIndex = -1;
     }
     
     // --- 4. GESTIÓN DE DATOS CON FIRESTORE ---
     function onRemoteUpdate(doc) {
         if (localUpdate) return;
         const data = doc.data();
-        if (data && data.rowData) {
+        if (data && Array.isArray(data.rowData)) {
             tableState = data;
         } else {
-            console.log("Estructura de tabla no encontrada o inválida. Reiniciando a valores por defecto.");
             tableState = createDefaultTable();
             docRef.set(tableState).catch(console.error);
-            return;
+            return; // Importante salir para evitar errores de renderizado con estado vacío
         }
         renderColgroup(); renderHeaders(); renderBody(); updateControlsVisibility();
     }
     function updateControlsVisibility() { const display = AppState.isCoordinator ? 'inline-block' : 'none'; Object.values(controls).forEach(btn => { if(btn) btn.style.display = display; }); }
 
-    // --- 5. VINCULACIÓN DE EVENTOS (CON LA CORRECCIÓN CLAVE) ---
+    // --- 5. VINCULACIÓN DE EVENTOS (CON REDIBUJADO INMEDIATO) ---
     function bindCoordinatorEvents() {
         if (!AppState.isCoordinator) return;
         
-        // VINCULACIÓN DE BOTONES (OK)
-        if (controls.addRow) controls.addRow.onclick = () => { const newRow = createDefaultRow(tableState.cols.length); const updatedRowData = [...tableState.rowData]; const insertIndex = (selectedRowIndex === -1) ? updatedRowData.length : selectedRowIndex + 1; updatedRowData.splice(insertIndex, 0, newRow); docRef.update({ rowData: updatedRowData }); };
-        if (controls.removeRow) controls.removeRow.onclick = () => { if (selectedRowIndex === -1) return alert("Por favor, selecciona una fila para eliminar."); if (confirm("¿Seguro que quieres eliminar la fila seleccionada?")) { const updatedRowData = [...tableState.rowData]; updatedRowData.splice(selectedRowIndex, 1); docRef.update({ rowData: updatedRowData }); } };
-        if (controls.addCol) controls.addCol.onclick = () => { const name = prompt("Nombre nueva columna:", `T${(tableState.cols?.length || 0) + 1}`); if(name) { const newCol = { id: `th-c-${Date.now()}`, header: name.trim() }; const newCols = [...(tableState.cols || []), newCol]; const updatedRowData = tableState.rowData.map(r => ({ ...r, cells: [...r.cells, createDefaultCell()].slice(0,NUM_STATIC_COLS_START+newCols.length+NUM_STATIC_COLS_END) })); updatedRowData.forEach(r => r.cells.splice(NUM_STATIC_COLS_START+newCols.length-1, 0, createDefaultCell())); docRef.update({ cols: newCols, rowData: updatedRowData }); }};
-        if (controls.removeCol) controls.removeCol.onclick = () => { if ((tableState.cols?.length || 0) > 0 && confirm("¿Eliminar la última columna de turno?")) { const newCols = tableState.cols.slice(0, -1); const updatedRowData = tableState.rowData.map(r => { r.cells.splice(NUM_STATIC_COLS_START + newCols.length, 1); return r; }); docRef.update({ cols: newCols, rowData: updatedRowData }); } };
-        if (controls.limpiar) controls.limpiar.onclick = () => { if (confirm("¿Borrar TODOS los textos y colores?")) { docRef.update({ rowData: tableState.rowData.map(() => createDefaultRow(tableState.cols.length)) }); } };
+        function updateFirestore() {
+            localUpdate = true;
+            docRef.update({ cols: tableState.cols, rowData: tableState.rowData, headers: tableState.headers })
+                .finally(() => setTimeout(() => localUpdate = false, 100));
+        }
 
-        // VINCULACIÓN DE EDICIÓN DE CELDAS
-        thead.addEventListener('blur', (e) => { const th = e.target.closest('th'); if (th?.isContentEditable) docRef.update({ [`headers.${th.id}`]: th.innerText.trim() }); }, true);
-        
-        // ¡¡¡AQUÍ ESTÁ LA CORRECCIÓN MÁS IMPORTANTE!!!
-        tbody.addEventListener('blur', (e) => {
-            const editor = e.target.closest('.text-editor');
-            if (editor?.isContentEditable) {
-                const cell = editor.closest('td');
-                const row = editor.closest('tr');
-                if (cell && row) {
-                    // ¡CORRECCIÓN! Modifica el estado en memoria, no una copia
-                    tableState.rowData[row.dataset.rowIndex].cells[cell.cellIndex].text = editor.innerText.trim();
-                    
-                    localUpdate = true;
-                    // Envía el estado COMPLETO y actualizado
-                    docRef.update({ rowData: tableState.rowData })
-                        .finally(() => setTimeout(() => localUpdate = false, 50));
-                }
+        if (controls.addRow) controls.addRow.onclick = () => {
+            const newRow = createDefaultRow(tableState.cols.length);
+            const insertIndex = (selectedRowIndex === -1) ? tableState.rowData.length : selectedRowIndex + 1;
+            tableState.rowData.splice(insertIndex, 0, newRow);
+            renderBody(); // ¡REDIBUJA AHORA!
+            updateFirestore();
+        };
+
+        if (controls.removeRow) controls.removeRow.onclick = () => {
+            if (selectedRowIndex === -1) return alert("Por favor, selecciona una fila para eliminar.");
+            if (confirm("¿Seguro que quieres eliminar la fila seleccionada?")) {
+                tableState.rowData.splice(selectedRowIndex, 1);
+                selectedRowIndex = -1; // Deselecciona para evitar errores
+                renderBody(); // ¡REDIBUJA AHORA!
+                updateFirestore();
             }
-        }, true);
+        };
+
+        if (controls.addCol) controls.addCol.onclick = () => {
+            const name = prompt("Nombre nueva columna:", `T${(tableState.cols?.length || 0) + 1}`);
+            if (name) {
+                tableState.cols.push({ id: `th-c-${Date.now()}`, header: name.trim() });
+                tableState.rowData.forEach(row => { row.cells.splice(NUM_STATIC_COLS_START + tableState.cols.length - 1, 0, createDefaultCell()); });
+                renderColgroup(); renderHeaders(); renderBody(); // ¡REDIBUJA TODO AHORA!
+                updateFirestore();
+            }
+        };
+
+        if (controls.removeCol) controls.removeCol.onclick = () => {
+            if ((tableState.cols?.length || 0) > 0 && confirm("¿Eliminar la última columna de turno?")) {
+                tableState.cols.pop();
+                tableState.rowData.forEach(row => { row.cells.splice(NUM_STATIC_COLS_START + tableState.cols.length, 1); });
+                renderColgroup(); renderHeaders(); renderBody(); // ¡REDIBUJA TODO AHORA!
+                updateFirestore();
+            }
+        };
         
+        if (controls.limpiar) controls.limpiar.onclick = () => {
+            if (confirm("¿Borrar TODOS los textos y colores de la tabla?")) {
+                tableState.rowData = tableState.rowData.map(() => createDefaultRow(tableState.cols.length));
+                renderBody(); // ¡REDIBUJA AHORA!
+                updateFirestore();
+            }
+        };
+
+        thead.addEventListener('blur', (e) => { const th = e.target.closest('th'); if (th?.isContentEditable) { tableState.headers[th.id] = th.innerText.trim(); updateFirestore(); } }, true);
+        tbody.addEventListener('blur', (e) => { const editor = e.target.closest('.text-editor'); if (editor?.isContentEditable) { const cell = editor.closest('td'); const row = editor.closest('tr'); if (cell && row) { tableState.rowData[row.dataset.rowIndex].cells[cell.cellIndex].text = editor.innerText.trim(); updateFirestore(); } } }, true);
         tbody.addEventListener('click', (e) => { const fila = e.target.closest("tr"); if (fila?.parentElement === tbody) { tbody.querySelectorAll("tr.seleccionada").forEach(tr => tr.classList.remove("seleccionada")); fila.classList.add("seleccionada"); selectedRowIndex = parseInt(fila.dataset.rowIndex, 10); } });
     }
     
-    // Autocontención de funciones auxiliares
-    let openColorPicker = (targetElement, callback) => { document.getElementById('coord-color-palette')?.remove(); const p=document.createElement('div');p.id='coord-color-palette';Object.assign(p.style, {position:'absolute',display:'flex',flexWrap:'wrap',width:'250px',gap:'8px',padding:'10px',backgroundColor:'var(--panel-bg)',borderRadius:'8px',boxShadow:'0 4px 15px rgba(0,0,0,0.2)',zIndex:'100'}); COORDINATOR_PALETTE.forEach(c => { const s=document.createElement('button');s.className='palette-swatch';Object.assign(s.style, {width:'30px',height:'30px',borderRadius:'50%',cursor:'pointer',border:'2px solid var(--bg-color)',display:'flex',alignItems:'center',justifyContent:'center'}); if(c==='initial'){s.innerHTML='🔄';s.title="Quitar color";} s.style.backgroundColor=c==='initial'?'var(--button-bg-color)':c; s.onclick=()=>{callback(c);p.remove();}; p.appendChild(s);}); document.body.appendChild(p); const tr=targetElement.getBoundingClientRect(); let l=window.scrollX+tr.left; if(l+250>window.innerWidth) l=window.innerWidth-260; p.style.top=`${window.scrollY+tr.bottom+5}px`; p.style.left=`${l}px`; const cl=(e)=>{if(!p.contains(e.target)&&e.target!==targetElement){p.remove();document.removeEventListener('click',cl,true);}}; setTimeout(()=>document.addEventListener('click',cl,true),100); };
-    let renderColgroup = () => { let cg=tabla.querySelector('colgroup'); if(!cg){cg=document.createElement('colgroup');tabla.insertBefore(cg,thead);} const nc=tableState.cols?.length||0; const tw=nc>0?(100-9-18-35)/nc:0; let h=`<col style="width:9%;"><col style="width:18%;">`; for(let i=0;i<nc;i++){h+=`<col style="width:${tw}%;">`;} h+=`<col style="width:35%;">`; cg.innerHTML=h;};
-    let renderHeaders = () => { thead.innerHTML=''; const r1=thead.insertRow(); const r2=thead.insertRow(); const nc=tableState.cols?.length||0; r1.innerHTML=`<th colspan="2">FUNCIONARIO/A</th><th id="th-ciclo" colspan="${nc||1}" class="titulo-ciclo">${tableState.headers?.['th-ciclo']||'CICLO'}</th><th colspan="1">OBSERVACIONES</th>`; r2.innerHTML='<th>Nº</th><th>NOMBRE</th>'; tableState.cols?.forEach(c=>{r2.innerHTML+=`<th id="${c.id}">${tableState.headers?.[c.id]||c.header}</th>`;}); r2.innerHTML+=`<th id="th-cocina">${tableState.headers?.['th-cocina']||'COCINA'}</th>`; if(AppState.isCoordinator){thead.querySelectorAll('th[id]').forEach(th=>th.contentEditable=true);}};
+    // --- 6. AUTOCONTENCIÓN Y ARRANQUE ---
+    var openColorPicker= (t,c)=>{document.getElementById("coord-color-palette")?.remove();const p=document.createElement("div");p.id="coord-color-palette",Object.assign(p.style,{position:"absolute",display:"flex",flexWrap:"wrap",width:"250px",gap:"8px",padding:"10px",backgroundColor:"var(--panel-bg)",borderRadius:"8px",boxShadow:"0 4px 15px rgba(0, 0, 0, 0.2)",zIndex:"100"}),COORDINATOR_PALETTE.forEach(e=>{const o=document.createElement("button");o.className="palette-swatch",Object.assign(o.style,{width:"30px",height:"30px",borderRadius:"50%",cursor:"pointer",border:"2px solid var(--bg-color)",display:"flex",alignItems:"center",justifyContent:"center"}),"initial"===e?(o.innerHTML="\ud83d\udd04",o.title="Quitar color"):o.style.backgroundColor=e,o.style.backgroundColor="initial"===e?"var(--button-bg-color)":e,o.onclick=()=>{c(e),p.remove()},p.appendChild(o)}),document.body.appendChild(p);const l=t.getBoundingClientRect();let a=window.scrollX+l.left;a+250>window.innerWidth&&(a=window.innerWidth-260),p.style.top=`${window.scrollY+l.bottom+5}px`,p.style.left=`${a}px`;const r=e=>{p.contains(e.target)||e.target===t||(p.remove(),document.removeEventListener("click",r,!0))};setTimeout(()=>document.addEventListener("click",r,!0),100)};
+    var renderColgroup=()=>{let t=tabla.querySelector("colgroup");t||(t=document.createElement("colgroup"),tabla.insertBefore(t,thead));const e=tableState.cols?.length||0,o=e>0?(100-9-18-35)/e:0;let l=`<col style="width:9%;"><col style="width:18%;">`;for(let t=0;t<e;t++)l+=`<col style="width:${o}%;">`;l+='<col style="width:35%;">',t.innerHTML=l};
+    var renderHeaders=()=>{thead.innerHTML="";const t=thead.insertRow(),e=thead.insertRow(),o=tableState.cols?.length||0;t.innerHTML=`<th colspan="2">FUNCIONARIO/A</th><th id="th-ciclo" colspan="${o||1}" class="titulo-ciclo">${tableState.headers?.["th-ciclo"]||"CICLO"}</th><th colspan="1">OBSERVACIONES</th>`,e.innerHTML="<th>N\xba</th><th>NOMBRE</th>",tableState.cols?.forEach(t=>{e.innerHTML+=`<th id="${t.id}">${tableState.headers?.[t.id]||t.header}</th>`}),e.innerHTML+=`<th id="th-cocina">${tableState.headers?.["th-cocina"]||"COCINA"}</th>`,AppState.isCoordinator&&thead.querySelectorAll("th[id]").forEach(t=>{t.contentEditable=!0})};
 
-    // --- 6. INICIALIZACIÓN ---
     docRef.onSnapshot(onRemoteUpdate, (error) => { console.error("Error al sincronizar tabla:", error); tbody.innerHTML = '<tr><td colspan="8">Error al cargar datos.</td></tr>'; });
     bindCoordinatorEvents();
 }
