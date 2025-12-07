@@ -1,5 +1,5 @@
 // =========================================================================
-// TurnApp v6.0 - Versión Estable
+// TurnApp v7.0 - Versión Estable
 // =========================================================================
 // Esta versión incluye todas las funcionalidades para un solo usuario,
 // cálculo de festivos variables y correcciones de UI.
@@ -770,133 +770,182 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // INICIO DEL NUEVO BLOQUE DE LÓGICA
 // =========================================================================
 
-// 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
-function restoreManualEdits(){
-  try {
-        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
+// 1. GESTIÓN DE EDICIONES MANUALES DEL CALENDARIO CON FIRESTORE
+let saveTimeout = null; // Variable para controlar el debounce del guardado
 
-    if (raw) manualEdits = JSON.parse(raw);
-  } catch(e){
-    manualEdits = {};
-  }
-}
-
-function saveManualEdits(){
-    try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
-}
-
-// 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
-function initLicenciasPanel() {
-    const licenciasContainer = document.getElementById('licencias-container');
-    if (!licenciasContainer) {
-        console.error("Error: Contenedor de licencias no encontrado.");
-        return;
+/**
+ * Carga las ediciones manuales del calendario desde el documento del usuario en Firestore.
+ * Debe ejecutarse como una función asíncrona al inicio.
+ */
+async function restoreManualEdits() {
+    if (!AppState.userId) {
+        manualEdits = {};
+        return; // Salir si no hay un ID de usuario
     }
+
+    const db = firebase.firestore();
+    // Apuntamos a un documento específico del usuario en una nueva colección 'userData'
+    const userDocRef = db.collection('userData').doc(AppState.userId);
+
+    try {
+        const doc = await userDocRef.get();
+        if (doc.exists && doc.data().manualEdits) {
+            manualEdits = doc.data().manualEdits;
+            console.log("Calendario: Ediciones manuales cargadas desde Firestore.");
+        } else {
+            // Si no existe el documento o el campo, empezamos con un objeto vacío
+            manualEdits = {};
+            console.log("Calendario: No se encontraron ediciones guardadas en la nube.");
+        }
+    } catch (error) {
+        console.error("Error al cargar el calendario desde Firestore:", error);
+        manualEdits = {}; // En caso de error, asegurar un estado limpio
+    }
+}
+
+/**
+ * Guarda el objeto `manualEdits` completo en Firestore.
+ * Utiliza un "debounce" para no escribir en la base de datos en cada pulsación de tecla,
+ * sino que espera 1.5 segundos de inactividad para guardar.
+ */
+function saveManualEdits() {
+    if (!AppState.userId) return; // No intentar guardar si no estamos conectados
+
+    // Si ya hay un guardado programado, lo cancelamos para empezar de nuevo la cuenta
+    if (saveTimeout) {
+        clearTimeout(saveTimeout);
+    }
+
+    // Programamos el guardado para dentro de 1.5 segundos
+    saveTimeout = setTimeout(() => {
+        const db = firebase.firestore();
+        const userDocRef = db.collection('userData').doc(AppState.userId);
+        
+        console.log(`Guardando calendario en la nube para ${AppState.userId}...`);
+        
+        // Usamos .set con { merge: true } para crear/actualizar el campo `manualEdits`
+        // sin sobreescribir otros posibles datos del usuario (como licencias, etc.).
+        userDocRef.set({ manualEdits: manualEdits }, { merge: true })
+            .catch(error => {
+                console.error("Error al guardar calendario en Firestore:", error);
+                // Aquí se podría añadir una alerta para el usuario si falla el guardado
+            });
+    }, 1500); // 1500 ms = 1.5 segundos
+}
+
+// 2. NUEVA FUNCIÓN DE LICENCIAS (CONECTADA A FIRESTORE)
+async function initLicenciasPanel() {
+    const licenciasContainer = document.getElementById('licencias-container');
+    if (!licenciasContainer) return;
 
     const items = licenciasContainer.querySelectorAll('.licencia-item');
     const totalCargaEl = document.getElementById('total-carga');
     const totalConsumidosEl = document.getElementById('total-consumidos');
     const totalRestanEl = document.getElementById('total-restan');
-    const LICENCIAS_KEY = `turnapp.user.${AppState.userId}.licenciasData.v3`;
+    
+    let saveTimeout = null; // Para el debounce del guardado
 
-
-    // Calcula y actualiza todos los valores derivados (restan, totales)
     function updateCalculations() {
-        let totalCarga = 0;
-        let totalConsumidos = 0;
-
+        let totalCarga = 0, totalConsumidos = 0;
         items.forEach(item => {
-            const cargaInput = item.querySelector('.carga');
-            const consumidosInput = item.querySelector('.consumidos');
-            const restanInput = item.querySelector('.restan');
-
-            const carga = parseInt(cargaInput.value, 10) || 0;
-            const consumidos = parseInt(consumidosInput.value, 10) || 0;
-            
-            if (restanInput) restanInput.value = carga - consumidos;
+            const carga = parseInt(item.querySelector('.carga').value, 10) || 0;
+            const consumidos = parseInt(item.querySelector('.consumidos').value, 10) || 0;
+            item.querySelector('.restan').value = carga - consumidos;
             totalCarga += carga;
             totalConsumidos += consumidos;
         });
-
-        if (totalCargaEl) totalCargaEl.value = totalCarga;
-        if (totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
-        if (totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
+        if(totalCargaEl) totalCargaEl.value = totalCarga;
+        if(totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
+        if(totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
     }
 
-    // Guarda el estado actual en localStorage
     function saveState() {
-        const state = {};
-        items.forEach(item => {
-            const tipo = item.dataset.tipo;
-            if (tipo) {
-                const carga = item.querySelector('.carga').value;
-                const consumidos = item.querySelector('.consumidos').value;
-                const color = item.querySelector('.licencia-color-handle').style.backgroundColor;
-                state[tipo] = { carga, consumidos, color };
-            }
-        });
-        localStorage.setItem(LICENCIAS_KEY, JSON.stringify(state));
-    }
+        if (!AppState.userId) return;
+        if (saveTimeout) clearTimeout(saveTimeout);
 
-    // Carga el estado desde localStorage
-    function loadState() {
-        const savedState = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
-        items.forEach(item => {
-            const tipo = item.dataset.tipo;
-            if (tipo && savedState[tipo]) {
-                item.querySelector('.carga').value = savedState[tipo].carga || 0;
-                item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
-                const colorBtn = item.querySelector('.licencia-color-handle');
-                if (colorBtn && savedState[tipo].color) {
-                   colorBtn.style.backgroundColor = savedState[tipo].color;
+        saveTimeout = setTimeout(() => {
+            const state = {};
+            items.forEach(item => {
+                const tipo = item.dataset.tipo;
+                if (tipo) {
+                    state[tipo] = {
+                        carga: item.querySelector('.carga').value,
+                        consumidos: item.querySelector('.consumidos').value,
+                        color: item.querySelector('.licencia-color-handle').style.backgroundColor
+                    };
                 }
-            }
-        });
+            });
+            
+            const db = firebase.firestore();
+            const userDocRef = db.collection('userData').doc(AppState.userId);
+            console.log(`Guardando licencias en la nube para ${AppState.userId}...`);
+            userDocRef.set({ licenciasData: state }, { merge: true })
+                .catch(error => console.error("Error al guardar licencias en Firestore:", error));
+        }, 1500);
     }
 
-    // Vincula los eventos a los inputs y botones
+    async function loadState() {
+        if (!AppState.userId) return;
+        const db = firebase.firestore();
+        const userDocRef = db.collection('userData').doc(AppState.userId);
+
+        try {
+            const doc = await userDocRef.get();
+            if (doc.exists && doc.data().licenciasData) {
+                const savedState = doc.data().licenciasData;
+                items.forEach(item => {
+                    const tipo = item.dataset.tipo;
+                    if (tipo && savedState[tipo]) {
+                        item.querySelector('.carga').value = savedState[tipo].carga || 0;
+                        item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
+                        const colorHandle = item.querySelector('.licencia-color-handle');
+                        if (colorHandle && savedState[tipo].color) {
+                           colorHandle.style.backgroundColor = savedState[tipo].color;
+                        }
+                    }
+                });
+                console.log("Licencias: Datos cargados desde Firestore.");
+            } else {
+                console.log("Licencias: No se encontraron datos guardados en la nube.");
+            }
+        } catch (error) {
+            console.error("Error al cargar licencias desde Firestore:", error);
+        }
+    }
+
     items.forEach(item => {
-        const inputs = item.querySelectorAll('.carga, .consumidos');
-        inputs.forEach(input => {
+        item.querySelectorAll('.carga, .consumidos').forEach(input => {
             input.addEventListener('input', () => {
                 updateCalculations();
                 saveState();
             });
         });
-const colorCell = item.querySelector('.licencia-color-handle'); // Esta es la casilla de color
-if (colorCell) {
-    // Hacemos que la casilla sea un contenedor para nuestro "punto"
-    colorCell.style.position = 'relative'; 
-    colorCell.innerHTML = ''; // Limpiamos la casilla por si acaso
 
-    // Creamos el "punto" (handle) que irá dentro
-    const innerHandle = document.createElement('button');
-    innerHandle.type = 'button';
-    innerHandle.title = 'Elegir color';
-    innerHandle.innerHTML = '●'; // El carácter del punto
-    innerHandle.className = 'licencia-inner-handle'; // Le damos una clase para los estilos
-
-    // Le asignamos el evento de clic al "punto"
-    innerHandle.addEventListener('click', (ev) => {
-        ev.stopPropagation();
-        // La paleta se abre anclada al "punto", pero cambia el color de la casilla contenedora
-        openColorPicker(innerHandle, (color) => {
-            const newColor = (color === 'initial') ? '' : color;
-            colorCell.style.backgroundColor = newColor; // Aplicamos el color a la casilla
-            saveState(); // Guardamos el estado (la función saveState() ya sabe leer este valor)
-        }, colorPalette);
-    });
-    
-    // Añadimos el "punto" dentro de la casilla de color
-    colorCell.appendChild(innerHandle);
-}
-
+        const colorCell = item.querySelector('.licencia-color-handle');
+        if (colorCell) {
+            colorCell.style.position = 'relative';
+            colorCell.innerHTML = '';
+            const innerHandle = document.createElement('button');
+            innerHandle.type = 'button';
+            innerHandle.title = 'Elegir color';
+            innerHandle.innerHTML = '●';
+            innerHandle.className = 'licencia-inner-handle';
+            innerHandle.addEventListener('click', (ev) => {
+                ev.stopPropagation();
+                openColorPicker(innerHandle, (color) => {
+                    colorCell.style.backgroundColor = (color === 'initial') ? '' : color;
+                    saveState();
+                }, colorPalette);
             });
+            colorCell.appendChild(innerHandle);
+        }
+    });
 
-    // Carga inicial
-    loadState();
+    // Carga inicial de datos y cálculos
+    await loadState();
     updateCalculations();
 }
+
 // =========================================================================
 // FIN DEL NUEVO BLOQUE DE LÓGICA
 // =========================================================================
@@ -1302,27 +1351,59 @@ function openColorPicker(anchorEl, onSelect, palette = colorPalette){
   setTimeout(()=> document.addEventListener('click', closeFn), 10);
 }
 
-// ---------------- persistencia/CADENCIA spec ----------------
-function saveCadenceSpec(spec){
-    try { localStorage.setItem(`turnapp.user.${AppState.userId}.cadenceSpec`, JSON.stringify(spec)); } catch(e){}
+// ---------------- GESTIÓN DE CADENCIA CON FIRESTORE ----------------
+/**
+ * Guarda la especificación de la cadencia en el documento del usuario en Firestore.
+ * Esta acción es directa, ya que se invoca tras una confirmación explícita del usuario.
+ * @param {object | null} spec - El objeto de especificación de la cadencia, o null para borrarla.
+ */
+function saveCadenceSpec(spec) {
+    if (!AppState.userId) return;
+
+    const db = firebase.firestore();
+    const userDocRef = db.collection('userData').doc(AppState.userId);
+
+    console.log(`Guardando cadencia en la nube para ${AppState.userId}...`);
+    
+    // Usamos { merge: true } para no sobreescribir otros datos del usuario.
+    // Si spec es null, Firestore eliminará el campo 'cadenceSpec' del documento.
+    userDocRef.set({ cadenceSpec: spec }, { merge: true })
+        .catch(error => {
+            console.error("Error al guardar la cadencia en Firestore:", error);
+            alert("Hubo un error al guardar tu cadencia en la nube.");
+        });
 }
-function restoreCadenceSpec(){
-  try {
-        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.cadenceSpec`);
-    if(!raw) return;
-    cadenceSpec = JSON.parse(raw);
-    if(cadenceSpec && cadenceSpec.startISO && cadenceSpec.pattern){
-      cadenceData = [];
-      const start = new Date(cadenceSpec.startISO);
-      for(let i=0;i<10000;i++){
-        const d = new Date(start);
-        d.setDate(start.getDate() + i);
-        const type = cadenceSpec.pattern[i % cadenceSpec.pattern.length];
-        cadenceData.push({ date: d, type: type });
-      }
-      renderCalendar(currentMonth, currentYear);
+
+/**
+ * Carga la especificación de la cadencia desde Firestore y reconstruye los datos locales.
+ * Es una función asíncrona que debe esperarse (await) al arrancar la app.
+ */
+async function restoreCadenceSpec() {
+    if (!AppState.userId) {
+        cadenceSpec = null;
+        return;
     }
-  } catch(e){ cadenceSpec = null; }
+
+    const db = firebase.firestore();
+    const userDocRef = db.collection('userData').doc(AppState.userId);
+
+    try {
+        const doc = await userDocRef.get();
+        if (doc.exists && doc.data().cadenceSpec) {
+            cadenceSpec = doc.data().cadenceSpec;
+            console.log("Cadencia: Datos cargados desde Firestore.");
+            
+            // Si la cadencia existe, reconstruimos los datos para el calendario.
+            if (cadenceSpec) {
+                buildCadenceDataFromSpec(); // Reutilizamos esta función existente.
+            }
+        } else {
+            cadenceSpec = null; // No hay cadencia guardada.
+        }
+    } catch (error) {
+        console.error("Error al cargar la cadencia desde Firestore:", error);
+        cadenceSpec = null; // En caso de error, aseguramos un estado limpio.
+    }
 }
 
 // ------------------ CADENCIAS (modal) ------------------
@@ -1447,23 +1528,20 @@ function buildCadenceDataFromSpec(){
   }
 }
 
-// Limpieza de cadencia desde fecha
-function clearCadencePrompt(){
-  const startDateStr = prompt("Introduce la fecha desde la que quieres limpiar la cadencia (DD/MM/AAAA):");
-  if(!startDateStr) return;
-  const parts = startDateStr.split('/');
-  if(parts.length!==3) return alert("Formato incorrecto");
-  const day = parseInt(parts[0],10), month = parseInt(parts[1],10)-1, year = parseInt(parts[2],10);
-  const startDate = new Date(year, month, day);
-  if(isNaN(startDate)) return alert("Fecha inválida");
+// Limpieza de cadencia (versión simplificada y conectada a Firestore)
+function clearCadencePrompt() {
+    if (confirm("¿Seguro que quieres eliminar la cadencia activa? Esta acción no se puede deshacer.")) {
+        cadenceSpec = null;
+        cadenceData = []; // Vaciar los datos locales inmediatamente
 
-  cadenceData = cadenceData.filter(cd => cd.date < startDate);
+        // Guardar el estado 'null' en Firestore para persistir el cambio
+        saveCadenceSpec(null);
 
-  if(cadenceSpec && new Date(cadenceSpec.startISO) >= startDate){
-    cadenceSpec = null;
-        try { localStorage.removeItem(`turnapp.user.${AppState.userId}.cadenceSpec`); } catch(e){}
-  }
-  renderCalendar(currentMonth, currentYear);
+        // Volver a renderizar el calendario para reflejar el cambio al instante
+        renderCalendar(currentMonth, currentYear);
+        
+        alert("La cadencia ha sido eliminada.");
+    }
 }
 
 // ---------------- aplicar cadencia sobre DOM ----------------
@@ -1792,7 +1870,7 @@ function initNotificationManager() {
 // =========================================================================
 //    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
 // =========================================================================
-function initializeAndStartApp(user) {
+ async function initializeAndStartApp(user) {
     if (!user) return;
 
     // 1. Poblamos el estado de la aplicación con la información del usuario
@@ -1813,8 +1891,8 @@ function initializeAndStartApp(user) {
     
     // 2. Ahora que AppState es correcto, inicializamos todos los módulos
     // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
-    if(typeof restoreManualEdits === 'function') restoreManualEdits();
-    if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
+    if(typeof restoreManualEdits === 'function') await restoreManualEdits();
+    if(typeof restoreCadenceSpec === 'function') await restoreCadenceSpec();
     if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
     if(typeof initApp === 'function') initApp();
     if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
@@ -1822,7 +1900,7 @@ function initializeAndStartApp(user) {
     if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
     if(typeof initPeticiones === 'function') initPeticiones();
     if(typeof initEditableTitle === 'function') initEditableTitle();
-    if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
+    if(typeof initLicenciasPanel === 'function') await initLicenciasPanel();
     if(typeof initNotificationManager === 'function') initNotificationManager();
 }
 
