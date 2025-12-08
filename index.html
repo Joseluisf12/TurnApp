@@ -419,19 +419,106 @@
   <script src="app.js" defer></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', () => {
-        try {
-            // Inicializa Firebase
-            firebase.initializeApp(firebaseConfig);
-            
-            // Pasa el control total al único controlador en app.js
-            MainAppController();
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Referencias a elementos de la UI ---
+    const splashScreen = document.getElementById('splash'), 
+          mainApp = document.getElementById('app'), 
+          authContainer = document.getElementById('auth-container'), 
+          logoutBtn = document.getElementById('btn-logout'), 
+          licenciasContainer = document.getElementById('licencias-container');
+    
+    let appInitialized = false;
 
-        } catch (e) {
-            console.error("ERROR FATAL DE INICIALIZACIÓN:", e);
-            document.body.innerHTML = '<h1>Error Crítico. La aplicación no puede arrancar. Revisa la consola del navegador.</h1>';
+    // --- FUNCIÓN DE ARRANQUE (ahora solo muestra/oculta paneles) ---
+    function showMainApp() {
+        if (appInitialized) return;
+        appInitialized = true;
+
+        authContainer.style.display = 'none';
+        mainApp.style.display = 'block';
+        if (splashScreen) splashScreen.style.display = 'none'; // Ocultamos splash al final
+
+        // --- LÓGICA DE NAVEGACIÓN Y BOTONES (se queda aquí) ---
+        const applyCadenceBtn = document.getElementById('btn-apply-cadence');
+        const clearCadenceBtn = document.getElementById('btn-clear-cadence');
+        if (applyCadenceBtn) applyCadenceBtn.addEventListener('click', () => typeof openCadenceModal === 'function' && openCadenceModal());
+        if (clearCadenceBtn) clearCadenceBtn.addEventListener('click', () => typeof clearCadencePrompt === 'function' && clearCadencePrompt());
+
+        const navButtons = document.querySelectorAll('.nav-btn[data-section]');
+        const panels = { turnos: document.getElementById('content'), peticiones: document.getElementById('ajustes-section'), tablon: document.getElementById('tablon-section'), documentos: document.getElementById('documentos-section') };
+
+        function switchPanel(targetSection) {
+            Object.values(panels).forEach(p => p && p.classList.add('oculto'));
+            if (licenciasContainer) licenciasContainer.classList.add('oculto');
+            const panelToShow = panels[targetSection];
+            if (panelToShow) {
+                panelToShow.classList.remove('oculto');
+                panelToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+            navButtons.forEach(btn => btn.classList.toggle('active', btn.dataset.section === targetSection));
         }
-    });
+
+        navButtons.forEach(btn => btn.addEventListener('click', (e) => { const target = e.currentTarget.dataset.section; if (target) switchPanel(target); }));
+        
+        const btnCargaDias = document.getElementById('btn-carga-dias');
+        if (btnCargaDias) {
+            btnCargaDias.addEventListener('click', () => {
+                if (panels.turnos.classList.contains('oculto')) switchPanel('turnos');
+                setTimeout(() => {
+                    licenciasContainer.classList.toggle('oculto');
+                    if (!licenciasContainer.classList.contains('oculto')) {
+                         licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }
+                }, 50);
+            });
+        }
+        
+        switchPanel('turnos');
+        if (logoutBtn) { logoutBtn.style.display = 'block'; logoutBtn.onclick = () => { if (confirm('¿Seguro que quieres cerrar la sesión?')) { firebase.auth().signOut(); } }; }
+    }
+
+    function showLoginScreen() {
+        appInitialized = false;
+        if(splashScreen) splashScreen.style.display = 'none';
+        mainApp.style.display = 'none';
+        authContainer.style.display = 'flex';
+        if(logoutBtn) logoutBtn.style.display = 'none';
+    }
+
+    // --- FORMULARIO DE LOGIN (sin cambios) ---
+    function initAuthForm() {
+        const emailInput = document.getElementById('auth-email'), passwordInput = document.getElementById('auth-password'), submitBtn = document.getElementById('auth-submit-btn'), toggleLink = document.getElementById('auth-toggle-link'), authTitle = document.getElementById('auth-title'), errorContainer = document.getElementById('auth-error');
+        if (!submitBtn) return; 
+        let isLoginMode = true;
+        
+        toggleLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; errorContainer.textContent = ''; });
+        submitBtn.addEventListener('click', () => { 
+            const email = emailInput.value, password = passwordInput.value; errorContainer.textContent = ''; 
+            if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; } 
+            if (isLoginMode) { firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } 
+            else { firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } 
+        });
+    }
+
+    // --- PUNTO DE CONTROL PRINCIPAL (AHORA MÁS LÓGICO) ---
+    try {
+        firebase.initializeApp(firebaseConfig);
+        initAuthForm();
+        firebase.auth().onAuthStateChanged(user => {
+            if (user) {
+                // PRIMERO, inicializamos el estado del usuario.
+                initializeAndStartApp(user); 
+                // SEGUNDO, mostramos la app.
+                showMainApp();
+            } else {
+                showLoginScreen();
+            }
+        });
+    } catch (e) {
+        console.error("ERROR FATAL:", e);
+        document.body.innerHTML = '<h1>Error fatal al cargar la aplicación. Revisa la consola.</h1>';
+    }
+});
 </script>
 
 
