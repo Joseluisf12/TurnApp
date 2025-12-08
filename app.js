@@ -2092,10 +2092,8 @@ async function initNotificationManager() {
 }
 
 /**
- * LÓGICA DE ARRANQUE v8.0 - VERSIÓN SEGURA (NO DESTRUCTIVA)
- * Función principal que se llama tras el login.
- * Determina si el usuario tiene un grupo y muestra la pantalla
- * correspondiente sin borrar el resto de la aplicación.
+ * LÓGICA DE ARRANQUE v8.0 - ESTRATEGIA FINAL (NO-CONFLICTIVA)
+ * Funciona en armonía con index.html para evitar conflictos y roturas.
  */
 async function initializeAndStartApp(user) {
     if (!user) return;
@@ -2116,9 +2114,9 @@ async function initializeAndStartApp(user) {
         const groupIdFromDB = userDoc.exists ? userDoc.data().memberOfGroup : null;
 
         if (groupIdFromDB) {
-            // --- CASO A: EL USUARIO PERTENECE A UN GRUPO ---
-            // Si la pantalla de "limbo" se estuviera mostrando, la ocultamos.
-            hideLimboScreen();
+            // --- CASO A: EL USUARIO TIENE GRUPO ASIGNADO ---
+            // El flujo es normal. Hacemos visible el contenido de la app.
+            showAppContent();
 
             AppState.groupId = groupIdFromDB;
             const groupDoc = await db.collection('groups').doc(AppState.groupId).get();
@@ -2131,17 +2129,14 @@ async function initializeAndStartApp(user) {
                  throw new Error(`El grupo '${AppState.groupId}' al que perteneces ya no existe.`);
             }
 
-            console.log("Cargando app para el grupo:", AppState.groupId);
+            console.log("Cargando módulos de la app para el grupo:", AppState.groupId);
             
-            // Mostramos el contenedor de la app y arrancamos los módulos.
-            // (index.html ya muestra el contenedor, esto es una salvaguarda)
-            const appContainer = document.getElementById('app-container');
-            if (appContainer) appContainer.style.display = 'block';
-            
+            // SOLO AQUÍ iniciamos los módulos de la app.
             await initializeAppModules();
 
         } else {
             // --- CASO B: EL USUARIO NO TIENE GRUPO ASIGNADO ---
+            // NO se inician los módulos. En su lugar, se muestra la pantalla de "limbo".
             const message = AppState.isSuperAdmin
                 ? "¡Bienvenido, Super Admin! Aquí aparecerá tu panel para crear grupos."
                 : "Tu cuenta aún no ha sido asignada a un grupo. Contacta con tu coordinador.";
@@ -2155,39 +2150,49 @@ async function initializeAndStartApp(user) {
 }
 
 /**
- * Muestra una pantalla de información de forma SEGURA.
- * Oculta los contenedores principales y muestra un mensaje, pero no borra el DOM.
+ * Muestra una pantalla de información DENTRO del contenedor de la app.
+ * Oculta el contenido normal de la app (paneles, nav) y muestra un mensaje.
+ * Esta es la forma SEGURA y NO-CONFLICTIVA.
  */
 function displayLimboScreen(message) {
-    const loginContainer = document.getElementById('login-container');
+    const mainContent = document.getElementById('main-content');
+    const bottomNav = document.querySelector('.bottom-nav');
     const appContainer = document.getElementById('app-container');
-    if (loginContainer) loginContainer.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'none';
 
-    let limboScreen = document.getElementById('limbo-screen');
+    // Ocultamos el contenido principal de la app para dejar espacio al mensaje
+    if (mainContent) mainContent.style.display = 'none';
+    if (bottomNav) bottomNav.style.display = 'none';
+
+    // Creamos la pantalla de limbo si no existe
+    let limboScreen = document.getElementById('limbo-screen-inside');
     if (!limboScreen) {
         limboScreen = document.createElement('div');
-        limboScreen.id = 'limbo-screen';
-        // Insertamos la pantalla de limbo al principio del body para no interferir.
-        document.body.insertBefore(limboScreen, document.body.firstChild);
+        limboScreen.id = 'limbo-screen-inside';
+        if (appContainer) {
+            appContainer.appendChild(limboScreen);
+        }
     }
     
-    limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: #f0f2f5; color: #333; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;';
+    // Aplicamos estilos y contenido
+    limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 90vh; text-align: center; padding: 20px; font-size: 1.2em;';
     limboScreen.innerHTML = `<img src="icon-192x192.png" alt="TurnApp Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
                              <p>${message}</p>
-                             <button onclick="firebase.auth().signOut()" style="margin-top: 20px; padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">Cerrar Sesión</button>`;
+                             <button onclick="firebase.auth().signOut()" style="margin-top: 20px; padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 5px; cursor: pointer;">Cerrar Sesión</button>`;
     
     limboScreen.style.display = 'flex';
 }
 
 /**
- * Oculta la pantalla de información si está visible.
+ * Restaura la visibilidad del contenido principal de la app.
  */
-function hideLimboScreen() {
-    const limboScreen = document.getElementById('limbo-screen');
-    if (limboScreen) {
-        limboScreen.style.display = 'none';
-    }
+function showAppContent() {
+    const mainContent = document.getElementById('main-content');
+    const bottomNav = document.querySelector('.bottom-nav');
+    const limboScreen = document.getElementById('limbo-screen-inside');
+
+    if (mainContent) mainContent.style.display = 'block';
+    if (bottomNav) bottomNav.style.display = 'flex';
+    if (limboScreen) limboScreen.style.display = 'none';
 }
 
   // ------------------ FIN app.js ------------------
