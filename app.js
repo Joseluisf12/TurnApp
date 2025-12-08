@@ -769,18 +769,29 @@ let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }
 // Este es el UID del "dueño" de toda la plataforma. Solo este usuario
 // podrá crear nuevos grupos y asignar coordinadores.
 // Asegúrate de que aquí está tu User ID de Firebase.
-const SUPER_ADMIN_UID = 'rD3KBeWoJEgyhXQXoFV58ia6N3x1';
+const SUPER_ADMIN_UID = 'rD3KBeWoJEgyhXQXoFV58ia6N3x1'; // <-- CAMBIA ESTO POR TU UID
 
 const AppState = {
-    userId: null,            // UID del usuario que ha iniciado sesión (se mantiene).
-    userName: null,          // Nombre del usuario que ha iniciado sesión (se mantiene).
+    // --- Campos que se mantienen ---
+    userId: null,
+    userName: null,
     
-    // --- Nuevos campos para la v8.0 ---
-    isSuperAdmin: false,     // Se calculará en el login. ¿Es el usuario el dueño de la app?
-    isCoordinator: false,    // Se calculará en el login. ¿Es el usuario el coordinador del grupo actual?
+    // --- Campos para la v8.0 (reemplazan los valores fijos) ---
+    isSuperAdmin: false,     // ¿Es el usuario el dueño de la app? Se calcula al iniciar sesión.
+    isCoordinator: false,    // ¿Es el usuario el coordinador del grupo? Se calcula al iniciar sesión.
     
-    groupId: null,           // El ID del grupo se cargará dinámicamente después del login.
-    groupName: "TurnApp"     // Nombre visible del grupo, se cargará dinámicamente.
+    groupId: null,           // El ID del grupo al que pertenece el usuario. Se carga dinámicamente.
+    groupName: "TurnApp",    // El nombre del grupo. Se carga dinámicamente.
+
+    // --- El resto de la configuración se mantiene igual ---
+    cadenceSpec: {
+        type: 'V-1',
+        v1_choice: 0,
+        custom_pattern: ''
+    },
+    manualEdits: {},
+    peticiones: [],
+    aliases: {}
 };
 
 
@@ -2080,45 +2091,41 @@ async function initNotificationManager() {
     window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
 }
 
-// =========================================================================
-// ARRANQUE v8.0 - LÓGICA DE INICIO DINÁMICA Y MULTI-GRUPO
-// =========================================================================
 
 /**
- * Función principal que arranca la aplicación tras el login.
- * Ahora determina si el usuario es Super Admin, si pertenece a un grupo,
- * y carga la interfaz correspondiente.
+ * LÓGICA DE ARRANQUE v8.0
+ * Función principal que se llama tras el login. Ahora es dinámica.
+ * Determina si el usuario es Super Admin, a qué grupo pertenece,
+ * e inicia la interfaz correspondiente.
  */
 async function initializeAndStartApp(user) {
     if (!user) return;
 
-    // --- 1. Configuración básica del estado ---
+    // --- 1. Configuración inicial del estado con datos del usuario ---
     AppState.userId = user.uid;
     AppState.userName = user.displayName || user.email.split('@')[0];
     AppState.isSuperAdmin = (user.uid === SUPER_ADMIN_UID);
 
     console.log(`Usuario conectado: ${AppState.userName} (Super Admin: ${AppState.isSuperAdmin})`);
     
-    // Ocultamos el contenido principal mientras averiguamos el grupo
-    const mainContent = document.getElementById('content');
-    const appHeader = document.querySelector('.main-header');
-    if (mainContent) mainContent.style.display = 'none';
-    if (appHeader) appHeader.style.display = 'none';
+    // Ocultamos la app principal temporalmente mientras averiguamos el grupo
+    const appContainer = document.getElementById('app');
+    if (appContainer) appContainer.style.display = 'none';
 
-    // --- 2. Lógica de asignación de grupo ---
+    // --- 2. Lógica para encontrar el grupo del usuario ---
     const db = firebase.firestore();
     const userDocRef = db.collection('userData').doc(user.uid);
 
     try {
         const userDoc = await userDocRef.get();
-        // Buscamos a qué grupo pertenece el usuario
+        // Buscamos el campo 'memberOfGroup' en su documento de userData
         const groupIdFromDB = userDoc.exists ? userDoc.data().memberOfGroup : null;
 
         if (groupIdFromDB) {
-            // --- CASO A: El usuario pertenece a un grupo ---
+            // --- CASO A: EL USUARIO PERTENECE A UN GRUPO ---
+            // El usuario ya está asignado a un grupo, cargamos la app normal.
             AppState.groupId = groupIdFromDB;
-            const groupDocRef = db.collection('groups').doc(AppState.groupId);
-            const groupDoc = await groupDocRef.get();
+            const groupDoc = await db.collection('groups').doc(AppState.groupId).get();
 
             if (groupDoc.exists) {
                 const groupData = groupDoc.data();
@@ -2126,23 +2133,22 @@ async function initializeAndStartApp(user) {
                 // Comprobamos si el usuario es el coordinador de ESTE grupo
                 AppState.isCoordinator = (user.uid === groupData.coordinatorId);
             } else {
-                 throw new Error(`El grupo '${AppState.groupId}' asignado a tu usuario no existe. Contacta con el administrador.`);
+                 throw new Error(`El grupo '${AppState.groupId}' al que perteneces ha sido eliminado. Contacta con el administrador.`);
             }
 
             console.log("Estado final de la app:", AppState);
             
-            // Mostramos la UI principal y arrancamos los módulos
-            if (mainContent) mainContent.style.display = 'block';
-            if (appHeader) appHeader.style.display = 'flex';
-            await initializeAppModules();
+            // Mostramos la UI principal y arrancamos el resto de módulos
+            if (appContainer) appContainer.style.display = 'block';
+            await initializeAppModules(); // Esta es la función que ya existía
 
         } else {
-            // --- CASO B: El usuario NO pertenece a ningún grupo ---
+            // --- CASO B: EL USUARIO NO TIENE GRUPO ASIGNADO ---
             if (AppState.isSuperAdmin) {
-                // Es el Super Admin sin grupo -> mostramos su panel de creación
+                // Si es el Super Admin, mostramos su panel de bienvenida.
                 displayAdminPanel();
             } else {
-                // Es un usuario normal sin grupo -> mostramos mensaje de espera
+                // Si es un usuario normal, mostramos la pantalla de "en espera".
                 displayLimboScreen("Tu cuenta aún no ha sido asignada a un grupo. Por favor, contacta con tu coordinador.");
             }
         }
@@ -2153,321 +2159,28 @@ async function initializeAndStartApp(user) {
 }
 
 /**
- * Agrupa la inicialización de todos los módulos de la aplicación.
- * Se llama únicamente cuando el usuario tiene un grupo asignado.
- */
-async function initializeAppModules() {
-    console.log("Inicializando módulos de la aplicación...");
-    // El orden es importante para las dependencias
-    await Promise.all([restoreManualEdits(), restoreCadenceSpec(), initLicenciasPanel()]);
-    await initThemeSwitcher();
-    
-    initApp();
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones();
-    initAliasManager();
-    initEditableTitle();
-    initNotificationManager();
-    console.log("Módulos inicializados.");
-}
-
-/**
- * Muestra una pantalla completa con un mensaje. Se usa para usuarios sin
- * grupo asignado o para mostrar errores fatales.
+ * Muestra una pantalla completa con un mensaje.
+ * Se usa para usuarios sin grupo o para mostrar errores graves.
  */
 function displayLimboScreen(message) {
-    let limboScreen = document.getElementById('limbo-screen');
-    if (!limboScreen) {
-        document.body.innerHTML = ''; // Limpiamos el body para evitar conflictos
-        limboScreen = document.createElement('div');
-        limboScreen.id = 'limbo-screen';
-        limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: var(--bg-color); color: var(--text-color);';
-        document.body.appendChild(limboScreen);
-    }
+    // Limpiamos el body para asegurar que no haya nada más
+    document.body.innerHTML = ''; 
+    const limboScreen = document.createElement('div');
+    limboScreen.id = 'limbo-screen';
+    limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: #f0f2f5; color: #333;';
+    
     limboScreen.innerHTML = `<img src="icon-192x192.png" alt="TurnApp Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
-                             <p>${message}</p>`;
-    limboScreen.style.display = 'flex';
+                             <p>${message}</p>
+                             <button onclick="firebase.auth().signOut()" style="margin-top: 20px; padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">Cerrar Sesión</button>`;
+    document.body.appendChild(limboScreen);
 }
 
 /**
  * Placeholder para la futura función del panel de Super Admin.
- * Por ahora, solo muestra un mensaje de bienvenida.
+ * Por ahora, solo muestra un mensaje de bienvenida especial.
  */
 function displayAdminPanel() {
-    displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá tu panel para gestionar los grupos de la plataforma.");
-}
-
-// =========================================================================
-// ARRANQUE v8.0 - LÓGICA DE INICIO Y NAVEGACIÓN (VERSIÓN FINAL Y COMPLETA)
-// =========================================================================
-
-/**
- * Adjunta los listeners para la navegación principal y la UI.
- * RESTAURA LA LÓGICA DE BOTONES BORRADA POR ERROR DE INDEX.HTML.
- */
-function initNavigationAndCoreUI() {
-    console.log("Inicializando listeners de UI y navegación...");
-
-    const applyCadenceBtn = document.getElementById('btn-apply-cadence');
-    const clearCadenceBtn = document.getElementById('btn-clear-cadence');
-    const licenciasContainer = document.getElementById('licencias-container');
-    const navButtons = document.querySelectorAll('.nav-btn');
-    const logoutBtn = document.getElementById('btn-logout');
-    const installBtn = document.getElementById('btn-install-pwa');
-    const panels = {
-        turnos: document.getElementById('content'),
-        peticiones: document.getElementById('ajustes-section'),
-        tablon: document.getElementById('tablon-section'),
-        documentos: document.getElementById('documentos-section')
-    };
-
-    function switchPanel(targetSection) {
-        Object.values(panels).forEach(p => { if (p) p.classList.add('oculto'); });
-        if (licenciasContainer) licenciasContainer.classList.add('oculto');
-        
-        const panelToShow = panels[targetSection];
-        if (panelToShow) {
-            panelToShow.classList.remove('oculto');
-        }
-
-        navButtons.forEach(btn => {
-            const section = btn.dataset.section;
-            if (section) {
-                 btn.classList.toggle('active', section === targetSection);
-            }
-             else if (btn.id === 'btn-carga-dias') {
-                btn.classList.remove('active');
-            }
-        });
-        
-        const activeNavBtn = document.querySelector(`.nav-btn[data-section="${targetSection}"]`);
-        if(activeNavBtn) activeNavBtn.classList.add('active');
-    }
-
-    navButtons.forEach(btn => {
-        if (btn.dataset.section) {
-            btn.addEventListener('click', (e) => {
-                const target = e.currentTarget.dataset.section;
-                if (target) switchPanel(target);
-            });
-        }
-    });
-
-    const btnCargaDias = document.getElementById('btn-carga-dias');
-    if (btnCargaDias) {
-        btnCargaDias.addEventListener('click', () => {
-            const isShowingPermisos = !licenciasContainer.classList.contains('oculto');
-            
-            if (isShowingPermisos) {
-                licenciasContainer.classList.add('oculto');
-                btnCargaDias.classList.remove('active');
-                if (!document.querySelector('.nav-btn.active[data-section]')) {
-                    switchPanel('turnos');
-                }
-            } else {
-                if (panels.turnos.classList.contains('oculto')) {
-                    switchPanel('turnos');
-                }
-                setTimeout(() => {
-                    licenciasContainer.classList.remove('oculto');
-                    document.querySelectorAll('.nav-btn.active').forEach(b => b.classList.remove('active'));
-                    btnCargaDias.classList.add('active');
-                    licenciasContainer.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }, 50);
-            }
-        });
-    }
-    
-    if (applyCadenceBtn) applyCadenceBtn.addEventListener('click', () => typeof openCadenceModal === 'function' && openCadenceModal());
-    if (clearCadenceBtn) clearCadenceBtn.addEventListener('click', () => typeof clearCadencePrompt === 'function' && clearCadencePrompt());
-    if (logoutBtn) {
-        logoutBtn.style.display = 'block';
-        logoutBtn.onclick = () => { if (confirm('¿Seguro que quieres cerrar la sesión?')) { firebase.auth().signOut(); } };
-    }
-
-    if (installBtn) {
-        let deferredPrompt;
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if(installBtn) installBtn.style.display = 'block';
-        });
-        installBtn.addEventListener('click', async () => {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                await deferredPrompt.userChoice;
-                deferredPrompt = null;
-            }
-        });
-    }
-
-    switchPanel('turnos');
-}
-
-/**
- * Función principal que arranca la aplicación tras el login.
- */
-async function initializeAndStartApp(user) {
-    if (!user) return;
-
-    const appContainer = document.getElementById('app');
-    if (appContainer) appContainer.style.display = 'block';
-
-    AppState.userId = user.uid;
-    AppState.userName = user.displayName || user.email.split('@')[0];
-    AppState.isSuperAdmin = (user.uid === SUPER_ADMIN_UID);
-
-    console.log(`Usuario conectado: ${AppState.userName} (Super Admin: ${AppState.isSuperAdmin})`);
-
-    const db = firebase.firestore();
-    const userDocRef = db.collection('userData').doc(user.uid);
-
-    try {
-        const userDoc = await userDocRef.get();
-        const groupIdFromDB = userDoc.exists ? userDoc.data().memberOfGroup : null;
-
-        if (groupIdFromDB) {
-            AppState.groupId = groupIdFromDB;
-            const groupDoc = await db.collection('groups').doc(AppState.groupId).get();
-
-            if (groupDoc.exists) {
-                const groupData = groupDoc.data();
-                AppState.groupName = groupData.groupName || "Grupo sin nombre";
-                AppState.isCoordinator = (user.uid === groupData.coordinatorId);
-            } else {
-                 throw new Error(`El grupo '${AppState.groupId}' asignado no existe.`);
-            }
-
-            console.log("Estado final:", AppState);
-            initNavigationAndCoreUI();
-            await initializeAppModules();
-
-        } else {
-            if (AppState.isSuperAdmin) {
-                displayAdminPanel();
-            } else {
-                displayLimboScreen("Tu cuenta aún no ha sido asignada a un grupo. Por favor, contacta con tu coordinador.");
-            }
-        }
-    } catch (error) {
-        console.error("Error fatal durante la inicialización:", error);
-        displayLimboScreen(`Error al iniciar: ${error.message}`);
-    }
-}
-
-/**
- * Agrupa la inicialización de todos los módulos de la aplicación.
- */
-async function initializeAppModules() {
-    console.log("Inicializando módulos de la aplicación...");
-    await Promise.all([restoreManualEdits(), restoreCadenceSpec(), initLicenciasPanel()]);
-    
-    initThemeSwitcher();
-    initApp();
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones();
-    initAliasManager();
-    initEditableTitle();
-    initNotificationManager();
-    console.log("Módulos inicializados.");
-}
-
-/**
- * Muestra una pantalla completa para usuarios sin grupo o con errores.
- */
-function displayLimboScreen(message) {
-    const appContainer = document.getElementById('app');
-    if (appContainer) appContainer.style.display = 'none';
-
-    let limboScreen = document.getElementById('limbo-screen');
-    if (!limboScreen) {
-        limboScreen = document.createElement('div');
-        limboScreen.id = 'limbo-screen';
-        limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: var(--bg-color); color: var(--text-color);';
-        document.body.appendChild(limboScreen);
-    }
-    limboScreen.innerHTML = `<img src="icon-192x192.png" alt="TurnApp Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
-                             <p>${message}</p>
-                             <button id="limbo-logout" style="margin-top: 20px; padding: 10px 20px; border: 1px solid; border-radius: 5px; cursor: pointer; background-color: var(--button-bg-color); color: var(--text-color);">Cerrar Sesión</button>`;
-    
-    const logoutBtn = document.getElementById('limbo-logout');
-    if (logoutBtn) logoutBtn.onclick = () => firebase.auth().signOut();
-    limboScreen.style.display = 'flex';
-}
-
-/**
- * Muestra el panel de Super Admin (versión simplificada).
- */
-function displayAdminPanel() {
-    displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá tu panel para crear y gestionar los grupos de la plataforma.");
-}
-
-/**
- * INICIADOR GLOBAL DE LA APLICACIÓN - COMPLETO Y CORRECTO.
- */
-function TurnAppGlobalInitializer() {
-    const loginContainer = document.getElementById('auth-container');
-    const appContainer = document.getElementById('app');
-    const splashScreen = document.getElementById('splash');
-
-    if (splashScreen) splashScreen.style.display = 'flex';
-    if (loginContainer) loginContainer.style.display = 'none';
-    if (appContainer) appContainer.style.display = 'none';
-
-    const emailInput = document.getElementById('auth-email'), passwordInput = document.getElementById('auth-password'), submitBtn = document.getElementById('auth-submit-btn'), toggleLink = document.getElementById('auth-toggle-link'), authTitle = document.getElementById('auth-title'), errorContainer = document.getElementById('auth-error');
-    if (submitBtn && toggleLink && authTitle) {
-        let isLoginMode = true;
-        toggleLink.addEventListener('click', (e) => { 
-            e.preventDefault(); 
-            isLoginMode = !isLoginMode; 
-            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; 
-            submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; 
-            const toggleText = toggleLink.previousSibling;
-            if(toggleText.nodeType === 3) toggleText.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; 
-            toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; 
-            errorContainer.textContent = ''; 
-        });
-
-        submitBtn.addEventListener('click', () => { 
-            const email = emailInput.value, password = passwordInput.value; 
-            errorContainer.textContent = ''; 
-            if (!email || !password) { 
-                errorContainer.textContent = 'Por favor, introduce email y contraseña.'; 
-                return; 
-            }
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Procesando...';
-            
-            const action = isLoginMode 
-                ? firebase.auth().signInWithEmailAndPassword(email, password)
-                : firebase.auth().createUserWithEmailAndPassword(email, password);
-
-            action.catch(error => { 
-                errorContainer.textContent = 'Error: ' + error.message; 
-            }).finally(() => {
-                submitBtn.disabled = false;
-                submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse';
-            });
-        });
-    }
-
-    firebase.auth().onAuthStateChanged(async (user) => {
-        if (splashScreen) splashScreen.style.display = 'none';
-        const limboScreen = document.getElementById('limbo-screen');
-        if (limboScreen) limboScreen.remove();
-
-        if (user) {
-            if (loginContainer) loginContainer.style.display = 'none';
-            await initializeAndStartApp(user);
-        } else {
-            if (appContainer) appContainer.style.display = 'none';
-            if (loginContainer) loginContainer.style.display = 'flex';
-        }
-    });
+    displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá en breve tu panel para crear y gestionar los grupos de la plataforma.");
 }
 
   // ------------------ FIN app.js ------------------
