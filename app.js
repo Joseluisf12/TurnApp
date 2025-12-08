@@ -14,7 +14,7 @@ async function initThemeSwitcher() {
     if (!themeToggleButton) return;
 
     // 1. Referencia al documento del usuario en Firestore
-    const db = firebase.firestore();
+          let db;
     if (!AppState.userId) {
         console.error("ThemeSwitcher: No se pudo obtener el ID de usuario. Usando tema por defecto.");
         body.dataset.theme = 'light';
@@ -2077,7 +2077,7 @@ async function initNotificationManager() {
 //    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
 // =========================================================================
  async function initializeAndStartApp(user) {
-    if (!user) return;
+    db = firebase.firestore();
 
     // 1. Poblamos el estado de la aplicación con la información del usuario
     AppState.userId = user.uid;
