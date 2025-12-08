@@ -1,4 +1,4 @@
-/* app.css - Versión 7.0 
+/* app.css - Versión 4.0 
 /* ==========================================================================
    1. VARIABLES DE COLOR PARA LOS TEMAS
    ========================================================================== */
@@ -905,10 +905,10 @@ tbody tr.seleccionada > td:last-child {
 }
 
 /* Texto de la petición */
-.peticion-texto {
-    font-weight: 500;
-    color: var(--text-color); /* ¡LA CLAVE! Usa el color del tema */
-    word-break: break-word;
+.peticion-left div:first-child {
+  font-weight: 500;
+  color: #202020;
+  word-wrap: break-word;
 }
 
 /* Fecha/hora */
@@ -1876,35 +1876,3 @@ body[data-theme='dark'] #total-restan {
   text-decoration: underline;
 }
 
-/* ========================================================================= */
-/* HANDLE DE COLOR PARA LA TABLA DEL COORDINADOR (CORREGIDO v2)              */
-/* ========================================================================= */
-
-.coord-color-handle {
-    position: absolute;
-    bottom: 1px; /* Posicionado abajo */
-    right: 1px;  /* y a la derecha */
-    
-    height: 14px; /* Más pequeño */
-    width: 14px;
-    
-    font-size: 10px; /* Icono más pequeño */
-    line-height: 14px;
-    
-    background: transparent;
-    border: none;
-    border-radius: 50%;
-    
-    color: var(--text-color);
-    opacity: 0.05; /* Aún más discreto por defecto */
-    
-    cursor: pointer;
-    z-index: 5;
-    padding: 0;
-    transition: opacity 0.2s, transform 0.2s;
-}
-
-.coord-color-handle:hover {
-    opacity: 0.9; /* Muy visible en hover */
-    transform: scale(1.2); /* Se agranda un poco para indicar interacción */
-}

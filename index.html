@@ -409,7 +409,6 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js" defer></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js" defer></script>
- <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js" defer></script>
 
   <!-- Carga tus "llaves secretas" de configuración -->
   <script src="firebase-config.js" defer></script>
@@ -421,24 +420,47 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     // --- Referencias a elementos de la UI ---
-    const splashScreen = document.getElementById('splash'), 
-          mainApp = document.getElementById('app'), 
-          authContainer = document.getElementById('auth-container'), 
-          logoutBtn = document.getElementById('btn-logout'), 
-          licenciasContainer = document.getElementById('licencias-container');
+    const splashScreen = document.getElementById('splash'), mainApp = document.getElementById('app'), authContainer = document.getElementById('auth-container'), splashLogo = document.getElementById('splash-logo'), logoutBtn = document.getElementById('btn-logout'), licenciasContainer = document.getElementById('licencias-container');
     
     let appInitialized = false;
 
-    // --- FUNCIÓN DE ARRANQUE (ahora solo muestra/oculta paneles) ---
-    function showMainApp() {
+    // --- FUNCIÓN DE ARRANQUE DE LA APP ---
+    function arrancarAplicacion(user) {
         if (appInitialized) return;
-        appInitialized = true;
+        
+        if (user && user.uid && typeof AppState === 'object') {
+            AppState.userId = user.uid;
+        } else {
+            console.error("Error crítico: No se pudo establecer el ID de usuario.");
+            firebase.auth().signOut();
+            return;
+        }
 
+        appInitialized = true;
         authContainer.style.display = 'none';
         mainApp.style.display = 'block';
-        if (splashScreen) splashScreen.style.display = 'none'; // Ocultamos splash al final
+        splashScreen.style.display = 'flex';
+        
+        if (splashLogo) { splashLogo.onclick = () => { splashScreen.style.display = 'none'; }; }
 
-        // --- LÓGICA DE NAVEGACIÓN Y BOTONES (se queda aquí) ---
+        // --- INICIALIZACIÓN COMPLETA DE MÓDULOS (AHORA SÍ) ---
+        if(typeof restoreManualEdits === 'function') restoreManualEdits();
+        if(typeof restoreCadenceSpec === 'function') restoreCadenceSpec();
+        if(typeof initThemeSwitcher === 'function') initThemeSwitcher();
+        if(typeof initApp === 'function') initApp();
+        if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
+        if(typeof initTablon === 'function') initTablon();
+        if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
+        if(typeof initPeticiones === 'function') initPeticiones();
+        if(typeof initEditableTitle === 'function') initEditableTitle();
+        if(typeof initLicenciasPanel === 'function') initLicenciasPanel();
+        if(typeof initNotificationManager === 'function') initNotificationManager();
+        
+        if (window.TurnApp && typeof window.TurnApp.renderPeticiones === 'function') {
+            window.TurnApp.renderPeticiones();
+        }
+
+        // --- LÓGICA DE NAVEGACIÓN Y BOTONES ---
         const applyCadenceBtn = document.getElementById('btn-apply-cadence');
         const clearCadenceBtn = document.getElementById('btn-clear-cadence');
         if (applyCadenceBtn) applyCadenceBtn.addEventListener('click', () => typeof openCadenceModal === 'function' && openCadenceModal());
@@ -472,55 +494,82 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 50);
             });
         }
+
+        // --- LÓGICA PARA EL BOTÓN DE INSTALAR (PWA) ---
+        let deferredPrompt;
+        const installButton = document.getElementById('btn-install-pwa');
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if(installButton) installButton.style.display = 'block';
+        });
+        if(installButton) {
+            installButton.addEventListener('click', () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    deferredPrompt.userChoice.then((choiceResult) => {
+                        if (choiceResult.outcome === 'accepted') { console.log('PWA instalada'); }
+                        deferredPrompt = null;
+                    });
+                }
+            });
+        }
         
         switchPanel('turnos');
         if (logoutBtn) { logoutBtn.style.display = 'block'; logoutBtn.onclick = () => { if (confirm('¿Seguro que quieres cerrar la sesión?')) { firebase.auth().signOut(); } }; }
     }
 
-    function showLoginScreen() {
+    function mostrarPantallaDeLogin() {
         appInitialized = false;
-        if(splashScreen) splashScreen.style.display = 'none';
+        splashScreen.style.display = 'none';
         mainApp.style.display = 'none';
         authContainer.style.display = 'flex';
         if(logoutBtn) logoutBtn.style.display = 'none';
     }
 
-    // --- FORMULARIO DE LOGIN (sin cambios) ---
+    // --- FUNCIÓN COMPLETA DEL FORMULARIO DE LOGIN (AHORA SÍ) ---
     function initAuthForm() {
         const emailInput = document.getElementById('auth-email'), passwordInput = document.getElementById('auth-password'), submitBtn = document.getElementById('auth-submit-btn'), toggleLink = document.getElementById('auth-toggle-link'), authTitle = document.getElementById('auth-title'), errorContainer = document.getElementById('auth-error');
         if (!submitBtn) return; 
         let isLoginMode = true;
         
-        toggleLink.addEventListener('click', (e) => { e.preventDefault(); isLoginMode = !isLoginMode; authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; errorContainer.textContent = ''; });
+        toggleLink.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            isLoginMode = !isLoginMode; 
+            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; 
+            submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; 
+            toggleLink.previousSibling.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; 
+            toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; 
+            errorContainer.textContent = ''; 
+        });
         submitBtn.addEventListener('click', () => { 
-            const email = emailInput.value, password = passwordInput.value; errorContainer.textContent = ''; 
+            const email = emailInput.value, password = passwordInput.value; 
+            errorContainer.textContent = ''; 
             if (!email || !password) { errorContainer.textContent = 'Por favor, introduce email y contraseña.'; return; } 
-            if (isLoginMode) { firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } 
-            else { firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); } 
+            if (isLoginMode) { 
+                firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); 
+            } else { 
+                firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); 
+            } 
         });
     }
 
-    // --- PUNTO DE CONTROL PRINCIPAL (AHORA MÁS LÓGICO) ---
+    // --- PUNTO DE CONTROL PRINCIPAL ---
     try {
         firebase.initializeApp(firebaseConfig);
         initAuthForm();
         firebase.auth().onAuthStateChanged(user => {
             if (user) {
-                // PRIMERO, inicializamos el estado del usuario.
-                initializeAndStartApp(user); 
-                // SEGUNDO, mostramos la app.
-                showMainApp();
+                arrancarAplicacion(user);
             } else {
-                showLoginScreen();
+                mostrarPantallaDeLogin();
             }
         });
     } catch (e) {
         console.error("ERROR FATAL:", e);
-        document.body.innerHTML = '<h1>Error fatal al cargar la aplicación. Revisa la consola.</h1>';
     }
 });
 </script>
-
 
 <!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
 <div id="image-modal" class="image-modal-overlay oculto">
