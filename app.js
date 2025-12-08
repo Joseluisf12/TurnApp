@@ -2076,24 +2076,62 @@ async function initNotificationManager() {
 // =========================================================================
 //    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
 // =========================================================================
- async function initializeAndStartApp(user) {
+async function initializeAndStartApp(user) {
+    // 1. INICIALIZAMOS LA BASE DE DATOS AQUÍ. Ahora es seguro hacerlo.
     db = firebase.firestore();
 
-    // 1. Poblamos el estado de la aplicación con la información del usuario
+    // 2. El resto de tu código original, que ahora funcionará.
     AppState.userId = user.uid;
-    AppState.userName = user.displayName || user.email; // Usamos nombre de pantalla o email
-    AppState.isCoordinator = (user.uid === AppState.coordinatorId);
+    AppState.userName = user.displayName || user.email.split('@')[0];
+    document.getElementById('editable-title').textContent = AppState.userName;
 
-    console.log("Usuario conectado:", AppState); // Para depurar fácilmente
+    const userDocRef = db.collection('userData').doc(user.uid);
 
-    // Si el usuario es nuevo y no tiene nombre, se lo ponemos (su email)
-    if (!user.displayName && user.email) {
-        user.updateProfile({
-            displayName: user.email.split('@')[0]
-        }).catch(error => {
-            console.error("Error al actualizar el nombre de usuario:", error);
-        });
+    try {
+        const userDoc = await userDocRef.get();
+        if (userDoc.exists) {
+            const userData = userDoc.data();
+            AppState.isCoordinator = userData.isCoordinator || false;
+            AppState.groupId = userData.memberOfGroup || null;
+        }
+
+        if (AppState.groupId) {
+            const groupDocRef = db.collection('groups').doc(AppState.groupId);
+            const groupDoc = await groupDocRef.get();
+            if (groupDoc.exists) {
+                const groupData = groupDoc.data();
+                AppState.groupName = groupData.groupName || "TurnApp";
+                document.title = AppState.groupName;
+                
+                // Inicializa los módulos que dependen de la base de datos
+                await restoreCadenceSpec();
+                await restoreManualEdits();
+                initPeticiones();
+                initCoordinatorTable();
+                initAliasManager();
+                initLicencias();
+                initDocumentos();
+                initTablon();
+                initNotifications();
+
+            } else {
+                throw new Error(`El grupo '${AppState.groupId}' no existe.`);
+            }
+        } else {
+             // Si el usuario no pertenece a un grupo, podrías mostrar un mensaje.
+             console.warn(`El usuario ${user.email} no pertenece a ningún grupo.`);
+             document.getElementById('calendar').innerHTML = '<p style="text-align:center; padding:20px;">No estás asignado a ningún grupo. Contacta con tu coordinador.</p>';
+        }
+
+    } catch (error) {
+        console.error("Error fatal durante la inicialización de datos:", error);
+        document.getElementById('calendar').innerHTML = `<p style="text-align:center; padding:20px;">Error al cargar los datos: ${error.message}</p>`;
     }
+
+    // Finalmente, renderiza el calendario
+    renderCalendar();
+}
+
     
     // 2. Ahora que AppState es correcto, inicializamos todos los módulos
     // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
