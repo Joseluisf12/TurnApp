@@ -61,6 +61,21 @@ async function initThemeSwitcher() {
     });
 }
 
+// =========================================================================
+// HABILITAR PERSISTENCIA OFFLINE DE FIRESTORE
+// =========================================================================
+firebase.firestore().enablePersistence()
+    .then(() => {
+        console.log("Soporte offline de Firestore habilitado con éxito.");
+    })
+    .catch((err) => {
+        if (err.code == 'failed-precondition') {
+            console.warn("Soporte offline no habilitado. Solo se puede activar en una pestaña a la vez.");
+        } else if (err.code == 'unimplemented') {
+            console.warn("Soporte offline no disponible en este navegador.");
+        }
+    });
+
 // =================================================================
 // INICIO DEL initCoordinatorTable v5.3 (BOTONES Y REDIBUJADO CORREGIDOS)
 // =================================================================
@@ -746,18 +761,26 @@ let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
 
-// ------------ (PEGA ESTE NUEVO CÓDIGO) ------------
+// =========================================================================
+// ARQUITECTURA v8.0 - SUPER ADMIN Y ESTADO DINÁMICO
+// =========================================================================
+
+// !! IMPORTANTE !!
+// Este es el UID del "dueño" de toda la plataforma. Solo este usuario
+// podrá crear nuevos grupos y asignar coordinadores.
+// Asegúrate de que aquí está tu User ID de Firebase.
+const SUPER_ADMIN_UID = 'rD3KBeWoJEgyhXQXoFV58ia6N3x1';
+
 const AppState = {
-    groupId: 'equipo_alpha',
+    userId: null,            // UID del usuario que ha iniciado sesión (se mantiene).
+    userName: null,          // Nombre del usuario que ha iniciado sesión (se mantiene).
     
-    // !! IMPORTANTE !!
-    // Pega aquí tu "User ID" de Firebase para asignarte como Coordinador.
-    // Lo encuentras en: Firebase Console > Authentication > Users tab.
-    coordinatorId: 'rD3KBeWoJEgyhXQXoFV58ia6N3x1', 
+    // --- Nuevos campos para la v8.0 ---
+    isSuperAdmin: false,     // Se calculará en el login. ¿Es el usuario el dueño de la app?
+    isCoordinator: false,    // Se calculará en el login. ¿Es el usuario el coordinador del grupo actual?
     
-    userId: null,        // Se establecerá dinámicamente en el login.
-    userName: null,      // También lo guardaremos en el login.
-    isCoordinator: false // Se calculará automáticamente en el login.
+    groupId: null,           // El ID del grupo se cargará dinámicamente después del login.
+    groupName: "TurnApp"     // Nombre visible del grupo, se cargará dinámicamente.
 };
 
 
@@ -2057,44 +2080,123 @@ async function initNotificationManager() {
     window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
 }
 
+// =========================================================================
+// ARRANQUE v8.0 - LÓGICA DE INICIO DINÁMICA Y MULTI-GRUPO
+// =========================================================================
 
-// =========================================================================
-//    NUEVO ARRANQUE CENTRALIZADO DE LA APLICACIÓN
-// =========================================================================
- async function initializeAndStartApp(user) {
+/**
+ * Función principal que arranca la aplicación tras el login.
+ * Ahora determina si el usuario es Super Admin, si pertenece a un grupo,
+ * y carga la interfaz correspondiente.
+ */
+async function initializeAndStartApp(user) {
     if (!user) return;
 
-    // 1. Poblamos el estado de la aplicación con la información del usuario
+    // --- 1. Configuración básica del estado ---
     AppState.userId = user.uid;
-    AppState.userName = user.displayName || user.email; // Usamos nombre de pantalla o email
-    AppState.isCoordinator = (user.uid === AppState.coordinatorId);
+    AppState.userName = user.displayName || user.email.split('@')[0];
+    AppState.isSuperAdmin = (user.uid === SUPER_ADMIN_UID);
 
-    console.log("Usuario conectado:", AppState); // Para depurar fácilmente
-
-    // Si el usuario es nuevo y no tiene nombre, se lo ponemos (su email)
-    if (!user.displayName && user.email) {
-        user.updateProfile({
-            displayName: user.email.split('@')[0]
-        }).catch(error => {
-            console.error("Error al actualizar el nombre de usuario:", error);
-        });
-    }
+    console.log(`Usuario conectado: ${AppState.userName} (Super Admin: ${AppState.isSuperAdmin})`);
     
-    // 2. Ahora que AppState es correcto, inicializamos todos los módulos
-    // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
-    if(typeof restoreManualEdits === 'function') await restoreManualEdits();
-    if(typeof restoreCadenceSpec === 'function') await restoreCadenceSpec();
-    if(typeof initThemeSwitcher === 'function') await initThemeSwitcher();
-    if(typeof initApp === 'function') initApp();
-    if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
-    if(typeof initTablon === 'function') initTablon();
-    if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
-    if(typeof initPeticiones === 'function') initPeticiones();
-    if(typeof initAliasManager === 'function') initAliasManager();
-    if(typeof initEditableTitle === 'function') initEditableTitle();
-    if(typeof initLicenciasPanel === 'function') await initLicenciasPanel();
-    if(typeof initNotificationManager === 'function') await initNotificationManager();
+    // Ocultamos el contenido principal mientras averiguamos el grupo
+    const mainContent = document.getElementById('content');
+    const appHeader = document.querySelector('.main-header');
+    if (mainContent) mainContent.style.display = 'none';
+    if (appHeader) appHeader.style.display = 'none';
+
+    // --- 2. Lógica de asignación de grupo ---
+    const db = firebase.firestore();
+    const userDocRef = db.collection('userData').doc(user.uid);
+
+    try {
+        const userDoc = await userDocRef.get();
+        // Buscamos a qué grupo pertenece el usuario
+        const groupIdFromDB = userDoc.exists ? userDoc.data().memberOfGroup : null;
+
+        if (groupIdFromDB) {
+            // --- CASO A: El usuario pertenece a un grupo ---
+            AppState.groupId = groupIdFromDB;
+            const groupDocRef = db.collection('groups').doc(AppState.groupId);
+            const groupDoc = await groupDocRef.get();
+
+            if (groupDoc.exists) {
+                const groupData = groupDoc.data();
+                AppState.groupName = groupData.groupName || "Grupo sin nombre";
+                // Comprobamos si el usuario es el coordinador de ESTE grupo
+                AppState.isCoordinator = (user.uid === groupData.coordinatorId);
+            } else {
+                 throw new Error(`El grupo '${AppState.groupId}' asignado a tu usuario no existe. Contacta con el administrador.`);
+            }
+
+            console.log("Estado final de la app:", AppState);
+            
+            // Mostramos la UI principal y arrancamos los módulos
+            if (mainContent) mainContent.style.display = 'block';
+            if (appHeader) appHeader.style.display = 'flex';
+            await initializeAppModules();
+
+        } else {
+            // --- CASO B: El usuario NO pertenece a ningún grupo ---
+            if (AppState.isSuperAdmin) {
+                // Es el Super Admin sin grupo -> mostramos su panel de creación
+                displayAdminPanel();
+            } else {
+                // Es un usuario normal sin grupo -> mostramos mensaje de espera
+                displayLimboScreen("Tu cuenta aún no ha sido asignada a un grupo. Por favor, contacta con tu coordinador.");
+            }
+        }
+    } catch (error) {
+        console.error("Error fatal durante la inicialización:", error);
+        displayLimboScreen(`Error al iniciar la aplicación: ${error.message}. Recarga la página o contacta con soporte.`);
+    }
 }
 
+/**
+ * Agrupa la inicialización de todos los módulos de la aplicación.
+ * Se llama únicamente cuando el usuario tiene un grupo asignado.
+ */
+async function initializeAppModules() {
+    console.log("Inicializando módulos de la aplicación...");
+    // El orden es importante para las dependencias
+    await Promise.all([restoreManualEdits(), restoreCadenceSpec(), initLicenciasPanel()]);
+    await initThemeSwitcher();
+    
+    initApp();
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones();
+    initAliasManager();
+    initEditableTitle();
+    initNotificationManager();
+    console.log("Módulos inicializados.");
+}
+
+/**
+ * Muestra una pantalla completa con un mensaje. Se usa para usuarios sin
+ * grupo asignado o para mostrar errores fatales.
+ */
+function displayLimboScreen(message) {
+    let limboScreen = document.getElementById('limbo-screen');
+    if (!limboScreen) {
+        document.body.innerHTML = ''; // Limpiamos el body para evitar conflictos
+        limboScreen = document.createElement('div');
+        limboScreen.id = 'limbo-screen';
+        limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: var(--bg-color); color: var(--text-color);';
+        document.body.appendChild(limboScreen);
+    }
+    limboScreen.innerHTML = `<img src="icon-192x192.png" alt="TurnApp Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
+                             <p>${message}</p>`;
+    limboScreen.style.display = 'flex';
+}
+
+/**
+ * Placeholder para la futura función del panel de Super Admin.
+ * Por ahora, solo muestra un mensaje de bienvenida.
+ */
+function displayAdminPanel() {
+    displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá tu panel para gestionar los grupos de la plataforma.");
+}
 
   // ------------------ FIN app.js ------------------
