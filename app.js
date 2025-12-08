@@ -2091,26 +2091,21 @@ async function initNotificationManager() {
     window.TurnApp.checkAndDisplayNotifications = checkAndDisplayNotifications;
 }
 
-
 /**
- * LÓGICA DE ARRANQUE v8.0
- * Función principal que se llama tras el login. Ahora es dinámica.
- * Determina si el usuario es Super Admin, a qué grupo pertenece,
- * e inicia la interfaz correspondiente.
+ * LÓGICA DE ARRANQUE v8.0 - VERSIÓN SEGURA (NO DESTRUCTIVA)
+ * Función principal que se llama tras el login.
+ * Determina si el usuario tiene un grupo y muestra la pantalla
+ * correspondiente sin borrar el resto de la aplicación.
  */
 async function initializeAndStartApp(user) {
     if (!user) return;
 
-    // --- 1. Configuración inicial del estado con datos del usuario ---
+    // --- 1. Configuración inicial del estado ---
     AppState.userId = user.uid;
     AppState.userName = user.displayName || user.email.split('@')[0];
     AppState.isSuperAdmin = (user.uid === SUPER_ADMIN_UID);
 
     console.log(`Usuario conectado: ${AppState.userName} (Super Admin: ${AppState.isSuperAdmin})`);
-    
-    // Ocultamos la app principal temporalmente mientras averiguamos el grupo
-    const appContainer = document.getElementById('app');
-    if (appContainer) appContainer.style.display = 'none';
 
     // --- 2. Lógica para encontrar el grupo del usuario ---
     const db = firebase.firestore();
@@ -2118,69 +2113,81 @@ async function initializeAndStartApp(user) {
 
     try {
         const userDoc = await userDocRef.get();
-        // Buscamos el campo 'memberOfGroup' en su documento de userData
         const groupIdFromDB = userDoc.exists ? userDoc.data().memberOfGroup : null;
 
         if (groupIdFromDB) {
             // --- CASO A: EL USUARIO PERTENECE A UN GRUPO ---
-            // El usuario ya está asignado a un grupo, cargamos la app normal.
+            // Si la pantalla de "limbo" se estuviera mostrando, la ocultamos.
+            hideLimboScreen();
+
             AppState.groupId = groupIdFromDB;
             const groupDoc = await db.collection('groups').doc(AppState.groupId).get();
 
             if (groupDoc.exists) {
                 const groupData = groupDoc.data();
                 AppState.groupName = groupData.groupName || "Grupo sin nombre";
-                // Comprobamos si el usuario es el coordinador de ESTE grupo
                 AppState.isCoordinator = (user.uid === groupData.coordinatorId);
             } else {
-                 throw new Error(`El grupo '${AppState.groupId}' al que perteneces ha sido eliminado. Contacta con el administrador.`);
+                 throw new Error(`El grupo '${AppState.groupId}' al que perteneces ya no existe.`);
             }
 
-            console.log("Estado final de la app:", AppState);
+            console.log("Cargando app para el grupo:", AppState.groupId);
             
-            // Mostramos la UI principal y arrancamos el resto de módulos
+            // Mostramos el contenedor de la app y arrancamos los módulos.
+            // (index.html ya muestra el contenedor, esto es una salvaguarda)
+            const appContainer = document.getElementById('app-container');
             if (appContainer) appContainer.style.display = 'block';
-            await initializeAppModules(); // Esta es la función que ya existía
+            
+            await initializeAppModules();
 
         } else {
             // --- CASO B: EL USUARIO NO TIENE GRUPO ASIGNADO ---
-            if (AppState.isSuperAdmin) {
-                // Si es el Super Admin, mostramos su panel de bienvenida.
-                displayAdminPanel();
-            } else {
-                // Si es un usuario normal, mostramos la pantalla de "en espera".
-                displayLimboScreen("Tu cuenta aún no ha sido asignada a un grupo. Por favor, contacta con tu coordinador.");
-            }
+            const message = AppState.isSuperAdmin
+                ? "¡Bienvenido, Super Admin! Aquí aparecerá tu panel para crear grupos."
+                : "Tu cuenta aún no ha sido asignada a un grupo. Contacta con tu coordinador.";
+            
+            displayLimboScreen(message);
         }
     } catch (error) {
         console.error("Error fatal durante la inicialización:", error);
-        displayLimboScreen(`Error al iniciar la aplicación: ${error.message}. Recarga la página o contacta con soporte.`);
+        displayLimboScreen(`Error al iniciar: ${error.message}.`);
     }
 }
 
 /**
- * Muestra una pantalla completa con un mensaje.
- * Se usa para usuarios sin grupo o para mostrar errores graves.
+ * Muestra una pantalla de información de forma SEGURA.
+ * Oculta los contenedores principales y muestra un mensaje, pero no borra el DOM.
  */
 function displayLimboScreen(message) {
-    // Limpiamos el body para asegurar que no haya nada más
-    document.body.innerHTML = ''; 
-    const limboScreen = document.createElement('div');
-    limboScreen.id = 'limbo-screen';
-    limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: #f0f2f5; color: #333;';
+    const loginContainer = document.getElementById('login-container');
+    const appContainer = document.getElementById('app-container');
+    if (loginContainer) loginContainer.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'none';
+
+    let limboScreen = document.getElementById('limbo-screen');
+    if (!limboScreen) {
+        limboScreen = document.createElement('div');
+        limboScreen.id = 'limbo-screen';
+        // Insertamos la pantalla de limbo al principio del body para no interferir.
+        document.body.insertBefore(limboScreen, document.body.firstChild);
+    }
     
+    limboScreen.style.cssText = 'display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; text-align: center; padding: 20px; font-size: 1.2em; background-color: #f0f2f5; color: #333; position: fixed; top: 0; left: 0; width: 100%; z-index: 9999;';
     limboScreen.innerHTML = `<img src="icon-192x192.png" alt="TurnApp Logo" style="width: 80px; height: 80px; margin-bottom: 20px;">
                              <p>${message}</p>
                              <button onclick="firebase.auth().signOut()" style="margin-top: 20px; padding: 10px 20px; border: 1px solid #ccc; border-radius: 5px; cursor: pointer;">Cerrar Sesión</button>`;
-    document.body.appendChild(limboScreen);
+    
+    limboScreen.style.display = 'flex';
 }
 
 /**
- * Placeholder para la futura función del panel de Super Admin.
- * Por ahora, solo muestra un mensaje de bienvenida especial.
+ * Oculta la pantalla de información si está visible.
  */
-function displayAdminPanel() {
-    displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá en breve tu panel para crear y gestionar los grupos de la plataforma.");
+function hideLimboScreen() {
+    const limboScreen = document.getElementById('limbo-screen');
+    if (limboScreen) {
+        limboScreen.style.display = 'none';
+    }
 }
 
   // ------------------ FIN app.js ------------------
