@@ -2199,4 +2199,85 @@ function displayAdminPanel() {
     displayLimboScreen("¡Bienvenido, Super Admin! Aquí aparecerá tu panel para gestionar los grupos de la plataforma.");
 }
 
+// =========================================================================
+// INICIADOR GLOBAL DE LA APLICACIÓN (v8.0) - VERSIÓN CORREGIDA Y CENTRALIZADA
+// Este será el único punto de entrada llamado desde index.html
+// =========================================================================
+function TurnAppGlobalInitializer() {
+    const loginContainer = document.getElementById('auth-container'); // ID correcto de tu HTML
+    const appContainer = document.getElementById('app'); // ID correcto de tu HTML
+    const mainContent = document.getElementById('content');
+    const appHeader = document.querySelector('.app-header'); // Selector correcto de tu HTML
+    const splashScreen = document.getElementById('splash');
+
+    // Ocultamos todo al principio para evitar parpadeos
+    if (splashScreen) splashScreen.style.display = 'flex';
+    if (loginContainer) loginContainer.style.display = 'none';
+    if (appContainer) appContainer.style.display = 'none';
+
+    // --- Lógica del formulario de Login/Registro (movida desde index.html) ---
+    const emailInput = document.getElementById('auth-email'), 
+          passwordInput = document.getElementById('auth-password'), 
+          submitBtn = document.getElementById('auth-submit-btn'), 
+          toggleLink = document.getElementById('auth-toggle-link'), 
+          authTitle = document.getElementById('auth-title'), 
+          errorContainer = document.getElementById('auth-error');
+    
+    if (submitBtn) {
+        let isLoginMode = true;
+        toggleLink.addEventListener('click', (e) => { 
+            e.preventDefault(); 
+            isLoginMode = !isLoginMode; 
+            authTitle.textContent = isLoginMode ? 'Iniciar Sesión' : 'Crear Cuenta'; 
+            submitBtn.textContent = isLoginMode ? 'Acceder' : 'Registrarse'; 
+            const toggleText = toggleLink.previousSibling;
+            if(toggleText) toggleText.textContent = isLoginMode ? '¿No tienes cuenta? ' : '¿Ya tienes cuenta? '; 
+            toggleLink.textContent = isLoginMode ? 'Regístrate' : 'Inicia sesión'; 
+            errorContainer.textContent = ''; 
+        });
+        submitBtn.addEventListener('click', () => { 
+            const email = emailInput.value, password = passwordInput.value; 
+            errorContainer.textContent = ''; 
+            if (!email || !password) { 
+                errorContainer.textContent = 'Por favor, introduce email y contraseña.'; 
+                return; 
+            } 
+            if (isLoginMode) { 
+                firebase.auth().signInWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); 
+            } else { 
+                firebase.auth().createUserWithEmailAndPassword(email, password).catch(error => { errorContainer.textContent = 'Error: ' + error.message; }); 
+            } 
+        });
+    }
+    // --- Fin de la lógica del formulario ---
+
+    firebase.auth().onAuthStateChanged(async (user) => {
+        if (splashScreen) splashScreen.style.display = 'none'; // Ocultar splash en cualquier caso
+
+        if (user) {
+            // Usuario conectado -> Ocultar login, mostrar app e inicializar
+            if (loginContainer) loginContainer.style.display = 'none';
+            if (appContainer) appContainer.style.display = 'block';
+
+            const logoutBtn = document.getElementById('btn-logout');
+            if(logoutBtn) logoutBtn.style.display = 'block';
+            
+            await initializeAndStartApp(user);
+        } else {
+            // Usuario no conectado -> Mostrar login, ocultar app
+            if (loginContainer) loginContainer.style.display = 'flex';
+            if (appContainer) appContainer.style.display = 'none';
+
+            const limboScreen = document.getElementById('limbo-screen');
+            if(limboScreen) limboScreen.remove();
+
+            const logoutBtn = document.getElementById('btn-logout');
+            if(logoutBtn) logoutBtn.style.display = 'none';
+
+            if (mainContent) mainContent.style.display = 'block';
+            if (appHeader) appHeader.style.display = 'flex';
+        }
+    });
+}
+
   // ------------------ FIN app.js ------------------
