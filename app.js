@@ -1304,6 +1304,169 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
+     * Inicializa el título principal editable para el coordinador.
+     * El título se guarda en el documento del grupo en Firestore.
+     */
+    function initEditableTitle() {
+        const mainTitle = document.getElementById('main-title');
+        if (!mainTitle) return;
+
+        // El título se establece en initUser desde AppState.groupName, aquí solo gestionamos la edición.
+        // Hacemos el título editable solo para el coordinador.
+        if (AppState.isCoordinator) {
+            mainTitle.contentEditable = "true";
+            mainTitle.classList.add('editable-title');
+            mainTitle.setAttribute('title', 'Haz clic para editar el título');
+
+            let saveTitleTimeout = null;
+            mainTitle.addEventListener('blur', () => {
+                // Cuando el coordinador deja de editar, guardamos el cambio.
+                const newTitle = mainTitle.innerText.trim();
+                // Solo guardamos si el título es válido y ha cambiado.
+                if (newTitle && newTitle !== AppState.groupName) {
+                    db.collection('groups').doc(AppState.groupId).update({ name: newTitle })
+                        .then(() => {
+                            console.log('Título del grupo actualizado.');
+                            AppState.groupName = newTitle; // Actualizamos el estado local.
+                        })
+                        .catch(err => {
+                            console.error("Error al actualizar el título:", err);
+                            // Si falla, revertimos al título anterior para mantener la consistencia.
+                            mainTitle.innerText = AppState.groupName;
+                        });
+                } else {
+                    // Si el título se deja vacío o no cambia, se revierte.
+                    mainTitle.innerText = AppState.groupName;
+                }
+            });
+            
+            // Un pequeño truco para evitar que se pegue texto con formato (negrita, etc.).
+            mainTitle.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const text = e.clipboardData.getData('text/plain');
+                document.execCommand('insertText', false, text);
+            });
+        }
+    }
+
+    /**
+     * Inicializa el sistema de peticiones de cambio de turno entre usuarios.
+     * Carga y muestra las peticiones en el panel lateral.
+     */
+    function initPeticiones() {
+        const peticionesList = document.getElementById('peticiones-list');
+        const peticionesSection = document.getElementById('peticiones-section');
+        if (!peticionesList || !peticionesSection) return;
+
+        const peticionesCollection = db.collection('groups').doc(AppState.groupId).collection('peticiones');
+
+        // Listener de Firestore para recibir peticiones en tiempo real.
+        peticionesCollection.orderBy('createdAt', 'desc').onSnapshot(snapshot => {
+            peticionesList.innerHTML = ''; // Limpiamos la lista en cada actualización.
+
+            if (snapshot.empty) {
+                peticionesList.innerHTML = '<li>No hay peticiones activas.</li>';
+                return;
+            }
+
+            snapshot.forEach(doc => {
+                const p = doc.data();
+                const peticionId = doc.id;
+
+                // Solo mostramos peticiones que no hayan sido completadas o canceladas.
+                if (p.status !== 'activa') return;
+
+                // El HTML para cada elemento de la lista de peticiones.
+                const li = document.createElement('li');
+                li.className = 'peticion-item';
+                li.innerHTML = `
+                    <div class="peticion-info">
+                        <strong>${p.userName}</strong> pide cambiar su
+                        <span class="peticion-fecha" style="background-color: ${p.userShiftColor || 'var(--cell-bg)'}; color: ${p.userShiftColor ? '#fff' : 'inherit'};">
+                            ${p.userShiftText || 'día libre'} del ${new Date(p.userDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                        por el
+                        <span class="peticion-fecha" style="background-color: ${p.targetShiftColor || 'var(--cell-bg)'}; color: ${p.targetShiftColor ? '#fff' : 'inherit'};">
+                            ${p.targetShiftText || 'día libre'} del ${new Date(p.targetDate).toLocaleDateString('es-ES', { day: '2-digit', month: '2-digit' })}
+                        </span>
+                        de <strong class="target-user-name">${p.targetUserName}</strong>.
+                    </div>
+                    <div class="peticion-actions">
+                        ${ AppState.userId === p.targetUserId ?
+                            `<button class="btn-peticion-aceptar" data-id="${peticionId}">Aceptar</button>` : ''
+                        }
+                        ${ (AppState.userId === p.userId || AppState.userId === p.targetUserId || AppState.isCoordinator) ?
+                            `<button class="btn-peticion-rechazar" data-id="${peticionId}">X</button>` : ''
+                        }
+                    </div>
+                `;
+                peticionesList.appendChild(li);
+            });
+
+            if (peticionesList.children.length === 0) {
+                 peticionesList.innerHTML = '<li>No hay peticiones activas para ti.</li>';
+            }
+
+        }, (error) => {
+            console.error("Error al cargar peticiones: ", error);
+            peticionesList.innerHTML = '<li>Error al cargar las peticiones.</li>';
+        });
+
+        // Listener de clics para los botones de Aceptar/Rechazar.
+        peticionesSection.addEventListener('click', async (event) => {
+            const target = event.target;
+            const peticionId = target.dataset.id;
+            if (!peticionId) return;
+
+            const peticionRef = peticionesCollection.doc(peticionId);
+
+            if (target.classList.contains('btn-peticion-aceptar')) {
+                // Lógica para Aceptar una petición
+                try {
+                    const peticionDoc = await peticionRef.get();
+                    if (!peticionDoc.exists) return;
+                    const p = peticionDoc.data();
+                    
+                    // Doble comprobación: solo el destinatario puede aceptar.
+                    if (p.status === 'activa' && AppState.userId === p.targetUserId) {
+                        // Creamos un batch de Firestore para realizar múltiples escrituras de forma atómica.
+                        const batch = db.batch();
+
+                        // 1. Actualizar la petición a 'completada'.
+                        batch.update(peticionRef, { status: 'completada' });
+
+                        // 2. Intercambiar los turnos en el documento principal del calendario.
+                        const calendarDocRef = db.collection('groups').doc(AppState.groupId);
+                        // El campo se actualiza con notación de punto para objetos anidados.
+                        batch.update(calendarDocRef, {
+                            [`calendarState.${p.userDateKey}`]: p.targetShift,
+                            [`calendarState.${p.targetDateKey}`]: p.userShift
+                        });
+
+                        await batch.commit(); // Ejecutamos todas las operaciones.
+                        console.log("Petición aceptada y cambios aplicados.");
+                    }
+                } catch (error) { console.error("Error al aceptar la petición: ", error); }
+
+            } else if (target.classList.contains('btn-peticion-rechazar')) {
+                 // Lógica para Rechazar o Cancelar una petición
+                try {
+                    const peticionDoc = await peticionRef.get();
+                     if (!peticionDoc.exists) return;
+                     const p = peticionDoc.data();
+
+                    // Comprobamos que el usuario tiene permiso para cancelar/rechazar.
+                    if(p.status === 'activa' && (AppState.userId === p.userId || AppState.userId === p.targetUserId || AppState.isCoordinator)) {
+                        await peticionRef.update({ status: 'cancelada' });
+                        console.log("Petición cancelada/rechazada.");
+                    }
+                } catch (error) { console.error("Error al rechazar la petición: ", error); }
+            }
+        });
+    }
+
+
+    /**
      * Inicializa el modal de la cadencia de turnos.
      */
     function initCadenceModal() {
