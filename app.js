@@ -2132,22 +2132,5 @@ async function initializeAndStartApp(user) {
     renderCalendar();
 }
 
-    
-    // 2. Ahora que AppState es correcto, inicializamos todos los módulos
-    // Esto es el contenido que antes estaba en arrancarAplicacion() en index.html
-    if(typeof restoreManualEdits === 'function') await restoreManualEdits();
-    if(typeof restoreCadenceSpec === 'function') await restoreCadenceSpec();
-    if(typeof initThemeSwitcher === 'function') await initThemeSwitcher();
-    if(typeof initApp === 'function') initApp();
-    if(typeof initCoordinatorTable === 'function') initCoordinatorTable();
-    if(typeof initTablon === 'function') initTablon();
-    if(typeof initDocumentosPanel === 'function') initDocumentosPanel();
-    if(typeof initPeticiones === 'function') initPeticiones();
-    if(typeof initAliasManager === 'function') initAliasManager();
-    if(typeof initEditableTitle === 'function') initEditableTitle();
-    if(typeof initLicenciasPanel === 'function') await initLicenciasPanel();
-    if(typeof initNotificationManager === 'function') await initNotificationManager();
-}
-
 
   // ------------------ FIN app.js ------------------
