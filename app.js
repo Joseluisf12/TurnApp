@@ -706,92 +706,24 @@ function initDocumentosPanel() {
     renderDocs();
 }
 
-// =========================================================================
-// ARRANQUE CORREGIDO Y ORDENADO
-// =========================================================================
-document.addEventListener('DOMContentLoaded', () => {
-
-    // 1. Cargar el estado de DATOS PRIMERO. Esto es crítico.
-    // Estas funciones llenan las variables globales (manualEdits, cadenceSpec)
-    // con la información guardada por el usuario.
-    restoreManualEdits();
-    restoreCadenceSpec();
-
-    // 2. Ahora, inicializar todos los MÓDULOS DE LA INTERFAZ.
-    // Estas funciones ahora encontrarán los datos listos para ser usados.
-    initThemeSwitcher();
-    initApp(); // Contiene renderCalendar, que depende de los datos cargados.
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones(); // Esta función ahora se ejecuta en un estado consistente.
-    initEditableTitle();
-    initLicenciasPanel();
-    initNotificationManager();
-
-    // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
-    // Esto se hace al final para asegurar que todos los módulos estén listos.
-    
-    // Botones de Cadencia
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
-    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
-
-    // Botón de Peticiones
-    const btnPeticiones = document.getElementById("btn-peticiones");
-    const peticionesSection = document.getElementById("peticiones-section");
-    if (btnPeticiones && peticionesSection) {
-        peticionesSection.classList.add("oculto");
-        peticionesSection.style.display = "none";
-        btnPeticiones.addEventListener("click", (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-            if (visible) {
-                peticionesSection.classList.add("oculto");
-                peticionesSection.style.display = "none";
-            } else {
-                peticionesSection.classList.remove("oculto");
-                peticionesSection.style.display = "block";
-            }
-        });
-    }
-
-    // Pantalla de Splash
-    const splash = document.getElementById("splash");
-    const app = document.getElementById("app");
-    const logo = document.getElementById("splash-logo");
-    const calendarioSection = document.getElementById("calendar-panel");
-    const licenciasSection = document.getElementById("licencias-container");
-
-    if (splash && app && logo && calendarioSection && licenciasSection) {
-        app.classList.add("oculto");
-        calendarioSection.classList.add("oculto");
-        licenciasSection.classList.add("oculto");
-        
-        logo.addEventListener("click", () => {
-            splash.remove();
-            app.classList.remove("oculto");
-            calendarioSection.classList.remove("oculto");
-            licenciasSection.classList.add("oculto");
-            calendarioSection.classList.add("fade-in-up");
-            setTimeout(() => { app.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
-        });
-    }
-});
-
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
 let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
+
+
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
+let db = null; // ¡NUEVO! Esta variable guardará la conexión a Firestore.
 
 const AppState = {
-        groupId: 'equipo_alpha',
-        userId: 'user_123_test'
-    };
+    groupId: 'equipo_alpha',
+    // El userId se establecerá dinámicamente después del login.
+    // Lo inicializamos a null para evitar usar datos de prueba.
+    userId: null 
+};
+
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -821,18 +753,61 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // =========================================================================
 
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
-function restoreManualEdits(){
-  try {
-        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
 
-    if (raw) manualEdits = JSON.parse(raw);
-  } catch(e){
-    manualEdits = {};
-  }
+// Esta función ahora es asíncrona. Se encarga de inicializar Firestore y cargar los datos.
+async function restoreManualEdits() {
+    // Si 'db' no existe, es la primera vez que se ejecuta, así que inicializamos Firestore.
+    if (!db) {
+        try {
+            db = firebase.firestore();
+            console.log("Firestore inicializado correctamente.");
+        } catch (e) {
+            console.error("Error al inicializar Firestore. Asegúrate de que los scripts de Firebase están cargados.", e);
+            return; // Si no se puede inicializar, no continuamos.
+        }
+    }
+
+    if (!AppState.userId) {
+        console.warn("No hay ID de usuario. No se pueden cargar las ediciones manuales.");
+        manualEdits = {};
+        return;
+    }
+
+    try {
+        const docRef = db.collection('userSettings').doc(AppState.userId);
+        const doc = await docRef.get();
+        if (doc.exists && doc.data().manualEdits) {
+            manualEdits = doc.data().manualEdits;
+            console.log("Ediciones manuales cargadas desde Firestore.");
+            // ¡CLAVE! Como la carga desde la red es asíncrona, una vez que tenemos los
+            // datos, forzamos un re-renderizado del calendario para que los muestre.
+            if (typeof renderCalendar === 'function') {
+                renderCalendar(currentMonth, currentYear);
+            }
+        } else {
+            console.log("No hay 'manualEdits' en Firestore para este usuario. Se creará uno nuevo al guardar.");
+            manualEdits = {};
+        }
+    } catch (e) {
+        console.error("Error al cargar 'manualEdits' desde Firestore:", e);
+        manualEdits = {};
+    }
 }
 
-function saveManualEdits(){
-    try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
+// La función de guardado también es asíncrona.
+async function saveManualEdits() {
+    // Si no hay conexión a la DB o no hay un usuario identificado, no hace nada.
+    if (!db || !AppState.userId) {
+        return;
+    }
+    try {
+        const docRef = db.collection('userSettings').doc(AppState.userId);
+        // Usamos { merge: true } para no sobrescribir otros campos del documento en el futuro
+        // (por ejemplo, aquí guardaremos 'licenciasData' más adelante).
+        await docRef.set({ manualEdits: manualEdits }, { merge: true });
+    } catch (e) {
+        console.error("Error al guardar 'manualEdits' en Firestore:", e);
+    }
 }
 
 // 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
