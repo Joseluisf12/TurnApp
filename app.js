@@ -57,6 +57,47 @@ const switchToLogin = document.getElementById('switch-to-login');
 // FIN DE LA FASE 3: INICIALIZACIÓN
 // =================================================================================
 
+// =========================================================================
+// INICIALIZACIÓN DEL NÚCLEO DE LA APP (SOLO DESPUÉS DE LOGIN)
+// =========================================================================
+let isAppInitialized = false; // Bandera para evitar reinicialización
+
+function initializeAppCore() {
+    // Si la app ya se inicializó, no hacemos nada.
+    if (isAppInitialized) return;
+
+    console.log("Autenticación exitosa. Inicializando la aplicación principal...");
+
+    // 1. Cargar datos de usuario guardados
+    restoreManualEdits();
+    restoreCadenceSpec();
+
+    // 2. Inicializar todos los módulos de la interfaz
+    initApp(); 
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones();
+    initEditableTitle();
+    initLicenciasPanel();
+    initNotificationManager();
+
+    // 3. Configurar oyentes de eventos de la UI que no se inicializan solos
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
+    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
+    
+    // 4. Renderizar componentes que necesitan una llamada explícita
+    if (window.TurnApp && window.TurnApp.renderPeticiones) {
+        window.TurnApp.renderPeticiones();
+    }
+
+    // 5. Marcar la app como inicializada
+    isAppInitialized = true;
+}
+
+
 /**
  * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
  */
@@ -163,22 +204,28 @@ function initAuthSystem() {
         });
     });
 
-    // --- OBSERVADOR PRINCIPAL DEL ESTADO DE AUTENTICACIÓN ---
-    // Esta es la función clave que reacciona a los inicios y cierres de sesión.
+        // --- OBSERVADOR PRINCIPAL DEL ESTADO DE AUTENTICACIÓN ---
     onAuthStateChanged(auth, (user) => {
         if (user) {
-            // Si hay un usuario, ocultamos la autenticación y el splash, y mostramos la app.
+            // Usuario ha iniciado sesión.
             authContainer.classList.add('oculto');
-            splashScreen.classList.add('oculto');
             appContainer.classList.remove('oculto');
+            splashScreen.classList.add('oculto');
+            
+            // ¡AQUÍ LA CLAVE!
+            // Solo ahora llamamos a la inicialización del núcleo de la app.
+            initializeAppCore(); 
+
         } else {
-            // Si no hay usuario, mostramos el panel de autenticación y ocultamos la app y el splash.
+            // Usuario ha cerrado sesión.
             authContainer.classList.remove('oculto');
             appContainer.classList.add('oculto');
             splashScreen.classList.add('oculto');
+            
+            // Reseteamos la bandera para permitir una nueva inicialización en el próximo login.
+            isAppInitialized = false; 
         }
     });
-}
 
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
@@ -846,78 +893,26 @@ function initDocumentosPanel() {
 // =========================================================================
 // ARRANQUE CORREGIDO Y ORDENADO
 // =========================================================================
+// Este es el NUEVO contenido para el bloque que empieza en la línea 849
 document.addEventListener('DOMContentLoaded', () => {
-
-    // 1. Cargar el estado de DATOS PRIMERO. Esto es crítico.
-    // Estas funciones llenan las variables globales (manualEdits, cadenceSpec)
-    // con la información guardada por el usuario.
-    restoreManualEdits();
-    restoreCadenceSpec();
-
-    // 2. Ahora, inicializar todos los MÓDULOS DE LA INTERFAZ.
-    // Estas funciones ahora encontrarán los datos listos para ser usados.
+    // Al cargar la página, SOLO inicializamos el sistema de temas y autenticación.
+    // El resto de la aplicación se inicializará DESPUÉS de un login exitoso.
+    console.log("DOM cargado. Inicializando sistemas de Tema y Autenticación.");
     initThemeSwitcher();
-    initApp(); // Contiene renderCalendar, que depende de los datos cargados.
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones(); // Esta función ahora se ejecuta en un estado consistente.
-    initEditableTitle();
-    initLicenciasPanel();
-    initNotificationManager();
     initAuthSystem();
-
-    // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
-    // Esto se hace al final para asegurar que todos los módulos estén listos.
     
-    // Botones de Cadencia
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
-    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
-
-    // Botón de Peticiones
-    const btnPeticiones = document.getElementById("btn-peticiones");
-    const peticionesSection = document.getElementById("peticiones-section");
-    if (btnPeticiones && peticionesSection) {
-        peticionesSection.classList.add("oculto");
-        peticionesSection.style.display = "none";
-        btnPeticiones.addEventListener("click", (e) => {
-            e.preventDefault(); e.stopPropagation();
-            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
-            if (visible) {
-                peticionesSection.classList.add("oculto");
-                peticionesSection.style.display = "none";
-            } else {
-                peticionesSection.classList.remove("oculto");
-                peticionesSection.style.display = "block";
-            }
-        });
-    }
-
-    // Pantalla de Splash
+    // La lógica del splash screen se mantiene, pero ya no muestra la app.
+    // El observador de Auth decidirá si la app se ve o no.
     const splash = document.getElementById("splash");
-    const app = document.getElementById("app");
     const logo = document.getElementById("splash-logo");
-    const calendarioSection = document.getElementById("calendar-panel");
-    const licenciasSection = document.getElementById("licencias-container");
-
-    if (splash && app && logo && calendarioSection && licenciasSection) {
-        app.classList.add("oculto");
-        calendarioSection.classList.add("oculto");
-        licenciasSection.classList.add("oculto");
-        
+    if (splash && logo) {
         logo.addEventListener("click", () => {
-            splash.remove();
-            app.classList.remove("oculto");
-            calendarioSection.classList.remove("oculto");
-            licenciasSection.classList.add("oculto");
-            calendarioSection.classList.add("fade-in-up");
-            setTimeout(() => { app.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+            // Al hacer clic en el logo, simplemente se oculta el splash
+            // para revelar lo que haya decidido el sistema de Auth (el panel de login).
+            splash.style.display = 'none';
         });
     }
 });
-
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();
