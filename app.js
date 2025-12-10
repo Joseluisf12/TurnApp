@@ -5,6 +5,58 @@
 // cálculo de festivos variables y correcciones de UI.
 // Sirve como base para el futuro desarrollo multi-usuario.
 
+// =================================================================================
+// FASE 3: INICIALIZACIÓN DE FIREBASE Y AUTENTICACIÓN
+// =================================================================================
+
+// 1. Importar los servicios necesarios de Firebase
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
+import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, listAll, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
+
+
+// 2. Configuración de Firebase (de tu index.html)
+const firebaseConfig = {
+      apiKey: "AIzaSyCPAuyBdlEUO_UNcqOsAF7Cv6RH0or3YIk",
+      authDomain: "turnapp-multiusuario.firebaseapp.com",
+      projectId: "turnapp-multiusuario",
+      storageBucket: "turnapp-multiusuario.firebasestorage.app",
+      messagingSenderId: "705036017308",
+      appId: "1:705036017308:web:75a36e311da0ba2f4b9759",
+      measurementId: "G-D9KP8REF3S"
+  };
+
+// 3. Inicializar Firebase y sus servicios
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+
+// 4. Referencias a los elementos del DOM para la autenticación
+const authContainer = document.getElementById('auth-container');
+const appContainer = document.getElementById('app'); // Ya deberías tenerla, pero la ponemos para asegurar
+const splashScreen = document.getElementById('splash');
+
+const loginForm = document.getElementById('login-form');
+const registerForm = document.getElementById('register-form');
+
+const loginEmailInput = document.getElementById('login-email');
+const loginPasswordInput = document.getElementById('login-password');
+const registerEmailInput = document.getElementById('register-email');
+const registerPasswordInput = document.getElementById('register-password');
+
+const authError = document.getElementById('auth-error');
+const authTitle = document.getElementById('auth-title');
+
+const switchToRegister = document.getElementById('switch-to-register');
+const switchToLogin = document.getElementById('switch-to-login');
+
+// =================================================================================
+// FIN DE LA FASE 3: INICIALIZACIÓN
+// =================================================================================
+
 /**
  * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
  */
@@ -41,6 +93,91 @@ function initThemeSwitcher() {
     // Al cargar la app, aplicamos el tema guardado o el claro por defecto
     const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
     applyTheme(savedTheme);
+}
+
+
+
+function initAuthSystem() {
+    // Escuchador para cambiar al formulario de Registro
+    switchToRegister.addEventListener('click', (e) => {
+        e.preventDefault();
+        loginForm.classList.add('oculto');
+        registerForm.classList.remove('oculto');
+        switchToRegister.classList.add('oculto');
+        switchToLogin.classList.remove('oculto');
+        authTitle.textContent = 'Crear Cuenta';
+        authError.classList.add('oculto'); // Oculta errores previos
+    });
+
+    // Escuchador para volver al formulario de Login
+    switchToLogin.addEventListener('click', (e) => {
+        e.preventDefault();
+        registerForm.classList.add('oculto');
+        loginForm.classList.remove('oculto');
+        switchToLogin.classList.add('oculto');
+        switchToRegister.classList.remove('oculto');
+        authTitle.textContent = 'Iniciar Sesión';
+        authError.classList.add('oculto'); // Oculta errores previos
+    });
+
+    // Escuchador para el envío del formulario de Login
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        authError.classList.add('oculto');
+        const email = loginEmailInput.value;
+        const password = loginPasswordInput.value;
+
+        signInWithEmailAndPassword(auth, email, password)
+            .catch((error) => {
+                console.error("Error de login:", error.message);
+                authError.textContent = "Error: Las credenciales no son correctas o el usuario no existe.";
+                authError.classList.remove('oculto');
+            });
+    });
+
+    // Escuchador para el envío del formulario de Registro
+    registerForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        authError.classList.add('oculto');
+        const email = registerEmailInput.value;
+        const password = registerPasswordInput.value;
+
+        createUserWithEmailAndPassword(auth, email, password)
+            .catch((error) => {
+                console.error("Error de registro:", error.code, error.message);
+                if (error.code === 'auth/weak-password') {
+                    authError.textContent = "Error: La contraseña debe tener al menos 6 caracteres.";
+                } else if (error.code === 'auth/email-already-in-use') {
+                    authError.textContent = "Error: El correo electrónico ya está registrado.";
+                } else {
+                    authError.textContent = "Error al crear la cuenta.";
+                }
+                authError.classList.remove('oculto');
+            });
+    });
+
+   const logoutButton = document.getElementById('btn-logout');
+    logoutButton.addEventListener('click', () => {
+        signOut(auth).catch((error) => {
+            console.error("Error al cerrar sesión:", error);
+        });
+    });
+
+    // --- OBSERVADOR PRINCIPAL DEL ESTADO DE AUTENTICACIÓN ---
+    // Esta es la función clave que reacciona a los inicios y cierres de sesión.
+    onAuthStateChanged(auth, (user) => {
+        if (user) {
+            // Si hay un usuario, ocultamos la autenticación y el splash, y mostramos la app.
+            authContainer.classList.add('oculto');
+            splashScreen.classList.add('oculto');
+            appContainer.classList.remove('oculto');
+        } else {
+            // Si no hay usuario, mostramos el panel de autenticación y ocultamos la app y el splash.
+            authContainer.classList.remove('oculto');
+            appContainer.classList.add('oculto');
+            splashScreen.classList.add('oculto');
+        }
+    });
 }
 
 // =================================================================
@@ -728,6 +865,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initEditableTitle();
     initLicenciasPanel();
     initNotificationManager();
+    initAuthSystem();
 
     // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
     // Esto se hace al final para asegurar que todos los módulos estén listos.

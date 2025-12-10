@@ -1773,3 +1773,99 @@ body[data-theme='dark'] #total-restan {
 .tablon-item-actions .green:hover { background-color: var(--green-color-dark); }
 .tablon-item-actions .red { background-color: var(--red-color); }
 .tablon-item-actions .red:hover { background-color: var(--red-color-dark); }
+
+
+/* ============================================================= */
+/*             ESTILOS DEL PANEL DE AUTENTICACIÓN                */
+/* ============================================================= */
+
+/* 1. Contenedor principal (overlay) */
+.auth-container {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Fondo semitransparente */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000; /* Por encima de todo */
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+/* 2. Caja del formulario */
+#auth-box {
+    background-color: var(--modal-bg, #fff);
+    padding: 30px;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    border: 1px solid var(--modal-border, #ddd);
+}
+
+/* 3. Título (Iniciar Sesión / Registro) */
+#auth-title {
+    color: var(--text-color, #212529);
+    margin-bottom: 25px;
+    font-size: 1.8em;
+}
+
+/* 4. Estilo de los inputs de email/contraseña */
+#auth-box input[type="email"],
+#auth-box input[type="password"] {
+    width: 100%;
+    padding: 12px;
+    margin-bottom: 15px;
+    border-radius: 8px;
+    border: 1px solid var(--day-border, #ccc);
+    background-color: var(--day-cell-bg, #f8f9fa);
+    color: var(--text-color, #212529);
+    font-size: 1em;
+    box-sizing: border-box; /* Importante */
+}
+
+/* 5. Estilo de los botones de acción */
+.auth-button {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #0b5ed7; /* Azul principal */
+    color: white;
+    font-weight: bold;
+    font-size: 1.1em;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.auth-button:hover {
+    background-color: #0a58ca;
+}
+
+/* 6. Mensaje de error */
+.auth-error {
+    color: #dc3545; /* Rojo de error */
+    margin-top: 15px;
+    font-weight: bold;
+}
+
+/* 7. Enlace para cambiar entre login y registro */
+.auth-switcher {
+    margin-top: 20px;
+    font-size: 0.9em;
+    color: var(--text-color-secondary, #6c757d);
+}
+
+.auth-switcher a {
+    color: #0b5ed7;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.auth-switcher a:hover {
+    text-decoration: underline;
+}
