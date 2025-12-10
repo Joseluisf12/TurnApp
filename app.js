@@ -44,41 +44,55 @@ function initThemeSwitcher() {
 }
 
 // =================================================================
-//    initCoordinatorTable v4.0 (Conectado a Firestore y Roles)
+// INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
 // =================================================================
 function initCoordinatorTable() {
+
     const tabla = document.getElementById("tabla-coordinador");
     if (!tabla) return;
     const thead = tabla.querySelector("thead");
     const tbody = tabla.querySelector("tbody");
-    
-    // Contenedor de botones para mostrar/ocultar según el rol
-    const controlsContainer = document.getElementById('tabla-coordinador-controls');
-    
+
+    // 1. ESTADO Y CLAVES
+     const KEYS = {
+        TEXT: `turnapp.group.${AppState.groupId}.coordTable.texts`,
+        COLORS: `turnapp.group.${AppState.groupId}.coordTable.colors`,
+        ROWS: `turnapp.group.${AppState.groupId}.coordTable.rows`,
+        COLS: `turnapp.group.${AppState.groupId}.coordTable.cols`,
+        HEADERS: `turnapp.group.${AppState.groupId}.coordTable.headers`
+    };
+
     const DEFAULT_TURN_COLUMNS = [
         { id: 'th-m1', header: 'M¹' }, { id: 'th-t1', header: 'T¹' },
         { id: 'th-m2', header: 'M²' }, { id: 'th-t2', header: 'T²' },
         { id: 'th-n', header: 'N' }
     ];
+    let tableState = {};
+    let selectedRowIndex = -1; // ¡NUEVO! Para guardar la fila seleccionada
 
-    let tableState = {}; // Caché local del estado de la tabla
-    let selectedRowIndex = -1;
-    const groupDocRef = db.collection('groups').doc(AppState.groupId);
-
-    // --- FUNCIONES DE PERSISTENCIA ---
-
-    async function saveStateToFirestore() {
-        if (!AppState.isCoordinator) return;
+        function syncStateFromStorage(AppState) {
+        let turnColumns;
         try {
-            // Guardamos el objeto completo de la tabla en el documento del grupo
-            await groupDocRef.set({ coordinatorTable: tableState }, { merge: true });
+            turnColumns = JSON.parse(localStorage.getItem(KEYS.COLS) || JSON.stringify(DEFAULT_TURN_COLUMNS));
+            if (!Array.isArray(turnColumns)) throw new Error("Estructura de columnas corrupta.");
         } catch (e) {
-            console.error("Error guardando el estado de la tabla del coordinador:", e);
+            console.error("Error al leer columnas, reseteando a valores por defecto.", e);
+            turnColumns = [...DEFAULT_TURN_COLUMNS];
+            localStorage.setItem(KEYS.COLS, JSON.stringify(turnColumns));
         }
+
+        tableState = {
+            rowCount: parseInt(localStorage.getItem(KEYS.ROWS) || '18', 10),
+            turnColumns: turnColumns,
+            columnCount: 2 + turnColumns.length + 1,
+            turnColumnIndices: Array.from({ length: turnColumns.length }, (_, i) => i + 2),
+            texts: JSON.parse(localStorage.getItem(KEYS.TEXT) || '{}'),
+            colors: JSON.parse(localStorage.getItem(KEYS.COLORS) || '{}'),
+            headers: JSON.parse(localStorage.getItem(KEYS.HEADERS) || '{}')
+        };
     }
 
-    // --- FUNCIONES DE RENDERIZADO (SENSIBLES A PERMISOS) ---
-
+    // 2. FUNCIONES DE RENDERIZADO (sin cambios significativos)
     function renderColgroup() {
         let colgroup = tabla.querySelector('colgroup');
         if (!colgroup) {
@@ -89,84 +103,76 @@ function initCoordinatorTable() {
         const numTurnCols = tableState.turnColumns.length;
         const turnColWidth = numTurnCols > 0 ? (100 - 9 - 18 - 35) / numTurnCols : 0;
         for (let i = 0; i < numTurnCols; i++) {
-            colgroup.innerHTML += `<col style="width: ${turnColWidth}%;\">`;
+            colgroup.innerHTML += `<col style="width: ${turnColWidth}%;">`;
         }
-        colgroup.innerHTML += `<col style="width: 35%;\">`;
+        colgroup.innerHTML += `<col style="width: 35%;">`;
     }
 
     function renderHeaders() {
         if (!thead) return;
         thead.innerHTML = '';
-        const isCoord = AppState.isCoordinator;
-        
         const row1 = thead.insertRow();
-        row1.innerHTML = `<th colspan="2">FUNCIONARIO/A</th>`;
+        const row2 = thead.insertRow();
+
+        row1.innerHTML = '<th colspan="2">FUNCIONARIO/A</th>';
         const thCiclo = document.createElement('th');
         thCiclo.id = "th-ciclo";
         thCiclo.colSpan = tableState.turnColumns.length > 0 ? tableState.turnColumns.length : 1;
-        thCiclo.contentEditable = isCoord;
+        thCiclo.contentEditable = true;
         thCiclo.className = "titulo-ciclo";
         thCiclo.innerText = tableState.headers['th-ciclo'] || 'CICLO';
         row1.appendChild(thCiclo);
-        row1.innerHTML += `<th colspan="1">OBSERVACIONES</th>`;
+        row1.innerHTML += '<th colspan="1">OBSERVACIONES</th>';
 
-        const row2 = thead.insertRow();
         row2.innerHTML = '<th>Nº</th><th>NOMBRE</th>';
         tableState.turnColumns.forEach(col => {
             const th = document.createElement('th');
             th.id = col.id;
-            th.contentEditable = isCoord;
+            th.contentEditable = true;
             th.innerText = tableState.headers[col.id] || col.header;
             row2.appendChild(th);
         });
         const thCocina = document.createElement('th');
         thCocina.id = 'th-cocina';
-        thCocina.contentEditable = isCoord;
+        thCocina.contentEditable = true;
         thCocina.innerText = tableState.headers['th-cocina'] || 'COCINA';
         row2.appendChild(thCocina);
     }
 
     function initializeRow(row, rowIndex) {
-        const isCoord = AppState.isCoordinator;
         row.innerHTML = '';
-        row.dataset.rowIndex = rowIndex;
+        row.dataset.rowIndex = rowIndex; // ¡NUEVO! Guardamos el índice en la fila
         for (let cellIndex = 0; cellIndex < tableState.columnCount; cellIndex++) {
             const cell = document.createElement('td');
             const cellId = `r${rowIndex}-c${cellIndex}`;
             const textEditor = document.createElement('div');
             textEditor.className = 'text-editor';
-            textEditor.contentEditable = isCoord;
+            textEditor.contentEditable = true;
             textEditor.innerText = tableState.texts[cellId] || '';
             cell.appendChild(textEditor);
 
             if (tableState.turnColumnIndices.includes(cellIndex)) {
                 cell.style.position = 'relative';
+                textEditor.style.paddingBottom = '16px';
                 if (tableState.colors[cellId]) {
                     cell.style.backgroundColor = tableState.colors[cellId];
                 }
-                
-                if (isCoord) { // Solo mostrar manejador de color al coordinador
-                    textEditor.style.paddingBottom = '16px';
-                    const handle = document.createElement('button');
-                    handle.type = 'button';
-                    handle.title = 'Elegir color';
-                    handle.innerHTML = '&#9679;';
-                    handle.className = 'coord-color-handle'; // Damos clase para estilos
-                    handle.onclick = (ev) => {
-                        ev.stopPropagation();
-                        openColorPicker(handle, (color) => {
-                            const newColor = (color === 'initial') ? undefined : color;
-                            cell.style.backgroundColor = newColor || '';
-                            if (newColor) {
-                                tableState.colors[cellId] = newColor;
-                            } else {
-                                delete tableState.colors[cellId];
-                            }
-                            saveStateToFirestore();
-                        });
-                    };
-                    cell.appendChild(handle);
-                }
+                const handle = document.createElement('button');
+                handle.type = 'button';
+                handle.title = 'Elegir color';
+                handle.innerHTML = '&#9679;';
+                handle.style.cssText = 'position:absolute; bottom:0; left:0; width:100%; height:14px; background:transparent; border:none; cursor:pointer; color:rgba(0,0,0,0.2); font-size:10px; line-height:14px; opacity:0.1; z-index:10;';
+                handle.onmouseenter = () => handle.style.opacity = '0.6';
+                handle.onmouseleave = () => handle.style.opacity = '0.1';
+                handle.onclick = (ev) => {
+                    ev.stopPropagation();
+                    openColorPicker(handle, (color) => {
+                        cell.style.backgroundColor = (color === 'initial') ? '' : color;
+                        tableState.colors[cellId] = (color === 'initial') ? undefined : color;
+                        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
+                    });
+                };
+                cell.appendChild(handle);
             }
             row.appendChild(cell);
         }
@@ -179,29 +185,34 @@ function initCoordinatorTable() {
             const row = tbody.insertRow();
             initializeRow(row, i);
         }
-        selectedRowIndex = -1;
+        selectedRowIndex = -1; // Reseteamos selección
     }
 
     function fullTableRedraw() {
+        syncStateFromStorage(AppState);
         renderColgroup();
         renderHeaders();
         renderBody();
-        // Gestionar la visibilidad de los controles
-        if (controlsContainer) {
-            controlsContainer.style.display = AppState.isCoordinator ? 'flex' : 'none';
-        }
     }
 
+    // 3. ¡NUEVAS FUNCIONES PARA MANIPULAR DATOS!
     function shiftData(fromIndex, direction) {
-        const newTexts = {}, newColors = {};
-        for (let r = 0; r < tableState.rowCount; r++) {
+        const newTexts = {};
+        const newColors = {};
+        const numRows = tableState.rowCount;
+
+        for (let r = 0; r < numRows; r++) {
             for (let c = 0; c < tableState.columnCount; c++) {
                 const oldKey = `r${r}-c${c}`;
                 let newRowIndex = r;
 
-                if (direction === 'down' && r >= fromIndex) newRowIndex = r + 1;
-                else if (direction === 'up' && r > fromIndex) newRowIndex = r - 1;
-                if (r === fromIndex && direction === 'up') continue;
+                if (direction === 'down' && r >= fromIndex) {
+                    newRowIndex = r + 1;
+                } else if (direction === 'up' && r > fromIndex) {
+                    newRowIndex = r - 1;
+                }
+
+                if (r === fromIndex && direction === 'up') continue; // Saltamos la fila eliminada
 
                 const newKey = `r${newRowIndex}-c${c}`;
                 if (tableState.texts[oldKey] !== undefined) newTexts[newKey] = tableState.texts[oldKey];
@@ -210,35 +221,37 @@ function initCoordinatorTable() {
         }
         tableState.texts = newTexts;
         tableState.colors = newColors;
+        localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
+        localStorage.setItem(KEYS.COLORS, JSON.stringify(tableState.colors));
     }
-    
-    // --- VINCULACIÓN DE EVENTOS (SENSIBLE A PERMISOS) ---
-    function bindEvents() {
-        // Eventos que guardan datos solo se activan si es coordinador
-        if (AppState.isCoordinator) {
-            thead.addEventListener('blur', (e) => {
-                const target = e.target;
-                if (target.tagName === 'TH' && target.isContentEditable && target.id) {
-                    tableState.headers[target.id] = target.innerText.trim();
-                    saveStateToFirestore();
-                }
-            }, true);
 
-            tbody.addEventListener("input", (e) => {
-                const textEditor = e.target;
-                const row = textEditor.closest('tr');
-                const cell = textEditor.closest('td');
-                if (!textEditor.classList.contains('text-editor') || !row || !cell) return;
-                
-                const cellId = `r${row.dataset.rowIndex}-c${cell.cellIndex}`;
-                tableState.texts[cellId] = textEditor.innerText;
-                saveStateToFirestore();
-            });
-        }
+    // 4. VINCULACIÓN DE EVENTOS (MODIFICADA)
+        function bindEvents(AppState) {
+        thead.addEventListener('blur', (e) => {
+            const target = e.target;
+            if (target.tagName === 'TH' && target.isContentEditable && target.id) {
+                tableState.headers[target.id] = target.innerText.trim();
+                localStorage.setItem(KEYS.HEADERS, JSON.stringify(tableState.headers));
+            }
+        }, true);
+
+        tbody.addEventListener("input", (e) => {
+            const textEditor = e.target;
+            const row = textEditor.closest('tr');
+            const cell = textEditor.closest('td');
+            if (!textEditor.classList.contains('text-editor') || !row || !cell) return;
+            
+            const rowIndex = row.dataset.rowIndex;
+            const cellIndex = cell.cellIndex;
+            const cellId = `r${rowIndex}-c${cellIndex}`;
+
+            tableState.texts[cellId] = textEditor.innerText;
+            localStorage.setItem(KEYS.TEXT, JSON.stringify(tableState.texts));
+        });
         
-        // Selección de fila es visible para todos
+        // ¡NUEVA LÓGICA DE SELECCIÓN!
         tbody.addEventListener("click", (e) => {
-            if (e.target.closest('.coord-color-handle')) return;
+            if (e.target.closest('.color-handle')) return;
             const fila = e.target.closest("tr");
             if (fila && fila.parentElement === tbody) {
                 Array.from(tbody.children).forEach(tr => tr.classList.remove("seleccionada"));
@@ -247,86 +260,85 @@ function initCoordinatorTable() {
             }
         });
 
-        // Los eventos de los botones de control ya no necesitan clonarse
-        document.getElementById('btn-add-row')?.addEventListener('click', () => {
+        const btnAddRow = document.getElementById('btn-add-row');
+        const btnRemoveRow = document.getElementById('btn-remove-row');
+        const btnAddCol = document.getElementById('btn-add-col');
+        const btnRemoveCol = document.getElementById('btn-remove-col');
+        const btnLimpiar = document.getElementById("limpiar-tabla");
+
+        // ¡NUEVA LÓGICA PARA AÑADIR FILA!
+        if (btnAddRow) btnAddRow.onclick = () => {
             const insertIndex = (selectedRowIndex !== -1) ? selectedRowIndex + 1 : tableState.rowCount;
+            
             shiftData(insertIndex, 'down');
             tableState.rowCount++;
-            saveStateToFirestore();
-        });
+            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
+            
+            // Redibujamos para mantener la consistencia de los datos
+            renderBody();
+        };
 
-        document.getElementById('btn-remove-row')?.addEventListener('click', () => {
-            if (selectedRowIndex === -1) return alert("Por favor, selecciona una fila para eliminar.");
-            if (!confirm(`¿Seguro que quieres eliminar la fila ${selectedRowIndex + 1}?`)) return;
+        // ¡NUEVA LÓGICA PARA QUITAR FILA!
+        if (btnRemoveRow) btnRemoveRow.onclick = () => {
+            if (selectedRowIndex === -1) {
+                return alert("Por favor, selecciona una fila para eliminar.");
+            }
+            if (!confirm(`¿Seguro que quieres eliminar la fila ${selectedRowIndex + 1}?`)) {
+                return;
+            }
+
             shiftData(selectedRowIndex, 'up');
             tableState.rowCount--;
-            saveStateToFirestore();
-        });
+            localStorage.setItem(KEYS.ROWS, tableState.rowCount);
 
-        document.getElementById('btn-add-col')?.addEventListener('click', () => {
+            // Redibujamos para mantener la consistencia
+            renderBody();
+        };
+
+        if (btnAddCol) btnAddCol.onclick = () => {
             const newTurnName = prompt("Introduce el nombre para la nueva columna:", `T${tableState.turnColumns.length + 1}`);
-            if (!newTurnName?.trim()) return;
+            if (!newTurnName || newTurnName.trim() === '') return;
             tableState.turnColumns.push({ id: `th-custom-${Date.now()}`, header: newTurnName.trim() });
-            saveStateToFirestore();
-        });
-
-        document.getElementById('btn-remove-col')?.addEventListener('click', () => {
-            if (tableState.turnColumns.length <= 0) return alert("No hay columnas que eliminar.");
-            if (!confirm("¿Seguro que quieres eliminar la última columna de turno?")) return;
-            tableState.turnColumns.pop();
-            saveStateToFirestore();
-        });
-        
-        document.getElementById("limpiar-tabla")?.addEventListener("click", () => {
-            if (confirm("¿Seguro que quieres borrar todos los textos y colores de la tabla?")) {
-                tableState.texts = {};
-                tableState.colors = {};
-                saveStateToFirestore();
-            }
-        });
-    }
-    
-    // --- INICIALIZACIÓN Y ESCUCHA EN TIEMPO REAL ---
-    if (db) {
-        groupDocRef.onSnapshot(doc => {
-            const data = doc.data();
-            // Si hay datos en Firestore, los usamos. Si no, creamos un estado por defecto.
-            if (data && data.coordinatorTable) {
-                tableState = data.coordinatorTable;
-            } else {
-                tableState = {
-                    rowCount: 18,
-                    turnColumns: DEFAULT_TURN_COLUMNS,
-                    texts: {},
-                    colors: {},
-                    headers: {}
-                };
-            }
-            // Aseguramos que las propiedades básicas existan
-            tableState.turnColumns = tableState.turnColumns || DEFAULT_TURN_COLUMNS;
-            tableState.columnCount = 2 + tableState.turnColumns.length + 1;
-            tableState.turnColumnIndices = Array.from({ length: tableState.turnColumns.length }, (_, i) => i + 2);
-            tableState.headers = tableState.headers || {};
-            tableState.texts = tableState.texts || {};
-            tableState.colors = tableState.colors || {};
-
-            // Redibujar la tabla completa con el nuevo estado y los permisos correctos
+            localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
             fullTableRedraw();
+        };
 
-        }, error => {
-            console.error("Error al escuchar la tabla del coordinador:", error);
-        });
+        if (btnRemoveCol) btnRemoveCol.onclick = () => {
+            if (tableState.turnColumns.length > 0) {
+                if (!confirm("¿Seguro que quieres eliminar la última columna de turno?")) return;
+                tableState.turnColumns.pop();
+                localStorage.setItem(KEYS.COLS, JSON.stringify(tableState.turnColumns));
+                fullTableRedraw();
+            } else {
+                alert("No hay columnas de turno que eliminar.");
+            }
+        };
+        
+        if (btnLimpiar) {
+            const newBtn = btnLimpiar.cloneNode(true);
+            btnLimpiar.parentNode.replaceChild(newBtn, btnLimpiar);
+            newBtn.addEventListener("click", () => {
+                if (confirm("¿Seguro que quieres borrar todos los textos y colores de la tabla?")) {
+                    tableState.texts = {};
+                    tableState.colors = {};
+                    localStorage.removeItem(KEYS.TEXT);
+                    localStorage.removeItem(KEYS.COLORS);
+                        renderBody();
+                    }
+                });
+            }
+        }
+    
+        // 5. INICIALIZACIÓN
+        fullTableRedraw();
+        bindEvents(AppState);      
     }
     
-    // Vinculamos los eventos una sola vez al inicio
-    bindEvents();
-}
-   
+
 // =================================================================
-//    initTablon v2.0 (Conectado a Firestore en Tiempo Real)
+//    VERSIÓN MEJORADA de initTablon (CON NOMBRE EDITABLE)
 // =================================================================
 function initTablon() {
-    // Selectores del DOM
     const btnUpload = document.getElementById('btn-upload-file');
     const fileListContainer = document.getElementById('tablon-lista');
     const tablonPreviewContainer = document.getElementById('tablon-preview-container');
@@ -340,21 +352,14 @@ function initTablon() {
         console.error("TurnApp Error: Faltan elementos del DOM para la funcionalidad del Tablón.");
         return;
     }
-    
-    // Referencia a la colección de Firestore para los archivos del tablón
-    const tablonCollection = db.collection('groups').doc(AppState.groupId).collection('tablon_files');
 
-    // --- RENDERIZADO Y LÓGICA DE LA INTERFAZ ---
+       const TABLON_KEY = `turnapp.group.${AppState.groupId}.tablon.files`;
 
-    // Función que dibuja la lista de archivos en la pantalla
-    function renderFiles(files = []) {
+    function renderFiles() {
+        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
         fileListContainer.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // Ordenamos los archivos por fecha, del más nuevo al más antiguo
-        files.sort((a, b) => b.date.toDate() - a.date.toDate());
-
-        // Actualiza la previsualización de la imagen más reciente
         if (files.length > 0 && files[0].type.startsWith('image/')) {
             tablonPreviewImage.src = files[0].data;
             tablonPreviewContainer.classList.remove('oculto');
@@ -362,38 +367,36 @@ function initTablon() {
             tablonPreviewContainer.classList.add('oculto');
         }
 
-        files.forEach(file => {
+        files.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'tablon-item';
-            fileItem.dataset.id = file.id; // Guardamos el ID del documento de Firestore
-
+            
             const infoDiv = document.createElement('div');
             infoDiv.className = 'tablon-item-info';
 
             const nameStrong = document.createElement('strong');
             nameStrong.className = 'tablon-item-name';
             nameStrong.textContent = file.name;
-            nameStrong.contentEditable = true;
+            // --- ¡CAMBIO 1! Hacemos el nombre editable ---
+            nameStrong.contentEditable = true; 
             nameStrong.spellcheck = false;
+            // Guardamos el índice en el propio elemento para encontrarlo al editar
+            nameStrong.dataset.index = index;
 
             const metaSmall = document.createElement('small');
             metaSmall.className = 'tablon-item-meta';
-            const uploadDate = file.date.toDate().toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
             metaSmall.textContent = `Subido: ${uploadDate} | ${(file.size / 1024).toFixed(1)} KB`;
 
             infoDiv.appendChild(nameStrong);
             infoDiv.appendChild(metaSmall);
 
-            // Solo el coordinador o quien subió el archivo puede borrarlo
-            const canDelete = (AppState.isCoordinator || AppState.userId === file.uploaderId);
-            const deleteButtonHTML = canDelete ? `<button class="delete-btn modern-btn red" title="Eliminar">🗑️</button>` : '';
-
             const actionsDiv = document.createElement('div');
             actionsDiv.className = 'tablon-item-actions';
             actionsDiv.innerHTML = `
-                <button class="view-btn modern-btn green" title="Ver">👁️</button>
-                <button class="download-btn modern-btn" title="Descargar">📥</button>
-                ${deleteButtonHTML}
+                <button class="view-btn modern-btn green" data-index="${index}" title="Ver">👁️</button>
+                <button class="download-btn modern-btn" data-index="${index}" title="Descargar">📥</button>
+                <button class="delete-btn modern-btn red" data-index="${index}" title="Eliminar">🗑️</button>
             `;
 
             fileItem.appendChild(infoDiv);
@@ -403,11 +406,36 @@ function initTablon() {
         fileListContainer.appendChild(fragment);
     }
     
-    // --- MANEJO DE EVENTOS ---
+    // --- ¡CAMBIO 2! Lógica para guardar el nombre editado ---
+    fileListContainer.addEventListener('blur', (event) => {
+        // Se activa cuando se deja de editar un nombre
+        if (event.target && event.target.classList.contains('tablon-item-name')) {
+            const index = parseInt(event.target.dataset.index, 10);
+            const newName = event.target.textContent.trim();
+            
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            if (files[index] && newName) {
+                files[index].name = newName;
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                // Opcional: podrías volver a renderizar, pero no es estrictamente necesario
+                // renderFiles(); 
+            } else {
+                // Si el nombre se deja en blanco, se restaura el original
+                renderFiles();
+            }
+        }
+    }, true); // Usamos 'true' (captura) para asegurar que el evento se gestione bien
 
-    // Evento para subir un nuevo archivo
+    // --- ¡CAMBIO 3! Mejorar la experiencia de usuario con la tecla "Enter" ---
+    fileListContainer.addEventListener('keydown', (event) => {
+        if (event.target && event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
+            event.preventDefault(); // Evita que se cree un salto de línea
+            event.target.blur(); // Dispara el evento 'blur' para guardar
+        }
+    });
+
+    // El resto de la función permanece igual...
     btnUpload.addEventListener('click', () => {
-        if (!db || !AppState.userId) return alert("Debes iniciar sesión para subir archivos.");
         fileInput.value = null;
         fileInput.click();
     });
@@ -415,48 +443,31 @@ function initTablon() {
     fileInput.addEventListener('change', (e) => {
         const file = e.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
-        reader.onload = async (event) => {
-            const fileData = {
-                name: file.name,
-                type: file.type,
-                size: file.size,
-                date: firebase.firestore.FieldValue.serverTimestamp(), // Usa la hora del servidor
-                uploaderId: AppState.userId, // Guardamos quién subió el archivo
-                data: event.target.result // Contenido en Base64
-            };
-            
-            try {
-                await tablonCollection.add(fileData);
-            } catch (error) {
-                console.error("Error al subir el archivo al tablón:", error);
-                alert("No se pudo subir el archivo. Inténtalo de nuevo.");
-            }
+        reader.onload = (event) => {
+            const fileData = { name: file.name, type: file.type, size: file.size, date: new Date().toISOString(), data: event.target.result };
+            const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+            files.unshift(fileData);
+            localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+            renderFiles();
         };
         reader.readAsDataURL(file);
     });
 
-    // Delegación de eventos para los botones de la lista y la edición de nombres
-    fileListContainer.addEventListener('click', async (event) => {
+    fileListContainer.addEventListener('click', (event) => {
         const target = event.target;
-        const fileItem = target.closest('.tablon-item');
-        if (!fileItem) return;
+        const index = target.closest('[data-index]')?.dataset.index;
+        if (index === undefined) return;
 
-        const fileId = fileItem.dataset.id;
-        const fileDoc = await tablonCollection.doc(fileId).get();
-        if (!fileDoc.exists) return;
-        const file = fileDoc.data();
+        const files = JSON.parse(localStorage.getItem(TABLON_KEY) || '[]');
+        const file = files[index];
 
         if (target.classList.contains('view-btn')) {
             if (file.type.startsWith('image/')) {
                 modalImageContent.src = file.data;
                 imageModal.classList.remove('oculto');
             } else {
-                // Para otros tipos de archivo, se intenta abrir en una nueva pestaña
-                fetch(file.data).then(res => res.blob()).then(blob => {
-                    window.open(URL.createObjectURL(blob), '_blank');
-                });
+                fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
             }
         } else if (target.classList.contains('download-btn')) {
             const a = document.createElement('a');
@@ -467,68 +478,35 @@ function initTablon() {
             document.body.removeChild(a);
         } else if (target.classList.contains('delete-btn')) {
             if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
-                try {
-                    await tablonCollection.doc(fileId).delete();
-                } catch (error) {
-                    console.error("Error al eliminar el archivo del tablón:", error);
-                }
+                files.splice(index, 1);
+                localStorage.setItem(TABLON_KEY, JSON.stringify(files));
+                renderFiles();
             }
         }
     });
 
-    // Guardar el nombre editado
-    fileListContainer.addEventListener('blur', (event) => {
-        const target = event.target;
-        if (target.classList.contains('tablon-item-name')) {
-            const fileItem = target.closest('.tablon-item');
-            const fileId = fileItem.dataset.id;
-            const newName = target.textContent.trim();
-            if (newName && fileId) {
-                tablonCollection.doc(fileId).update({ name: newName }).catch(err => console.error("Error al actualizar nombre:", err));
-            }
-        }
-    }, true);
-    
-    // Prevenir salto de línea con Enter al editar
-    fileListContainer.addEventListener('keydown', (event) => {
-        if (event.target.classList.contains('tablon-item-name') && event.key === 'Enter') {
-            event.preventDefault();
-            event.target.blur();
-        }
-    });
-
-    // Eventos del modal de imagen
     tablonPreviewImage.addEventListener('click', () => {
         if (tablonPreviewImage.src && !tablonPreviewImage.src.endsWith('#')) {
             modalImageContent.src = tablonPreviewImage.src;
             imageModal.classList.remove('oculto');
         }
     });
-    modalCloseBtn.addEventListener('click', () => imageModal.classList.add('oculto'));
-    imageModal.addEventListener('click', (e) => { if (e.target === imageModal) imageModal.classList.add('oculto'); });
-    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) imageModal.classList.add('oculto'); });
+    modalCloseBtn.addEventListener('click', () => { imageModal.classList.add('oculto'); });
+    imageModal.addEventListener('click', (e) => { if (e.target === imageModal) { imageModal.classList.add('oculto'); } });
+    window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !imageModal.classList.contains('oculto')) { imageModal.classList.add('oculto'); } });
 
-    // --- INICIALIZACIÓN CON ESCUCHA EN TIEMPO REAL ---
-    
-    if (db) {
-        tablonCollection.onSnapshot(snapshot => {
-            const files = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderFiles(files);
-        }, error => {
-            console.error("Error al escuchar cambios en el tablón:", error);
-        });
-    }
+    renderFiles();
 }
 
 // =================================================================
-//    initDocumentosPanel v2.0 (Conectado a Firestore y Roles)
+//    VERSIÓN MEJORADA de initDocumentosPanel (con ICONOS en botones)
 // =================================================================
 function initDocumentosPanel() {
     const documentosSection = document.getElementById('documentos-section');
     if (!documentosSection) return;
 
+    // Configuración de PDF.js
     if (typeof pdfjsLib !== 'undefined') {
-        // La URL del worker se mantiene como está
         pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js`;
     }
 
@@ -537,37 +515,42 @@ function initDocumentosPanel() {
     const modalPdfContent = document.getElementById('modal-pdf-content');
     const modalCloseBtn = pdfModal.querySelector('.image-modal-close');
 
+    const DOCS_KEY = `turnapp.group.${AppState.groupId}.documentos.v3`;
+ 
     const CATEGORIES = ['mes', 'ciclos', 'vacaciones', 'rotacion'];
     let currentUploadCategory = null;
-    let allDocsCache = []; // Caché local de documentos para el clic en previsualización
 
-    if (!db) {
-        console.error("initDocumentosPanel: La base de datos (db) no está inicializada.");
-        return;
+    function loadDocs() {
+        const data = JSON.parse(localStorage.getItem(DOCS_KEY) || '{}');
+        CATEGORIES.forEach(cat => {
+            if (!Array.isArray(data[cat])) data[cat] = [];
+        });
+        return data;
     }
-    const docsCollection = db.collection('groups').doc(AppState.groupId).collection('documentos');
 
+    function saveDocs(docs) {
+        localStorage.setItem(DOCS_KEY, JSON.stringify(docs));
+    }
+    
     async function generatePdfThumbnail(pdfDataUrl) {
         try {
-            // Decodificamos el Base64 para que pdf.js lo pueda procesar
-            const pdfData = atob(pdfDataUrl.substring(pdfDataUrl.indexOf(',') + 1));
-            const pdf = await pdfjsLib.getDocument({ data: pdfData }).promise;
+            const pdf = await pdfjsLib.getDocument(pdfDataUrl).promise;
             const page = await pdf.getPage(1);
-            const viewport = page.getViewport({ scale: 0.4 }); // Escala para la miniatura
+            const viewport = page.getViewport({ scale: 0.5 });
             const canvas = document.createElement('canvas');
             const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
             await page.render({ canvasContext: context, viewport: viewport }).promise;
-            return canvas.toDataURL('image/jpeg', 0.75); // Calidad de la imagen JPG
+            return canvas.toDataURL('image/jpeg', 0.8);
         } catch (error) {
             console.error("Error generando la miniatura del PDF:", error);
             return null;
         }
     }
 
-    function renderDocs(docs = []) {
-        allDocsCache = docs; // Actualizamos la caché local
+    function renderDocs() {
+        const docs = loadDocs();
         
         CATEGORIES.forEach(category => {
             const card = documentosSection.querySelector(`.documento-card[data-category="${category}"]`);
@@ -576,20 +559,16 @@ function initDocumentosPanel() {
             const imgPreview = card.querySelector('.documento-preview-img');
             const overlay = card.querySelector('.preview-overlay');
             const fileListContainer = card.querySelector('.documento-file-list');
-            const uploadBtn = card.querySelector('.btn-upload-pdf');
-
-            // --- Lógica de Permisos para el botón de subir ---
-            if (uploadBtn) {
-                uploadBtn.style.display = AppState.isCoordinator ? 'flex' : 'none';
-            }
             
-            const filesForCategory = docs.filter(d => d.category === category).sort((a, b) => b.date.toDate() - a.date.toDate());
+            const files = docs[category];
 
-            if (filesForCategory.length > 0) {
-                const lastFile = filesForCategory[0];
-                imgPreview.src = lastFile.thumbnail || '';
-                imgPreview.style.display = lastFile.thumbnail ? 'block' : 'none';
-                overlay.style.display = lastFile.thumbnail ? 'none' : 'flex';
+            if (files && files.length > 0) {
+                const lastFile = files[0];
+                if (lastFile.thumbnail) {
+                    imgPreview.src = lastFile.thumbnail;
+                    imgPreview.style.display = 'block';
+                    overlay.style.display = 'none';
+                }
             } else {
                 imgPreview.src = '';
                 imgPreview.style.display = 'none';
@@ -599,69 +578,83 @@ function initDocumentosPanel() {
             fileListContainer.innerHTML = '';
             const fragment = document.createDocumentFragment();
 
-            filesForCategory.forEach(file => {
-                const fileItem = document.createElement('div');
-                fileItem.className = 'documento-file-item';
-                fileItem.dataset.id = file.id; // ID del documento de Firestore
+            if (files) {
+                files.forEach((file, index) => {
+                    const fileItem = document.createElement('div');
+                    fileItem.className = 'documento-file-item';
+                    const uploadDate = new Date(file.date).toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-                const uploadDate = file.date.toDate().toLocaleString('es-ES', { day: '2-digit', month: '2-digit', year: 'numeric' });
-                
-                // --- Lógica de Permisos para el botón de eliminar ---
-                const deleteButtonHTML = AppState.isCoordinator ? `<button class="doc-delete-btn modern-btn red" title="Eliminar">🗑️</button>` : '';
-
-                fileItem.innerHTML = `
-                    <div class="documento-file-info">
-                        <strong class="documento-file-name">${file.name}</strong>
-                        <small class="documento-file-meta">Subido: ${uploadDate}</small>
-                    </div>
-                    <div class="documento-file-actions">
-                        <button class="doc-view-btn modern-btn green" title="Ver">👁️</button>
-                        <button class="doc-download-btn modern-btn" title="Descargar">📥</button>
-                        ${deleteButtonHTML}
-                    </div>
-                `;
-                fragment.appendChild(fileItem);
-            });
+                    // --- ¡CAMBIO AQUÍ! Usamos iconos en lugar de texto y añadimos un 'title' para accesibilidad ---
+                    fileItem.innerHTML = `
+                        <div class="documento-file-info">
+                            <strong class="documento-file-name">${file.name}</strong>
+                            <small class="documento-file-meta">Subido: ${uploadDate}</small>
+                        </div>
+                        <div class="documento-file-actions">
+                            <button class="doc-view-btn modern-btn green" data-category="${category}" data-index="${index}" title="Ver">👁️</button>
+                            <button class="doc-download-btn modern-btn" data-category="${category}" data-index="${index}" title="Descargar">📥</button>
+                            <button class="doc-delete-btn modern-btn red" data-category="${category}" data-index="${index}" title="Eliminar">🗑️</button>
+                        </div>
+                    `;
+                    fragment.appendChild(fileItem);
+                });
+            }
             fileListContainer.appendChild(fragment);
         });
     }
 
-    documentosSection.addEventListener('click', async (event) => {
+    documentosSection.addEventListener('click', (event) => {
         const target = event.target;
-        const fileItem = target.closest('.documento-file-item');
-        const docId = fileItem?.dataset.id;
 
         if (target.matches('.btn-upload-pdf')) {
-            if (!AppState.isCoordinator) return alert("Solo el coordinador puede subir documentos.");
             currentUploadCategory = target.dataset.category;
             pdfInput.value = null;
             pdfInput.click();
             return;
         }
 
-        if (docId) {
-            const file = allDocsCache.find(doc => doc.id === docId);
-            if (!file) return;
-
-            if (target.matches('.doc-view-btn')) {
+        if (target.matches('.doc-view-btn')) {
+            const category = target.dataset.category;
+            const index = parseInt(target.dataset.index, 10);
+            const file = loadDocs()[category][index];
+            
+            if (file && file.data) {
                 if (window.innerWidth < 768) {
-                    fetch(file.data).then(res => res.blob()).then(blob => window.open(URL.createObjectURL(blob), '_blank'));
+                    fetch(file.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
                 } else {
                     modalPdfContent.src = file.data;
                     pdfModal.classList.remove('oculto');
                 }
-            } else if (target.matches('.doc-download-btn')) {
+            }
+            return;
+        }
+
+        if (target.matches('.doc-download-btn')) {
+            const category = target.dataset.category;
+            const index = parseInt(target.dataset.index, 10);
+            const file = loadDocs()[category][index];
+
+            if (file && file.data) {
                 const a = document.createElement('a');
                 a.href = file.data;
                 a.download = file.name;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
-            } else if (target.matches('.doc-delete-btn')) {
-                if (!AppState.isCoordinator) return;
-                if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
-                    docsCollection.doc(docId).delete().catch(err => console.error("Error al borrar documento:", err));
-                }
+            }
+            return;
+        }
+
+        if (target.matches('.doc-delete-btn')) {
+            const category = target.dataset.category;
+            const index = parseInt(target.dataset.index, 10);
+            const docs = loadDocs();
+            const file = docs[category][index];
+
+            if (confirm(`¿Seguro que quieres eliminar "${file.name}"?`)) {
+                docs[category].splice(index, 1);
+                saveDocs(docs);
+                renderDocs();
             }
             return;
         }
@@ -669,12 +662,11 @@ function initDocumentosPanel() {
         const previewContainer = target.closest('.documento-preview-container');
         if (previewContainer) {
             const category = previewContainer.closest('.documento-card').dataset.category;
-            const filesForCategory = allDocsCache.filter(d => d.category === category).sort((a, b) => b.date.toDate() - a.date.toDate());
-            
-            if (filesForCategory.length > 0) {
-                const lastFile = filesForCategory[0];
+            const docs = loadDocs();
+            if (docs[category] && docs[category].length > 0) {
+                const lastFile = docs[category][0];
                 if (window.innerWidth < 768) {
-                    fetch(lastFile.data).then(res => res.blob()).then(blob => window.open(URL.createObjectURL(blob), '_blank'));
+                    fetch(lastFile.data).then(res => res.blob()).then(blob => { window.open(URL.createObjectURL(blob), '_blank'); });
                 } else {
                     modalPdfContent.src = lastFile.data;
                     pdfModal.classList.remove('oculto');
@@ -685,51 +677,108 @@ function initDocumentosPanel() {
 
     pdfInput.addEventListener('change', async (e) => {
         const file = e.target.files[0];
-        if (!file || !currentUploadCategory || !AppState.isCoordinator) return;
+        if (!file || !currentUploadCategory) return;
 
         const reader = new FileReader();
         reader.onload = async (event) => {
-            const pdfDataUrl = event.target.result;
+            const pdfData = event.target.result;
             
             const card = documentosSection.querySelector(`.documento-card[data-category="${currentUploadCategory}"]`);
             const overlayText = card.querySelector('.preview-text');
             if (overlayText) overlayText.textContent = 'Procesando...';
 
-            const thumbnailData = await generatePdfThumbnail(pdfDataUrl);
+            const thumbnailData = await generatePdfThumbnail(pdfData);
+            const docs = loadDocs();
+            const newFileData = { name: file.name, size: file.size, date: new Date().toISOString(), data: pdfData, thumbnail: thumbnailData };
 
-            const newFileData = {
-                name: file.name,
-                size: file.size,
-                date: firebase.firestore.FieldValue.serverTimestamp(),
-                category: currentUploadCategory,
-                uploaderId: AppState.userId,
-                thumbnail: thumbnailData,
-                data: pdfDataUrl // NOTA: Idealmente esto sería una URL de Firebase Storage
-            };
-
-            try {
-                await docsCollection.add(newFileData);
-            } catch(err) {
-                console.error("Error al subir documento:", err);
-                if (overlayText) overlayText.textContent = 'Error al subir';
-            }
+            docs[currentUploadCategory].unshift(newFileData);
+            saveDocs(docs);
+            renderDocs();
         };
         reader.readAsDataURL(file);
     });
 
     modalCloseBtn.addEventListener('click', () => pdfModal.classList.add('oculto'));
-    pdfModal.addEventListener('click', (e) => { if (e.target === pdfModal) pdfModal.classList.add('oculto'); });
+    pdfModal.addEventListener('click', (e) => {
+        if (e.target === pdfModal) pdfModal.classList.add('oculto');
+    });
+    
+    renderDocs();
+}
 
-    // --- INICIALIZACIÓN CON ESCUCHA EN TIEMPO REAL ---
-    if (db) {
-        docsCollection.onSnapshot(snapshot => {
-            const allDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            renderDocs(allDocs);
-        }, error => {
-            console.error("Error al escuchar cambios en documentos:", error);
+// =========================================================================
+// ARRANQUE CORREGIDO Y ORDENADO
+// =========================================================================
+document.addEventListener('DOMContentLoaded', () => {
+
+    // 1. Cargar el estado de DATOS PRIMERO. Esto es crítico.
+    // Estas funciones llenan las variables globales (manualEdits, cadenceSpec)
+    // con la información guardada por el usuario.
+    restoreManualEdits();
+    restoreCadenceSpec();
+
+    // 2. Ahora, inicializar todos los MÓDULOS DE LA INTERFAZ.
+    // Estas funciones ahora encontrarán los datos listos para ser usados.
+    initThemeSwitcher();
+    initApp(); // Contiene renderCalendar, que depende de los datos cargados.
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones(); // Esta función ahora se ejecuta en un estado consistente.
+    initEditableTitle();
+    initLicenciasPanel();
+    initNotificationManager();
+
+    // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
+    // Esto se hace al final para asegurar que todos los módulos estén listos.
+    
+    // Botones de Cadencia
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
+    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
+
+    // Botón de Peticiones
+    const btnPeticiones = document.getElementById("btn-peticiones");
+    const peticionesSection = document.getElementById("peticiones-section");
+    if (btnPeticiones && peticionesSection) {
+        peticionesSection.classList.add("oculto");
+        peticionesSection.style.display = "none";
+        btnPeticiones.addEventListener("click", (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
+            if (visible) {
+                peticionesSection.classList.add("oculto");
+                peticionesSection.style.display = "none";
+            } else {
+                peticionesSection.classList.remove("oculto");
+                peticionesSection.style.display = "block";
+            }
         });
     }
-}
+
+    // Pantalla de Splash
+    const splash = document.getElementById("splash");
+    const app = document.getElementById("app");
+    const logo = document.getElementById("splash-logo");
+    const calendarioSection = document.getElementById("calendar-panel");
+    const licenciasSection = document.getElementById("licencias-container");
+
+    if (splash && app && logo && calendarioSection && licenciasSection) {
+        app.classList.add("oculto");
+        calendarioSection.classList.add("oculto");
+        licenciasSection.classList.add("oculto");
+        
+        logo.addEventListener("click", () => {
+            splash.remove();
+            app.classList.remove("oculto");
+            calendarioSection.classList.remove("oculto");
+            licenciasSection.classList.add("oculto");
+            calendarioSection.classList.add("fade-in-up");
+            setTimeout(() => { app.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
+        });
+    }
+});
 
 
 // ---------------- estado ----------------
@@ -738,15 +787,11 @@ let currentYear = new Date().getFullYear();
 let cadenceData = []; // array con {date: Date, type: string}
 let cadenceSpec = null; // { type: 'V-1'|'V-2'|'Personalizada', startISO: '', pattern: [...], v1Index:0 }
 let manualEdits = {}; // mapa "YYYY-MM-DD" -> { M: { text?, color?, userColor? }, T:..., N:... }
-let db = null; // ¡NUEVO! Esta variable guardará la conexión a Firestore.
 
 const AppState = {
-    groupId: 'equipo_alpha',
-    // El userId se establecerá dinámicamente después del login.
-    // Lo inicializamos a null para evitar usar datos de prueba.
-    userId: null 
-};
-
+        groupId: 'equipo_alpha',
+        userId: 'user_123_test'
+    };
 
 // ---------------- utilidades ----------------
 function dateKey(year, month, day){
@@ -776,64 +821,21 @@ function defaultTextFor(shiftKey){ return shiftKey; }
 // =========================================================================
 
 // 1. VERSIÓN LIMPIA DE restoreManualEdits (SOLO PARA CALENDARIO)
+function restoreManualEdits(){
+  try {
+        const raw = localStorage.getItem(`turnapp.user.${AppState.userId}.manualEdits`);
 
-// Esta función ahora es asíncrona. Se encarga de inicializar Firestore y cargar los datos.
-async function restoreManualEdits() {
-    // Si 'db' no existe, es la primera vez que se ejecuta, así que inicializamos Firestore.
-    if (!db) {
-        try {
-            db = firebase.firestore();
-            console.log("Firestore inicializado correctamente.");
-        } catch (e) {
-            console.error("Error al inicializar Firestore. Asegúrate de que los scripts de Firebase están cargados.", e);
-            return; // Si no se puede inicializar, no continuamos.
-        }
-    }
-
-    if (!AppState.userId) {
-        console.warn("No hay ID de usuario. No se pueden cargar las ediciones manuales.");
-        manualEdits = {};
-        return;
-    }
-
-    try {
-        const docRef = db.collection('userSettings').doc(AppState.userId);
-        const doc = await docRef.get();
-        if (doc.exists && doc.data().manualEdits) {
-            manualEdits = doc.data().manualEdits;
-            console.log("Ediciones manuales cargadas desde Firestore.");
-            // ¡CLAVE! Como la carga desde la red es asíncrona, una vez que tenemos los
-            // datos, forzamos un re-renderizado del calendario para que los muestre.
-            if (typeof renderCalendar === 'function') {
-                renderCalendar(currentMonth, currentYear);
-            }
-        } else {
-            console.log("No hay 'manualEdits' en Firestore para este usuario. Se creará uno nuevo al guardar.");
-            manualEdits = {};
-        }
-    } catch (e) {
-        console.error("Error al cargar 'manualEdits' desde Firestore:", e);
-        manualEdits = {};
-    }
+    if (raw) manualEdits = JSON.parse(raw);
+  } catch(e){
+    manualEdits = {};
+  }
 }
 
-// La función de guardado también es asíncrona.
-async function saveManualEdits() {
-    // Si no hay conexión a la DB o no hay un usuario identificado, no hace nada.
-    if (!db || !AppState.userId) {
-        return;
-    }
-    try {
-        const docRef = db.collection('userSettings').doc(AppState.userId);
-        // Usamos { merge: true } para no sobrescribir otros campos del documento en el futuro
-        // (por ejemplo, aquí guardaremos 'licenciasData' más adelante).
-        await docRef.set({ manualEdits: manualEdits }, { merge: true });
-    } catch (e) {
-        console.error("Error al guardar 'manualEdits' en Firestore:", e);
-    }
+function saveManualEdits(){
+    try { localStorage.setItem(`turnapp.user.${AppState.userId}.manualEdits`, JSON.stringify(manualEdits)); } catch(e){}
 }
 
-// 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS (CONECTADA A FIRESTORE)
+// 2. NUEVA FUNCIÓN CENTRALIZADA PARA EL PANEL DE LICENCIAS
 function initLicenciasPanel() {
     const licenciasContainer = document.getElementById('licencias-container');
     if (!licenciasContainer) {
@@ -845,120 +847,106 @@ function initLicenciasPanel() {
     const totalCargaEl = document.getElementById('total-carga');
     const totalConsumidosEl = document.getElementById('total-consumidos');
     const totalRestanEl = document.getElementById('total-restan');
+    const LICENCIAS_KEY = `turnapp.user.${AppState.userId}.licenciasData.v3`;
 
-    // --- Funciones Internas ---
 
-    // Calcula y actualiza visualmente los totales. No lee ni escribe, solo opera con la UI.
+    // Calcula y actualiza todos los valores derivados (restan, totales)
     function updateCalculations() {
-        let totalCarga = 0, totalConsumidos = 0;
+        let totalCarga = 0;
+        let totalConsumidos = 0;
+
         items.forEach(item => {
-            const carga = parseInt(item.querySelector('.carga').value, 10) || 0;
-            const consumidos = parseInt(item.querySelector('.consumidos').value, 10) || 0;
+            const cargaInput = item.querySelector('.carga');
+            const consumidosInput = item.querySelector('.consumidos');
             const restanInput = item.querySelector('.restan');
+
+            const carga = parseInt(cargaInput.value, 10) || 0;
+            const consumidos = parseInt(consumidosInput.value, 10) || 0;
+            
             if (restanInput) restanInput.value = carga - consumidos;
             totalCarga += carga;
             totalConsumidos += consumidos;
         });
+
         if (totalCargaEl) totalCargaEl.value = totalCarga;
         if (totalConsumidosEl) totalConsumidosEl.value = totalConsumidos;
         if (totalRestanEl) totalRestanEl.value = totalCarga - totalConsumidos;
     }
 
-    // Guarda el estado actual de la UI en Firestore.
-    async function saveState() {
-        if (!db || !AppState.userId) return;
-
+    // Guarda el estado actual en localStorage
+    function saveState() {
         const state = {};
         items.forEach(item => {
             const tipo = item.dataset.tipo;
             if (tipo) {
-                state[tipo] = {
-                    carga: item.querySelector('.carga').value,
-                    consumidos: item.querySelector('.consumidos').value,
-                    color: item.querySelector('.licencia-color-handle').style.backgroundColor
-                };
+                const carga = item.querySelector('.carga').value;
+                const consumidos = item.querySelector('.consumidos').value;
+                const color = item.querySelector('.licencia-color-handle').style.backgroundColor;
+                state[tipo] = { carga, consumidos, color };
             }
         });
-
-        try {
-            const docRef = db.collection('userSettings').doc(AppState.userId);
-            await docRef.set({ licenciasData: state }, { merge: true });
-        } catch (e) {
-            console.error("Error al guardar 'licenciasData' en Firestore:", e);
-        }
+        localStorage.setItem(LICENCIAS_KEY, JSON.stringify(state));
     }
 
-    // Carga el estado desde Firestore y lo aplica a la UI.
-    async function loadState() {
-        if (!db || !AppState.userId) {
-            updateCalculations(); // Simplemente calcula totales (que serán 0).
-            return;
-        }
-
-        try {
-            const docRef = db.collection('userSettings').doc(AppState.userId);
-            const doc = await docRef.get();
-            if (doc.exists && doc.data().licenciasData) {
-                const savedState = doc.data().licenciasData;
-                items.forEach(item => {
-                    const tipo = item.dataset.tipo;
-                    if (tipo && savedState[tipo]) {
-                        item.querySelector('.carga').value = savedState[tipo].carga || 0;
-                        item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
-                        const colorBtn = item.querySelector('.licencia-color-handle');
-                        if (colorBtn && savedState[tipo].color) {
-                            colorBtn.style.backgroundColor = savedState[tipo].color;
-                        }
-                    }
-                });
-                console.log("Datos de licencias cargados desde Firestore.");
-            } else {
-                 console.log("No hay 'licenciasData' en Firestore para este usuario.");
+    // Carga el estado desde localStorage
+    function loadState() {
+        const savedState = JSON.parse(localStorage.getItem(LICENCIAS_KEY) || '{}');
+        items.forEach(item => {
+            const tipo = item.dataset.tipo;
+            if (tipo && savedState[tipo]) {
+                item.querySelector('.carga').value = savedState[tipo].carga || 0;
+                item.querySelector('.consumidos').value = savedState[tipo].consumidos || 0;
+                const colorBtn = item.querySelector('.licencia-color-handle');
+                if (colorBtn && savedState[tipo].color) {
+                   colorBtn.style.backgroundColor = savedState[tipo].color;
+                }
             }
-        } catch (e) {
-            console.error("Error al cargar 'licenciasData' desde Firestore:", e);
-        }
-        // Es importante llamar a updateCalculations() DESPUÉS de intentar cargar los datos.
-        updateCalculations();
+        });
     }
 
-    // --- Vinculación de Eventos e Inicialización ---
-
+    // Vincula los eventos a los inputs y botones
     items.forEach(item => {
-        // Eventos para los inputs de números (carga, consumidos)
-        item.querySelectorAll('.carga, .consumidos').forEach(input => {
+        const inputs = item.querySelectorAll('.carga, .consumidos');
+        inputs.forEach(input => {
             input.addEventListener('input', () => {
                 updateCalculations();
-                saveState(); // Guardado automático al cambiar un valor.
+                saveState();
             });
         });
+const colorCell = item.querySelector('.licencia-color-handle'); // Esta es la casilla de color
+if (colorCell) {
+    // Hacemos que la casilla sea un contenedor para nuestro "punto"
+    colorCell.style.position = 'relative'; 
+    colorCell.innerHTML = ''; // Limpiamos la casilla por si acaso
 
-        // Evento para el botón de color
-        const colorCell = item.querySelector('.licencia-color-handle');
-        if (colorCell) {
-            colorCell.style.position = 'relative';
-            colorCell.innerHTML = '';
-            const innerHandle = document.createElement('button');
-            innerHandle.type = 'button';
-            innerHandle.title = 'Elegir color';
-            innerHandle.innerHTML = '●';
-            innerHandle.className = 'licencia-inner-handle';
-            innerHandle.addEventListener('click', (ev) => {
-                ev.stopPropagation();
-                openColorPicker(innerHandle, (color) => {
-                    colorCell.style.backgroundColor = (color === 'initial') ? '' : color;
-                    saveState(); // Guardado automático al cambiar un color.
-                }, colorPalette);
-            });
-            colorCell.appendChild(innerHandle);
-        }
+    // Creamos el "punto" (handle) que irá dentro
+    const innerHandle = document.createElement('button');
+    innerHandle.type = 'button';
+    innerHandle.title = 'Elegir color';
+    innerHandle.innerHTML = '●'; // El carácter del punto
+    innerHandle.className = 'licencia-inner-handle'; // Le damos una clase para los estilos
+
+    // Le asignamos el evento de clic al "punto"
+    innerHandle.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        // La paleta se abre anclada al "punto", pero cambia el color de la casilla contenedora
+        openColorPicker(innerHandle, (color) => {
+            const newColor = (color === 'initial') ? '' : color;
+            colorCell.style.backgroundColor = newColor; // Aplicamos el color a la casilla
+            saveState(); // Guardamos el estado (la función saveState() ya sabe leer este valor)
+        }, colorPalette);
     });
-
-    // Carga inicial de datos desde Firestore cuando se inicializa el panel.
-    loadState();
+    
+    // Añadimos el "punto" dentro de la casilla de color
+    colorCell.appendChild(innerHandle);
 }
 
+            });
 
+    // Carga inicial
+    loadState();
+    updateCalculations();
+}
 // =========================================================================
 // FIN DEL NUEVO BLOQUE DE LÓGICA
 // =========================================================================
@@ -1607,152 +1595,116 @@ function applyCadenceRender(month, year){
   });
 }
 
-
-// =================================================================
-//    initPeticiones v2.0 (Conectado a Firestore y Roles)
-// =================================================================
+// ------------------ MÓDULO PETICIONES (solo usuario, sin duplicar) ------------------
 function initPeticiones() {
-    // Selectores del DOM
-    const listaPeticiones = document.getElementById('lista-peticiones-usuario');
-    const peticionTexto = document.getElementById('peticion-texto');
-    const enviarPeticionBtn = document.getElementById('enviar-peticion');
+  const listaUsuario = document.getElementById('lista-peticiones-usuario');
+  const peticionTexto = document.getElementById('peticion-texto');
+  const enviarPeticionBtn = document.getElementById('enviar-peticion');
+  const listaAdmin = null; // ya no existe visualmente, pero mantenemos datos
 
-    if (!listaPeticiones || !peticionTexto || !enviarPeticionBtn) {
-        console.warn("initPeticiones: faltan elementos del DOM.");
-        return;
-    }
-    
-    // Ajustes de estilo que se mantienen
-    peticionTexto.style.fontSize = '1.3em';
-    peticionTexto.style.lineHeight = '1.4';
+  // 1. PRIMERO comprobamos que los elementos existen.
+  if (!listaUsuario || !peticionTexto || !enviarPeticionBtn) {
+    console.warn("initPeticiones: faltan elementos del DOM.");
+    return; // Si algo falta, la función termina aquí y no crashea.
+  }
 
-    // Referencia a la colección de Firestore
-    const peticionesCollection = db.collection('groups').doc(AppState.groupId).collection('peticiones');
+  // 2. AHORA, que ya sabemos que existen, modificamos su estilo.
+  peticionTexto.style.fontSize = '1.3em';
+  peticionTexto.style.lineHeight = '1.4';
 
-    // --- RENDERIZADO CON LÓGICA DE ROLES ---
+  const KEY_USER = `turnapp.group.${AppState.groupId}.peticiones.usuario`;
 
-    // Dibuja la lista, mostrando/ocultando controles según si el usuario es Coordinador
-    function render(peticiones = []) {
-        listaPeticiones.innerHTML = '';
-        const fragment = document.createDocumentFragment();
+  function load() {
+    return JSON.parse(localStorage.getItem(KEY_USER) || '[]');
+  }
 
-        peticiones.forEach(p => {
-            const li = document.createElement('li');
-            li.className = 'peticion-item';
-            li.dataset.id = p.id; // ID del documento de Firestore
+  function save(arr) {
+    localStorage.setItem(KEY_USER, JSON.stringify(arr));
+  }
 
-            const left = document.createElement('div');
-            left.className = 'peticion-left';
+  function render() {
+    const user = load();
+    listaUsuario.innerHTML = '';
+    user.forEach((p, idx) => {
+      const li = document.createElement('li');
+      li.className = 'peticion-item';
 
-            const textoDiv = document.createElement('div');
-            textoDiv.textContent = p.texto;
-            textoDiv.style.fontSize = '1.1em';
-            textoDiv.style.lineHeight = '1.4';
-            left.appendChild(textoDiv);
+      const left = document.createElement('div');
+      left.className = 'peticion-left';
 
-            // Mostramos quién y cuándo hizo la petición
-            if (p.fechaHora) {
-                const fechaDiv = document.createElement('div');
-                fechaDiv.className = 'fecha-hora';
-                const uploaderName = p.uploaderName || 'Anónimo';
-                const fecha = p.fechaHora.toDate().toLocaleString('es-ES');
-                fechaDiv.textContent = `Por: ${uploaderName} - ${fecha}`;
-                fechaDiv.style.fontSize = '0.85em';
-                fechaDiv.style.opacity = '0.85';
-                left.appendChild(fechaDiv);
-            }
-            li.appendChild(left);
+      const textoDiv = document.createElement('div');
+      textoDiv.textContent = p.texto;
+      textoDiv.style.fontSize = '1.1em';
+      textoDiv.style.lineHeight = '1.4';
+      left.appendChild(textoDiv);
 
-            // --- Lógica de Permisos: Solo el Coordinador ve los controles ---
-            // Asumimos que AppState.isCoordinator se define durante el login
-            if (AppState.isCoordinator) {
-                const right = document.createElement('div');
-                right.style.display = 'flex';
-                right.style.gap = '8px';
-                right.className = 'peticion-admin-controls';
+      if (p.fechaHora) {
+        const fechaDiv = document.createElement('div');
+        fechaDiv.className = 'fecha-hora';
+        fechaDiv.textContent = new Date(p.fechaHora).toLocaleString('es-ES');
+        fechaDiv.style.fontSize = '0.85em';
+        fechaDiv.style.opacity = '0.85';
+        left.appendChild(fechaDiv);
+      }
 
-                // Checkbox para marcar como revisada
-                const chk = document.createElement('input');
-                chk.type = 'checkbox';
-                chk.checked = !!p.revisada;
-                chk.title = 'Marcar como revisada';
-                chk.addEventListener('change', () => {
-                    peticionesCollection.doc(p.id).update({ revisada: chk.checked });
-                });
+      const right = document.createElement('div');
+      right.style.display = 'flex';
+      right.style.gap = '8px';
 
-                // Botón para eliminar
-                const delBtn = document.createElement('button');
-                delBtn.className = 'modern-btn red';
-                delBtn.textContent = '🗑️';
-                delBtn.title = 'Eliminar petición';
-                delBtn.addEventListener('click', () => {
-                    if (confirm(`¿Seguro que quieres eliminar esta petición?`)) {
-                        peticionesCollection.doc(p.id).delete();
-                    }
-                });
-
-                right.appendChild(chk);
-                right.appendChild(delBtn);
-                li.appendChild(right);
-            }
-            
-            // Si la petición está revisada, la atenuamos para todos
-            if (p.revisada) {
-                li.style.opacity = '0.6';
-                li.style.textDecoration = 'line-through';
-            }
-
-            fragment.appendChild(li);
-        });
-        listaPeticiones.appendChild(fragment);
-    }
-    
-    // --- MANEJO DE EVENTOS ---
-    
-    // Añadir una nueva petición
-    enviarPeticionBtn.addEventListener('click', async () => {
-        const texto = String(peticionTexto.value || '').trim();
-        if (!texto) return;
-
-        if (!db || !AppState.userId) {
-            return alert("Debes iniciar sesión para enviar peticiones.");
+      const chk = document.createElement('input');
+      chk.type = 'checkbox';
+      chk.checked = !!p.revisada;
+      chk.addEventListener('change', () => {
+        const u = load();
+        u[idx].revisada = chk.checked;
+        save(u);
+        render();
+        if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
+          window.TurnApp.checkAndDisplayNotifications();
         }
-        
-        // Asumimos que AppState.userName se define durante el login
-        const nuevaPeticion = {
-            texto: texto,
-            fechaHora: firebase.firestore.FieldValue.serverTimestamp(),
-            revisada: false,
-            uploaderId: AppState.userId,
-            uploaderName: AppState.userName || 'Usuario'
-        };
+      });
 
-        try {
-            await peticionesCollection.add(nuevaPeticion);
-            peticionTexto.value = ''; // Limpiar el input solo si tiene éxito
-        } catch (error) {
-            console.error("Error al enviar la petición:", error);
-            alert("No se pudo enviar la petición.");
-        }
+      const delBtn = document.createElement('button');
+      delBtn.textContent = '🗑️';
+      delBtn.addEventListener('click', () => {
+        const u = load();
+        u.splice(idx, 1);
+        save(u);
+        render();
+      });
+
+      right.appendChild(chk);
+      right.appendChild(delBtn);
+
+      li.appendChild(left);
+      li.appendChild(right);
+      listaUsuario.appendChild(li);
     });
+  }
 
-    // --- INICIALIZACIÓN CON ESCUCHA EN TIEMPO REAL ---
-
-    if (db) {
-        // Escucha cambios en la colección, ordenados por fecha descendente
-        peticionesCollection.orderBy("fechaHora", "desc").onSnapshot(snapshot => {
-            const peticiones = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-            render(peticiones);
-            
-            // Llama al sistema de notificaciones para que se actualice si hay cambios
-            if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
-                window.TurnApp.checkAndDisplayNotifications();
-            }
-        }, error => {
-            console.error("Error al escuchar las peticiones:", error);
-        });
+  function agregarPeticion(textoRaw) {
+    const texto = String(textoRaw || '').trim();
+    if (!texto) return;
+    const nueva = { texto, fechaHora: new Date().toISOString(), revisada: false };
+    const u = load();
+    u.unshift(nueva);
+    save(u);
+    render();
+    if (window.TurnApp && window.TurnApp.checkAndDisplayNotifications) {
+      window.TurnApp.checkAndDisplayNotifications();
     }
+  }
+
+  enviarPeticionBtn.addEventListener('click', () => {
+    agregarPeticion(peticionTexto.value);
+    peticionTexto.value = '';
+  });
+
+      // En lugar de intentar renderizar ahora, exponemos la función para llamarla más tarde.
+    window.TurnApp = window.TurnApp || {};
+    window.TurnApp.renderPeticiones = render;
 }
+
 
 /* ================================================================= */
 /*           MÓDULO DE NOTIFICACIONES VISUALES (PUNTO ROJO)          */
