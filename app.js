@@ -5,99 +5,6 @@
 // cálculo de festivos variables y correcciones de UI.
 // Sirve como base para el futuro desarrollo multi-usuario.
 
-// =================================================================================
-// FASE 3: INICIALIZACIÓN DE FIREBASE Y AUTENTICACIÓN
-// =================================================================================
-
-// 1. Importar los servicios necesarios de Firebase
-import { initializeApp } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-app.js";
-import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-auth.js";
-import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL, listAll, deleteObject } from "https://www.gstatic.com/firebasejs/9.15.0/firebase-storage.js";
-
-
-// 2. Configuración de Firebase (de tu index.html)
-const firebaseConfig = {
-      apiKey: "AIzaSyCPAuyBdlEUO_UNcqOsAF7Cv6RH0or3YIk",
-      authDomain: "turnapp-multiusuario.firebaseapp.com",
-      projectId: "turnapp-multiusuario",
-      storageBucket: "turnapp-multiusuario.firebasestorage.app",
-      messagingSenderId: "705036017308",
-      appId: "1:705036017308:web:75a36e311da0ba2f4b9759",
-      measurementId: "G-D9KP8REF3S"
-  };
-
-// 3. Inicializar Firebase y sus servicios
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-const storage = getStorage(app);
-
-
-// 4. Referencias a los elementos del DOM para la autenticación
-const authContainer = document.getElementById('auth-container');
-const appContainer = document.getElementById('app'); // Ya deberías tenerla, pero la ponemos para asegurar
-const splashScreen = document.getElementById('splash');
-
-const loginForm = document.getElementById('login-form');
-const registerForm = document.getElementById('register-form');
-
-const loginEmailInput = document.getElementById('login-email');
-const loginPasswordInput = document.getElementById('login-password');
-const registerEmailInput = document.getElementById('register-email');
-const registerPasswordInput = document.getElementById('register-password');
-
-const authError = document.getElementById('auth-error');
-const authTitle = document.getElementById('auth-title');
-
-const switchToRegister = document.getElementById('switch-to-register');
-const switchToLogin = document.getElementById('switch-to-login');
-
-// =================================================================================
-// FIN DE LA FASE 3: INICIALIZACIÓN
-// =================================================================================
-
-// =========================================================================
-// INICIALIZACIÓN DEL NÚCLEO DE LA APP (SOLO DESPUÉS DE LOGIN)
-// =========================================================================
-let isAppInitialized = false; // Bandera para evitar reinicialización
-
-function initializeAppCore() {
-    // Si la app ya se inicializó, no hacemos nada.
-    if (isAppInitialized) return;
-
-    console.log("Autenticación exitosa. Inicializando la aplicación principal...");
-
-    // 1. Cargar datos de usuario guardados
-    restoreManualEdits();
-    restoreCadenceSpec();
-
-    // 2. Inicializar todos los módulos de la interfaz
-    initApp(); 
-    initCoordinatorTable();
-    initTablon();
-    initDocumentosPanel();
-    initPeticiones();
-    initEditableTitle();
-    initLicenciasPanel();
-    initNotificationManager();
-
-    // 3. Configurar oyentes de eventos de la UI que no se inicializan solos
-    const applyBtn = document.getElementById('btn-apply-cadence');
-    const clearBtn = document.getElementById('btn-clear-cadence');
-    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
-    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
-    
-    // 4. Renderizar componentes que necesitan una llamada explícita
-    if (window.TurnApp && window.TurnApp.renderPeticiones) {
-        window.TurnApp.renderPeticiones();
-    }
-
-    // 5. Marcar la app como inicializada
-    isAppInitialized = true;
-}
-
-
 /**
  * Gestiona el cambio de tema (claro/oscuro) y su persistencia en localStorage.
  */
@@ -135,97 +42,6 @@ function initThemeSwitcher() {
     const savedTheme = localStorage.getItem('turnapp_theme') || 'light';
     applyTheme(savedTheme);
 }
-
-
-
-function initAuthSystem() {
-    // Escuchador para cambiar al formulario de Registro
-    switchToRegister.addEventListener('click', (e) => {
-        e.preventDefault();
-        loginForm.classList.add('oculto');
-        registerForm.classList.remove('oculto');
-        switchToRegister.classList.add('oculto');
-        switchToLogin.classList.remove('oculto');
-        authTitle.textContent = 'Crear Cuenta';
-        authError.classList.add('oculto'); // Oculta errores previos
-    });
-
-    // Escuchador para volver al formulario de Login
-    switchToLogin.addEventListener('click', (e) => {
-        e.preventDefault();
-        registerForm.classList.add('oculto');
-        loginForm.classList.remove('oculto');
-        switchToLogin.classList.add('oculto');
-        switchToRegister.classList.remove('oculto');
-        authTitle.textContent = 'Iniciar Sesión';
-        authError.classList.add('oculto'); // Oculta errores previos
-    });
-
-    // Escuchador para el envío del formulario de Login
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        authError.classList.add('oculto');
-        const email = loginEmailInput.value;
-        const password = loginPasswordInput.value;
-
-        signInWithEmailAndPassword(auth, email, password)
-            .catch((error) => {
-                console.error("Error de login:", error.message);
-                authError.textContent = "Error: Las credenciales no son correctas o el usuario no existe.";
-                authError.classList.remove('oculto');
-            });
-    });
-
-    // Escuchador para el envío del formulario de Registro
-    registerForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        authError.classList.add('oculto');
-        const email = registerEmailInput.value;
-        const password = registerPasswordInput.value;
-
-        createUserWithEmailAndPassword(auth, email, password)
-            .catch((error) => {
-                console.error("Error de registro:", error.code, error.message);
-                if (error.code === 'auth/weak-password') {
-                    authError.textContent = "Error: La contraseña debe tener al menos 6 caracteres.";
-                } else if (error.code === 'auth/email-already-in-use') {
-                    authError.textContent = "Error: El correo electrónico ya está registrado.";
-                } else {
-                    authError.textContent = "Error al crear la cuenta.";
-                }
-                authError.classList.remove('oculto');
-            });
-    });
-
-   const logoutButton = document.getElementById('btn-logout');
-    logoutButton.addEventListener('click', () => {
-        signOut(auth).catch((error) => {
-            console.error("Error al cerrar sesión:", error);
-        });
-    });
-
-        // --- OBSERVADOR PRINCIPAL DEL ESTADO DE AUTENTICACIÓN ---
-    onAuthStateChanged(auth, (user) => {
-        if (user) {
-            // Usuario ha iniciado sesión.
-            authContainer.classList.add('oculto');
-            appContainer.classList.remove('oculto');
-            splashScreen.classList.add('oculto');
-            
-            // ¡AQUÍ LA CLAVE!
-            // Solo ahora llamamos a la inicialización del núcleo de la app.
-            initializeAppCore(); 
-
-        } else {
-            // Usuario ha cerrado sesión.
-            authContainer.classList.remove('oculto');
-            appContainer.classList.add('oculto');
-            splashScreen.classList.add('oculto');
-            
-            // Reseteamos la bandera para permitir una nueva inicialización en el próximo login.
-            isAppInitialized = false; 
-        }
-    });
 
 // =================================================================
 // INICIO DEL NUEVO initCoordinatorTable v3.5 (INSERCIÓN SELECTIVA)
@@ -893,26 +709,77 @@ function initDocumentosPanel() {
 // =========================================================================
 // ARRANQUE CORREGIDO Y ORDENADO
 // =========================================================================
-// Este es el NUEVO contenido para el bloque que empieza en la línea 849
 document.addEventListener('DOMContentLoaded', () => {
-    // Al cargar la página, SOLO inicializamos el sistema de temas y autenticación.
-    // El resto de la aplicación se inicializará DESPUÉS de un login exitoso.
-    console.log("DOM cargado. Inicializando sistemas de Tema y Autenticación.");
+
+    // 1. Cargar el estado de DATOS PRIMERO. Esto es crítico.
+    // Estas funciones llenan las variables globales (manualEdits, cadenceSpec)
+    // con la información guardada por el usuario.
+    restoreManualEdits();
+    restoreCadenceSpec();
+
+    // 2. Ahora, inicializar todos los MÓDULOS DE LA INTERFAZ.
+    // Estas funciones ahora encontrarán los datos listos para ser usados.
     initThemeSwitcher();
-    initAuthSystem();
+    initApp(); // Contiene renderCalendar, que depende de los datos cargados.
+    initCoordinatorTable();
+    initTablon();
+    initDocumentosPanel();
+    initPeticiones(); // Esta función ahora se ejecuta en un estado consistente.
+    initEditableTitle();
+    initLicenciasPanel();
+    initNotificationManager();
+
+    // 3. Finalmente, configurar los OYENTES DE EVENTOS de la UI.
+    // Esto se hace al final para asegurar que todos los módulos estén listos.
     
-    // La lógica del splash screen se mantiene, pero ya no muestra la app.
-    // El observador de Auth decidirá si la app se ve o no.
+    // Botones de Cadencia
+    const applyBtn = document.getElementById('btn-apply-cadence');
+    const clearBtn = document.getElementById('btn-clear-cadence');
+    if (applyBtn) applyBtn.addEventListener('click', openCadenceModal);
+    if (clearBtn) clearBtn.addEventListener('click', clearCadencePrompt);
+
+    // Botón de Peticiones
+    const btnPeticiones = document.getElementById("btn-peticiones");
+    const peticionesSection = document.getElementById("peticiones-section");
+    if (btnPeticiones && peticionesSection) {
+        peticionesSection.classList.add("oculto");
+        peticionesSection.style.display = "none";
+        btnPeticiones.addEventListener("click", (e) => {
+            e.preventDefault(); e.stopPropagation();
+            const visible = peticionesSection.style.display !== "none" && !peticionesSection.classList.contains("oculto");
+            if (visible) {
+                peticionesSection.classList.add("oculto");
+                peticionesSection.style.display = "none";
+            } else {
+                peticionesSection.classList.remove("oculto");
+                peticionesSection.style.display = "block";
+            }
+        });
+    }
+
+    // Pantalla de Splash
     const splash = document.getElementById("splash");
+    const app = document.getElementById("app");
     const logo = document.getElementById("splash-logo");
-    if (splash && logo) {
+    const calendarioSection = document.getElementById("calendar-panel");
+    const licenciasSection = document.getElementById("licencias-container");
+
+    if (splash && app && logo && calendarioSection && licenciasSection) {
+        app.classList.add("oculto");
+        calendarioSection.classList.add("oculto");
+        licenciasSection.classList.add("oculto");
+        
         logo.addEventListener("click", () => {
-            // Al hacer clic en el logo, simplemente se oculta el splash
-            // para revelar lo que haya decidido el sistema de Auth (el panel de login).
-            splash.style.display = 'none';
+            splash.remove();
+            app.classList.remove("oculto");
+            calendarioSection.classList.remove("oculto");
+            licenciasSection.classList.add("oculto");
+            calendarioSection.classList.add("fade-in-up");
+            setTimeout(() => { app.scrollIntoView({ behavior: "smooth", block: "start" }); }, 50);
         });
     }
 });
+
 
 // ---------------- estado ----------------
 let currentMonth = new Date().getMonth();

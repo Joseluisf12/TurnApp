@@ -11,36 +11,6 @@
 </head>
 <body class="light">
 
-    <!-- ===================================================================== -->
-    <!-- PANEL DE AUTENTICACIÓN (LOGIN Y REGISTRO) -->
-    <!-- ===================================================================== -->
-    <div id="auth-container" class="auth-container">
-        <div id="auth-box">
-            <h2 id="auth-title">Iniciar Sesión</h2>
-            
-            <!-- Formulario de Login -->
-            <form id="login-form">
-                <input type="email" id="login-email" placeholder="Correo electrónico" required>
-                <input type="password" id="login-password" placeholder="Contraseña" required>
-                <button type="submit" class="auth-button">Entrar</button>
-            </form>
-
-            <!-- Formulario de Registro -->
-            <form id="register-form" class="oculto">
-                <input type="email" id="register-email" placeholder="Correo electrónico" required>
-                <input type="password" id="register-password" placeholder="Contraseña (mín. 6 caracteres)" required>
-                <button type="submit" class="auth-button">Crear Cuenta</button>
-            </form>
-
-            <p id="auth-error" class="auth-error oculto"></p>
-
-            <p class="auth-switcher">
-                <span id="switch-to-register">¿No tienes cuenta? <a href="#">Regístrate</a></span>
-                <span id="switch-to-login" class="oculto">¿Ya tienes cuenta? <a href="#">Inicia sesión</a></span>
-            </p>
-        </div>
-    </div>
-
   <!-- Pantalla inicial / Splash -->
   <div id="splash" class="splash">
     <div class="logo-wrap">
@@ -52,13 +22,9 @@
   <!-- App principal -->
 <main id="app" class="oculto">
     <header class="app-header">
-  <h2 id="app-title">TurnApp</h2>
-  <div> <!-- Contenedor para alinear los botones a la derecha -->
-      <button id="btn-logout" class="icon-btn" title="Cerrar Sesión">🚪</button>
-      <button id="btn-toggle-theme" class="icon-btn" title="Cambiar tema">🌓</button>
-  </div>
-</header>
-
+      <h2 id="app-title">TurnApp</h2>
+      <button id="btn-toggle-theme" class="icon-btn" aria-label="Cambiar tema">🌓</button>
+    </header>
 
     <!-- ========= PANEL 1: TURNOS (Calendario y Licencias) ========= -->
     <section id="content" class="content panel">
@@ -411,11 +377,40 @@
     </div>
   </div>
 
-  
-  <script type="module" src="app.js"></script>
+  <!-- ===================================================================== -->
+  <!-- SCRIPTS DE FIREBASE - AÑADIDOS PARA LA VERSIÓN MULTIUSUARIO -->
+  <!-- ===================================================================== -->
+
+  <!-- SDK principal de Firebase (obligatorio) -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+
+  <!-- Productos que vamos a usar -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js"></script>
+
+  <!-- Script para inicializar Firebase con tu configuración específica -->
+  <script>
+    // Tu configuración personal de Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyCPAuyBdlEUO_UNcqOsAF7Cv6RH0or3YIk",
+      authDomain: "turnapp-multiusuario.firebaseapp.com",
+      projectId: "turnapp-multiusuario",
+      storageBucket: "turnapp-multiusuario.firebasestorage.app",
+      messagingSenderId: "705036017308",
+      appId: "1:705036017308:web:75a36e311da0ba2f4b9759",
+      measurementId: "G-D9KP8REF3S"
+    };
+
+    // Inicializar Firebase
+    firebase.initializeApp(firebaseConfig);
+  </script>
+  <!-- ===================================================================== -->
+
+
+  <script src="app.js" defer></script>
 
 <script>
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- 1. ELEMENTOS Y PANELES (AÑADIDO EL TABLÓN) ---
     const appContainer = document.getElementById('app');
@@ -593,7 +588,6 @@ btnDocumentos.addEventListener('click', () => {
       console.log('PWA fue instalada');
     });
 });
-
 </script>
 
 <!-- Contenedor Modal para la visualización de imágenes a pantalla completa -->
